@@ -1,0 +1,73 @@
+services:
+  postgres:
+    image: postgres:16.4-alpine3.20
+    ports:
+      - '${DATABASE_PORT:-5432}:5432'
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_DB: ${DATABASE_DB:-project_db}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-Password1234}
+    env_file:
+      - path: ./.env
+        required: true
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DATABASE_USER:-postgres} -d ${DATABASE_DB:-project_db}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  server:
+    ports:
+      - '${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}'
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile.backend
+    network_mode: host
+    env_file: ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+    develop:
+      watch:
+        - path: ./backend/src
+          target: /app/backend/src
+          action: sync
+        - path: ./packages
+          target: /app/packages
+          action: sync
+
+  db-migration-service:
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile.db-migration
+    env_file:
+      - ./.env
+    network_mode: host
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  client:
+    ports:
+      - '${FRONTEND_PORT:-3000}:${FRONTEND_PORT:-3000}'
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile.frontend
+    network_mode: host
+    env_file:
+      - ./.env
+    develop:
+      watch:
+        - path: ./frontend/src
+          target: /app/frontend/src
+          action: sync
+        - path: ./packages
+          target: /app/packages
+          action: sync+restart

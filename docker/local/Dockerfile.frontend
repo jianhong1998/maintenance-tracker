@@ -1,0 +1,61 @@
+# =======================================================
+# TurboRepo Frontend Dockerfile - Optimized for Development
+# =======================================================
+
+# =======================================================
+# Base Stage - Common dependencies
+# =======================================================
+FROM node:22.14.0-slim AS base
+
+# Install build dependencies and pnpm in base layer (rarely changes)
+RUN apt update \
+    && apt install --assume-yes --no-install-recommends \
+        build-essential \
+        python3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g pnpm@latest
+
+WORKDIR /app
+
+# =======================================================
+# Dependencies Stage - Install dependencies
+# =======================================================
+FROM base AS deps
+
+# Copy workspace configuration files (changes infrequently)
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY turbo.json ./
+
+# Copy package.json files for all workspaces (for dependency resolution)
+COPY packages/types/package.json ./packages/types/
+COPY frontend/package.json ./frontend/
+
+# Install all dependencies in a single layer
+# This layer will be cached unless dependencies change
+RUN pnpm install --frozen-lockfile
+
+# =======================================================
+# Build Stage - Build shared packages
+# =======================================================
+FROM deps AS shared-build
+
+# Copy only shared package source code
+COPY packages/ ./packages/
+
+# Build only shared packages (cached unless shared packages change)
+RUN pnpm run build --filter=@project/types
+
+# =======================================================
+# Development Stage - Final development image
+# =======================================================
+FROM shared-build AS development
+
+# Copy frontend source code (this layer changes most frequently)
+COPY frontend/ ./frontend/
+
+# Set working directory to frontend for runtime
+WORKDIR /app/frontend
+
+# For development, start dev server directly (no build needed for Next.js dev mode)
+CMD ["pnpm", "run", "dev"]
+
