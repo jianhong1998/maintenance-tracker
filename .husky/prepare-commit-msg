@@ -18,15 +18,15 @@ if ! BRANCH_NAME=$(git symbolic-ref --short HEAD 2>/dev/null); then
   exit 0
 fi
 
-# Use regex to match branch name like 'chore/123-update-something'
-if ! echo "$BRANCH_NAME" | grep -E '^(chore|feat|fix|bugfix|docs|style|refactor|test|build|ci|perf|revert|config)/[0-9]+-.*$' >/dev/null; then
-  echo "Error: Branch name must follow pattern '<type>/<ticket-id>-<description>' (e.g., chore/123-update-something)"
+# Use regex to match branch name like 'chore/123/update-something'
+if ! echo "$BRANCH_NAME" | grep -E '^(chore|feat|fix|bugfix|docs|style|refactor|test|build|ci|perf|revert|config)/[0-9]+/.+$' >/dev/null; then
+  echo "Error: Branch name must follow pattern '<type>/<ticket-id>/<description>' (e.g., chore/123/update-something)"
   exit 1
 fi
 
 # Extract type and ticket ID from branch name
 TYPE=$(echo "$BRANCH_NAME" | cut -d'/' -f1)
-TICKET_ID=$(echo "$BRANCH_NAME" | cut -d'/' -f2 | cut -d'-' -f1)
+TICKET_ID=$(echo "$BRANCH_NAME" | cut -d'/' -f2)
 
 # Check if the commit message already contains the ticket ID
 if echo "$ORIGINAL_MSG" | grep -q "\[${TICKET_ID}\]"; then
