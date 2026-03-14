@@ -53,7 +53,7 @@ This is a **TurboRepo monorepo** with pnpm workspaces. Build order matters: `pac
 - Environment variables sourced from root `.env` (see `.env.template`)
 - Docker Compose services: `postgres`, `server` (NestJS), `client` (Next.js), `db-migration-service`
 
-# Project instructions
+## Project instructions
 
 - Always use relevant skills.
 - Always apply TDD when performing tasks.
