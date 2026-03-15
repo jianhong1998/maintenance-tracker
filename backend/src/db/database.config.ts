@@ -14,7 +14,7 @@ export default class DatabaseConfig {
       port: configService.get<number>('DATABASE_PORT', 5432),
       username: configService.get('DATABASE_USER', 'postgres'),
       password: configService.get('DATABASE_PASSWORD', 'postgres'),
-      database: configService.get('DATABASE_DB', 'invoice_management_app_db'),
+      database: configService.get('DATABASE_DB', 'project_db'),
       entities: ENTITY_MODELS,
       migrations: [migrationPathName],
       migrationsRun: false,
