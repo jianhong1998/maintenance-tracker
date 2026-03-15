@@ -20,3 +20,6 @@ postgres-data
 # Temp folders
 **/temp
 **/tmp
+
+# AI Agent workflow folders
+.superpowers

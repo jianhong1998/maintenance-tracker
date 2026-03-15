@@ -53,6 +53,26 @@ This is a **TurboRepo monorepo** with pnpm workspaces. Build order matters: `pac
 - Environment variables sourced from root `.env` (see `.env.template`)
 - Docker Compose services: `postgres`, `server` (NestJS), `client` (Next.js), `db-migration-service`
 
+## Committing — Husky prepare-commit-msg hook
+
+This repo has a Husky `prepare-commit-msg` hook (`.husky/prepare-commit-msg`) that **automatically prepends** a prefix to every commit message based on the branch name.
+
+For a branch named `feat/000/create-something`, the hook rewrites `update db schema` → `feat: 000 - update db schema`.
+
+**Before writing a commit message, always check whether Husky is active:**
+
+```bash
+cat .husky/prepare-commit-msg   # confirms the hook file exists
+ls .git/hooks/prepare-commit-msg  # confirms it is installed in the repo
+```
+
+If the hook is installed and active, provide **only the bare description** as the commit message — no type prefix, no ticket ID. Let the hook add them.
+
+- Correct: `git commit -m "update db schema"`
+- Wrong: `git commit -m "feat: 000 - update db schema"` ← causes duplicate prefix
+
+The hook skips merge commits, squash commits, and rebase operations automatically, so no special handling is needed for those.
+
 ## Project instructions
 
 - Always use relevant skills.

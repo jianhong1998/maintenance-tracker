@@ -1,0 +1,490 @@
+# Plan 11: Frontend Home Page
+
+> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Implement the `/` home page — a vehicle grid that shows all of the authenticated user's vehicles, a global warning badge counting cards that are overdue or mileage-warning, and an "all good" state when the count is zero.
+
+**Architecture:** Two new TanStack Query hooks — `useVehicles` (list) and `useMaintenanceCards(vehicleId)` — fetch data from the existing API. `QueryGroup` gains `VEHICLES` and `MAINTENANCE_CARDS` constants. A `VehicleCard` component renders one vehicle and independently fetches its cards to compute the per-vehicle warning count. The `HomeContent` component computes the global warning count using TanStack Query's `useQueries` (a single hook call that runs N parallel queries safely) — this avoids calling hooks inside a `.map()` loop, which would violate React's rules of hooks. TanStack Query deduplicates the card requests already fetched by `VehicleCard`. Mileage-warning computation follows the spec: remaining km = `(nextDueMileage - vehicleMileage) * (unit === 'mile' ? 1.60934 : 1)`; warn if `remainingKm <= mileageWarningThresholdKm`; overdue if `nextDueMileage < vehicleMileage` OR `nextDueDate < today`.
+
+**Tech Stack:** TanStack Query v5, Next.js 15 App Router, `@project/types`, Tailwind CSS, shadcn/ui
+
+**Spec reference:** `docs/superpowers/specs/2026-03-14-maintenance-tracker-design.md` — Section 6 (Frontend Structure: Home page, Maintenance Card UI)
+
+**Prerequisites:** Plans 01–10 must be complete. `@project/types` exports `IVehicleResDTO`, `IMaintenanceCardResDTO`, `IAppConfigResDTO`. `useAppConfig` hook exists (Plan 07 frontend chunk).
+
+---
+
+## Chunk 1: Query Hooks
+
+### Task 1: Add `VEHICLES` and `MAINTENANCE_CARDS` to `QueryGroup`
+
+**Files:**
+- Modify: `frontend/src/hooks/queries/keys/key.ts`
+
+- [ ] **Step 1: Update `key.ts`**
+
+In `frontend/src/hooks/queries/keys/key.ts`, update the `QueryGroup` object to include the two new groups:
+
+```typescript
+export const QueryGroup = Object.freeze({
+  HEALTH_CHECK: 'health-check',
+  CONFIG: 'config',
+  VEHICLES: 'vehicles',
+  MAINTENANCE_CARDS: 'maintenance-cards',
+} as const);
+export type QueryGroup = (typeof QueryGroup)[keyof typeof QueryGroup];
+```
+
+- [ ] **Step 2: Build to verify types compile**
+
+```bash
+cd frontend && pnpm build
+```
+
+Expected: No TypeScript errors.
+
+- [ ] **Step 3: Format and lint**
+
+```bash
+just format && just lint
+```
+
+Expected: No errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/hooks/queries/keys/key.ts
+git commit -m "feat: add VEHICLES and MAINTENANCE_CARDS to QueryGroup"
+```
+
+---
+
+### Task 2: Create `useVehicles` hook
+
+**Files:**
+- Create: `frontend/src/hooks/queries/vehicles/useVehicles.ts`
+
+- [ ] **Step 1: Create `useVehicles.ts`**
+
+Create `frontend/src/hooks/queries/vehicles/useVehicles.ts`:
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import type { IVehicleResDTO } from '@project/types';
+import { apiClient } from '@/lib/api-client';
+import { QueryGroup } from '../keys';
+
+export const useVehicles = () => {
+  return useQuery<IVehicleResDTO[]>({
+    queryKey: [QueryGroup.VEHICLES],
+    queryFn: () => apiClient.get<IVehicleResDTO[]>('/vehicles'),
+  });
+};
+```
+
+- [ ] **Step 2: Build to verify types compile**
+
+```bash
+cd frontend && pnpm build
+```
+
+Expected: No TypeScript errors.
+
+- [ ] **Step 3: Format and lint**
+
+```bash
+just format && just lint
+```
+
+Expected: No errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/hooks/queries/vehicles/useVehicles.ts
+git commit -m "feat: add useVehicles query hook"
+```
+
+---
+
+### Task 3: Create `useMaintenanceCards` hook
+
+**Files:**
+- Create: `frontend/src/hooks/queries/maintenance-cards/useMaintenanceCards.ts`
+
+- [ ] **Step 1: Create `useMaintenanceCards.ts`**
+
+Create `frontend/src/hooks/queries/maintenance-cards/useMaintenanceCards.ts`:
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import type { IMaintenanceCardResDTO } from '@project/types';
+import { apiClient } from '@/lib/api-client';
+import { QueryGroup } from '../keys';
+
+export const useMaintenanceCards = (vehicleId: string) => {
+  return useQuery<IMaintenanceCardResDTO[]>({
+    queryKey: [QueryGroup.MAINTENANCE_CARDS, vehicleId],
+    queryFn: () =>
+      apiClient.get<IMaintenanceCardResDTO[]>(
+        `/vehicles/${vehicleId}/maintenance-cards`,
+      ),
+    enabled: !!vehicleId,
+  });
+};
+```
+
+- [ ] **Step 2: Build to verify types compile**
+
+```bash
+cd frontend && pnpm build
+```
+
+Expected: No TypeScript errors.
+
+- [ ] **Step 3: Format and lint**
+
+```bash
+just format && just lint
+```
+
+Expected: No errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/hooks/queries/maintenance-cards/useMaintenanceCards.ts
+git commit -m "feat: add useMaintenanceCards query hook"
+```
+
+---
+
+## Chunk 2: Warning Count Logic, VehicleCard, and HomePage
+
+### Task 4: Create warning computation utility
+
+**Files:**
+- Create: `frontend/src/lib/warning.ts`
+
+This pure utility is used by both the home page and the vehicle dashboard (Plan 12). It computes the warning status of a single maintenance card given the vehicle's current mileage, mileage unit, and the app-config threshold.
+
+- [ ] **Step 1: Create `warning.ts`**
+
+Create `frontend/src/lib/warning.ts`:
+
+```typescript
+import type { IMaintenanceCardResDTO } from '@project/types';
+
+const MILES_TO_KM = 1.60934;
+
+export type CardWarningStatus = 'overdue' | 'warning' | 'ok';
+
+/**
+ * Computes the warning status of a single maintenance card.
+ *
+ * - 'overdue'  — nextDueDate < today OR nextDueMileage < vehicleMileage
+ * - 'warning'  — mileage remaining (in km) <= mileageWarningThresholdKm
+ *                (only when card has intervalMileage)
+ * - 'ok'       — all clear
+ */
+export function getCardWarningStatus(
+  card: IMaintenanceCardResDTO,
+  vehicleMileage: number,
+  mileageUnit: 'km' | 'mile',
+  mileageWarningThresholdKm: number,
+): CardWarningStatus {
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  // Date-based overdue check
+  if (card.nextDueDate && String(card.nextDueDate).slice(0, 10) < todayStr) {
+    return 'overdue';
+  }
+
+  // Mileage-based overdue check
+  if (card.nextDueMileage !== null && card.nextDueMileage < vehicleMileage) {
+    return 'overdue';
+  }
+
+  // Mileage-based warning check (only when card has an interval_mileage)
+  if (card.intervalMileage !== null && card.nextDueMileage !== null) {
+    const remainingNative = card.nextDueMileage - vehicleMileage;
+    const remainingKm =
+      mileageUnit === 'mile' ? remainingNative * MILES_TO_KM : remainingNative;
+
+    if (remainingKm <= mileageWarningThresholdKm) {
+      return 'warning';
+    }
+  }
+
+  return 'ok';
+}
+
+/**
+ * Returns the count of cards that are either 'overdue' or 'warning'.
+ */
+export function countWarningCards(
+  cards: IMaintenanceCardResDTO[],
+  vehicleMileage: number,
+  mileageUnit: 'km' | 'mile',
+  mileageWarningThresholdKm: number,
+): number {
+  return cards.filter((card) => {
+    const status = getCardWarningStatus(
+      card,
+      vehicleMileage,
+      mileageUnit,
+      mileageWarningThresholdKm,
+    );
+    return status === 'overdue' || status === 'warning';
+  }).length;
+}
+```
+
+- [ ] **Step 2: Build to verify types compile**
+
+```bash
+cd frontend && pnpm build
+```
+
+Expected: No TypeScript errors.
+
+- [ ] **Step 3: Format and lint**
+
+```bash
+just format && just lint
+```
+
+Expected: No errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/lib/warning.ts
+git commit -m "feat: add getCardWarningStatus and countWarningCards utilities"
+```
+
+---
+
+### Task 5: Create `VehicleCard` component
+
+**Files:**
+- Create: `frontend/src/components/vehicles/vehicle-card.tsx`
+
+`VehicleCard` renders one vehicle row. It independently fetches the vehicle's maintenance cards, computes the warning count, and shows a badge. Clicking navigates to `/vehicles/:id`.
+
+- [ ] **Step 1: Create `vehicle-card.tsx`**
+
+Create `frontend/src/components/vehicles/vehicle-card.tsx`:
+
+```typescript
+'use client';
+
+import Link from 'next/link';
+import type { IVehicleResDTO } from '@project/types';
+import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
+import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
+import { countWarningCards } from '@/lib/warning';
+
+interface VehicleCardProps {
+  vehicle: IVehicleResDTO;
+}
+
+export function VehicleCard({ vehicle }: VehicleCardProps) {
+  const { data: cards = [] } = useMaintenanceCards(vehicle.id);
+  const { data: config } = useAppConfig();
+
+  const warningCount =
+    config !== undefined
+      ? countWarningCards(
+          cards,
+          vehicle.mileage,
+          vehicle.mileageUnit,
+          config.mileageWarningThresholdKm,
+        )
+      : 0;
+
+  return (
+    <Link
+      href={`/vehicles/${vehicle.id}`}
+      className="block rounded-lg border p-4 hover:bg-accent transition-colors"
+    >
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="font-semibold">
+            {vehicle.brand} {vehicle.model}
+          </p>
+          <p className="text-muted-foreground text-sm">{vehicle.colour}</p>
+          <p className="text-muted-foreground text-sm">
+            {vehicle.mileage.toLocaleString()} {vehicle.mileageUnit}
+          </p>
+        </div>
+        {warningCount > 0 && (
+          <span className="rounded-full bg-destructive px-2.5 py-0.5 text-xs font-semibold text-destructive-foreground">
+            {warningCount}
+          </span>
+        )}
+      </div>
+    </Link>
+  );
+}
+```
+
+- [ ] **Step 2: Build to verify types compile**
+
+```bash
+cd frontend && pnpm build
+```
+
+Expected: No TypeScript errors.
+
+- [ ] **Step 3: Format and lint**
+
+```bash
+just format && just lint
+```
+
+Expected: No errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/components/vehicles/vehicle-card.tsx
+git commit -m "feat: add VehicleCard component with per-vehicle warning badge"
+```
+
+---
+
+### Task 6: Update `HomePage` with vehicle grid and global warning count
+
+**Files:**
+- Modify: `frontend/src/components/pages/home-page.tsx`
+
+`HomePage` wraps everything in `AuthGuard`, fetches vehicles via `useVehicles`, and derives a global warning count using TanStack Query's `useQueries` — a single hook call that runs N parallel queries safely (no hooks-in-loop violation). TanStack Query deduplicates the card requests already issued by each `VehicleCard`.
+
+- [ ] **Step 1: Update `home-page.tsx`**
+
+Replace the contents of `frontend/src/components/pages/home-page.tsx` with:
+
+```typescript
+'use client';
+
+import { useQueries } from '@tanstack/react-query';
+import { AuthGuard } from '@/components/auth/auth-guard';
+import { VehicleCard } from '@/components/vehicles/vehicle-card';
+import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
+import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
+import { countWarningCards } from '@/lib/warning';
+import { QueryGroup } from '@/hooks/queries/keys';
+import { apiClient } from '@/lib/api-client';
+import type { IVehicleResDTO, IMaintenanceCardResDTO } from '@project/types';
+
+/**
+ * Computes the global warning count across all vehicles using useQueries.
+ * useQueries is a single hook call that safely runs a dynamic number of
+ * parallel queries — no hooks-in-loop violation.
+ * TanStack Query deduplicates these fetches with VehicleCard's useMaintenanceCards calls.
+ */
+function useGlobalWarningCount(
+  vehicles: IVehicleResDTO[],
+  thresholdKm: number,
+): number {
+  const results = useQueries({
+    queries: vehicles.map((vehicle) => ({
+      queryKey: [QueryGroup.MAINTENANCE_CARDS, vehicle.id],
+      queryFn: () =>
+        apiClient.get<IMaintenanceCardResDTO[]>(
+          `/vehicles/${vehicle.id}/maintenance-cards`,
+        ),
+      enabled: !!vehicle.id,
+    })),
+  });
+
+  return results.reduce((total, result, index) => {
+    const cards = result.data ?? [];
+    const vehicle = vehicles[index];
+    return (
+      total +
+      countWarningCards(
+        cards,
+        vehicle.mileage,
+        vehicle.mileageUnit,
+        thresholdKm,
+      )
+    );
+  }, 0);
+}
+
+function HomeContent() {
+  const { data: vehicles = [], isLoading } = useVehicles();
+  const { data: config } = useAppConfig();
+  const thresholdKm = config?.mileageWarningThresholdKm ?? 500;
+  const globalWarningCount = useGlobalWarningCount(vehicles, thresholdKm);
+
+  if (isLoading) {
+    return <p className="text-muted-foreground text-sm">Loading vehicles…</p>;
+  }
+
+  if (vehicles.length === 0) {
+    return (
+      <p className="text-muted-foreground text-sm">
+        No vehicles yet. Add your first vehicle to get started.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {globalWarningCount === 0 ? (
+        <p className="text-sm font-medium text-green-600">
+          ✓ All good — no upcoming or overdue maintenance
+        </p>
+      ) : (
+        <p className="text-sm font-medium text-destructive">
+          {globalWarningCount} card
+          {globalWarningCount !== 1 ? 's' : ''} need attention
+        </p>
+      )}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {vehicles.map((vehicle) => (
+          <VehicleCard key={vehicle.id} vehicle={vehicle} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function HomePage() {
+  return (
+    <AuthGuard>
+      <main className="p-6">
+        <h1 className="mb-4 text-xl font-semibold">Your Vehicles</h1>
+        <HomeContent />
+      </main>
+    </AuthGuard>
+  );
+}
+```
+
+- [ ] **Step 2: Build to verify types compile**
+
+```bash
+cd frontend && pnpm build
+```
+
+Expected: No TypeScript errors.
+
+- [ ] **Step 3: Format and lint**
+
+```bash
+just format && just lint
+```
+
+Expected: No errors.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add frontend/src/components/pages/home-page.tsx
+git commit -m "feat: implement home page with vehicle grid and global warning count"
+```
