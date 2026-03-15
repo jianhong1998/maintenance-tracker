@@ -17,7 +17,7 @@ export default class DatabaseConfig {
       database: configService.get('DATABASE_DB', 'invoice_management_app_db'),
       entities: ENTITY_MODELS,
       migrations: [migrationPathName],
-      migrationsRun: true,
+      migrationsRun: false,
       synchronize: false,
       ssl: false,
     };
