@@ -1,10 +1,16 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
 
+const FIREBASE_APP_NAME = 'maintenance-tracker';
+
 @Injectable()
 export class FirebaseService implements OnModuleInit {
-  private _app: admin.app.App;
+  private _app: admin.app.App | undefined;
 
   constructor(private readonly configService: ConfigService) {}
 
@@ -19,18 +25,28 @@ export class FirebaseService implements OnModuleInit {
       .getOrThrow<string>('FIREBASE_PRIVATE_KEY')
       .replace(/\\n/g, '\n');
 
-    // Prevent re-initialisation if app already exists (e.g. in tests)
-    if (admin.apps.length > 0) {
-      this._app = admin.app();
+    const existing = admin.apps.find((a) => a?.name === FIREBASE_APP_NAME);
+    if (existing) {
+      this._app = existing;
       return;
     }
 
-    this._app = admin.initializeApp({
-      credential: admin.credential.cert({ projectId, clientEmail, privateKey }),
-    });
+    this._app = admin.initializeApp(
+      {
+        credential: admin.credential.cert({
+          projectId,
+          clientEmail,
+          privateKey,
+        }),
+      },
+      FIREBASE_APP_NAME,
+    );
   }
 
   get app(): admin.app.App {
+    if (!this._app) {
+      throw new InternalServerErrorException('Firebase app is not initialised');
+    }
     return this._app;
   }
 }

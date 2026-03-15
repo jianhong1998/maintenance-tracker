@@ -4,14 +4,13 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock firebase-admin before importing FirebaseService to avoid real SDK validation
 vi.mock('firebase-admin', () => {
-  const mockApp = { name: 'test-app' };
-  const mockApps: unknown[] = [];
+  const mockApps: { name: string }[] = [];
   const adminModule = {
     apps: mockApps,
-    app: () => mockApp,
-    initializeApp: vi.fn(() => {
-      mockApps.push(mockApp);
-      return mockApp;
+    initializeApp: vi.fn((_opts: unknown, name: string) => {
+      const app = { name };
+      mockApps.push(app);
+      return app;
     }),
     credential: {
       cert: vi.fn((creds: unknown) => creds as Record<string, unknown>),
@@ -51,11 +50,7 @@ describe('FirebaseService', () => {
     service = module.get<FirebaseService>(FirebaseService);
   });
 
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-
-  it('should expose a Firebase app instance', () => {
-    expect(service.app).toBeDefined();
+  it('should expose a Firebase app instance with the correct name', () => {
+    expect(service.app.name).toBe('maintenance-tracker');
   });
 });
