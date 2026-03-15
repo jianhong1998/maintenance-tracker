@@ -20,7 +20,7 @@
 - Modify: `docker-compose.yml`
 - Modify: `.env.template`
 
-- [ ] **Step 1: Add Redis service to `docker-compose.yml`**
+- [x] **Step 1: Add Redis service to `docker-compose.yml`**
 
 Add the following service block after the `postgres` service:
 
@@ -55,7 +55,7 @@ Also update the worker service (to be added in Plan 8 — leave a commented plac
   #   (added in Plan 08 - Background Job Infrastructure)
 ```
 
-- [ ] **Step 2: Add all new environment variables to `.env.template`**
+- [x] **Step 2: Add all new environment variables to `.env.template`**
 
 Append to `.env.template`:
 
@@ -82,7 +82,7 @@ NOTIFICATION_DAYS_BEFORE=7
 NOTIFICATION_CRON_SCHEDULE=0 8 * * *
 ```
 
-- [ ] **Step 3: Verify Redis starts**
+- [x] **Step 3: Verify Redis starts**
 
 ```bash
 just up-build
@@ -97,7 +97,7 @@ docker exec maintenance-tracker-redis-1 redis-cli ping
 
 Expected output: `PONG`
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docker-compose.yml .env.template
@@ -113,13 +113,13 @@ git commit -m "feat: add Redis service to Docker Compose and extend env template
 **Files:**
 - Modify: `backend/package.json` (via pnpm install)
 
-- [ ] **Step 1: Install production dependencies**
+- [x] **Step 1: Install production dependencies**
 
 ```bash
 cd backend && pnpm add @nestjs/bullmq bullmq firebase-admin postmark @aws-sdk/client-ses
 ```
 
-- [ ] **Step 2: Verify packages are installed**
+- [x] **Step 2: Verify packages are installed**
 
 ```bash
 cd backend && node -e "require('@nestjs/bullmq'); require('firebase-admin'); require('postmark'); console.log('OK')"
@@ -127,7 +127,7 @@ cd backend && node -e "require('@nestjs/bullmq'); require('firebase-admin'); req
 
 Expected output: `OK`
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/package.json pnpm-lock.yaml
@@ -150,7 +150,7 @@ git commit -m "feat: install bullmq, firebase-admin, postmark, aws-sdk packages"
 - `FirebaseService` initialises the Firebase Admin `app` instance once using env vars and exposes it.
 - `FirebaseModule` is declared `@Global()` so all modules can inject `FirebaseService` without re-importing.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/firebase/firebase.service.spec.ts`:
 
@@ -216,7 +216,7 @@ describe('FirebaseService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/firebase/firebase.service.spec.ts
@@ -224,7 +224,7 @@ cd backend && pnpm exec vitest run src/modules/firebase/firebase.service.spec.ts
 
 Expected: FAIL — `FirebaseService` not found.
 
-- [ ] **Step 3: Create `FirebaseService`**
+- [x] **Step 3: Create `FirebaseService`**
 
 Create `backend/src/modules/firebase/firebase.service.ts`:
 
@@ -263,7 +263,7 @@ export class FirebaseService implements OnModuleInit {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/firebase/firebase.service.spec.ts
@@ -271,7 +271,7 @@ cd backend && pnpm exec vitest run src/modules/firebase/firebase.service.spec.ts
 
 Expected: PASS
 
-- [ ] **Step 5: Create `FirebaseModule`**
+- [x] **Step 5: Create `FirebaseModule`**
 
 Create `backend/src/modules/firebase/firebase.module.ts`:
 
@@ -287,7 +287,7 @@ import { FirebaseService } from './firebase.service';
 export class FirebaseModule {}
 ```
 
-- [ ] **Step 6: Register `FirebaseModule` in `AppModule`**
+- [x] **Step 6: Register `FirebaseModule` in `AppModule`**
 
 In `backend/src/modules/app/app.module.ts`, add `FirebaseModule` to the `imports` array and add the import statement at the top:
 
@@ -297,7 +297,7 @@ import { FirebaseModule } from '../firebase/firebase.module';
 
 Add `FirebaseModule` to the `imports` array alongside the existing imports. Do not replace the file — only add the new import.
 
-- [ ] **Step 7: Run all unit tests to confirm nothing is broken**
+- [x] **Step 7: Run all unit tests to confirm nothing is broken**
 
 ```bash
 just test-unit
@@ -305,7 +305,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 8: Format and lint**
+- [x] **Step 8: Format and lint**
 
 ```bash
 just format && just lint
@@ -313,7 +313,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/src/modules/firebase/
