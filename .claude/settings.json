@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "deny": [
       "Read(**/.env)",
       "Bash(*cat */.env*)",
@@ -47,6 +46,10 @@
       "Bash(*source */.env*)",
       "Bash(*. .env*)",
       "Bash(*. */.env*)"
-    ]
+    ],
+    "defaultMode": "bypassPermissions"
+  },
+  "enabledPlugins": {
+    "superpowers@claude-plugins-official": true
   }
 }
