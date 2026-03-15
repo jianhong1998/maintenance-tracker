@@ -52,8 +52,8 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/types/package.json ./packages/types/
 COPY backend/package.json ./backend/
 
-# Install only production dependencies
-RUN pnpm install --frozen-lockfile --prod
+# Install only production dependencies (skip lifecycle scripts - husky is a devDep)
+RUN pnpm install --frozen-lockfile --prod --ignore-scripts
 
 # =======================================================
 # Final Migration Stage - Optimized runtime

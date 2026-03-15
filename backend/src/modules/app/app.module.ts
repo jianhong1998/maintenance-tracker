@@ -3,9 +3,15 @@ import { AppController } from './controllers/app.controller';
 import { AppService } from './services/app.service';
 import { AppConfig } from 'src/configs/app.config';
 import { CommonModule } from '../common/common.module';
+import { FirebaseModule } from '../firebase/firebase.module';
 
 @Module({
-  imports: [AppConfig.configModule, AppConfig.typeormModule, CommonModule],
+  imports: [
+    AppConfig.configModule,
+    AppConfig.typeormModule,
+    CommonModule,
+    FirebaseModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
