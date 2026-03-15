@@ -10,9 +10,9 @@ const options: DataSourceOptions & SeederOptions = {
   database: process.env.DATABASE_DB || 'project_db',
   synchronize: false,
   entities: ['dist/**/*.entity{.js,.ts}'],
-  migrations: ['dist/src/db/migrations/**/*{.js,.ts}'],
-  seeds: ['dist/src/db/seeders/**/*{.js,.ts}'],
-  factories: ['dist/src/db/factories/**/*{.js,.ts}'],
+  migrations: ['dist/**/migrations/**/*{.js,.ts}'],
+  seeds: ['dist/**/seeders/**/*{.js,.ts}'],
+  factories: ['dist/**/factories/**/*{.js,.ts}'],
   seedTracking: false,
   ssl: false,
 };
