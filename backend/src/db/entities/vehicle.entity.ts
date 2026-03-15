@@ -5,11 +5,11 @@ import {
   Entity,
   ManyToOne,
   JoinColumn,
-  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
+import { UuidV7BaseEntity } from './base.entity';
 
 export enum MileageUnit {
   KM = 'km',
@@ -17,10 +17,7 @@ export enum MileageUnit {
 }
 
 @Entity('vehicles')
-export class VehicleEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class VehicleEntity extends UuidV7BaseEntity {
   @Column({ type: 'uuid', name: 'user_id' })
   userId: string;
 
@@ -54,12 +51,12 @@ export class VehicleEntity {
   })
   mileageUnit: MileageUnit;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
 }

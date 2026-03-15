@@ -5,11 +5,11 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { VehicleEntity } from './vehicle.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
+import { UuidV7BaseEntity } from './base.entity';
 
 export enum MaintenanceCardType {
   TASK = 'task',
@@ -18,10 +18,7 @@ export enum MaintenanceCardType {
 }
 
 @Entity('maintenance_cards')
-export class MaintenanceCardEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class MaintenanceCardEntity extends UuidV7BaseEntity {
   @Column({ type: 'uuid', name: 'vehicle_id' })
   vehicleId: string;
 
@@ -64,12 +61,12 @@ export class MaintenanceCardEntity {
   @Column({ type: 'date', nullable: true, name: 'next_due_date' })
   nextDueDate: Date | null;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
 }

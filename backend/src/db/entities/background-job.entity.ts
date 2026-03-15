@@ -1,10 +1,5 @@
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, UpdateDateColumn } from 'typeorm';
+import { UuidV7BaseEntity } from './base.entity';
 
 export enum BackgroundJobStatus {
   PENDING = 'pending',
@@ -15,10 +10,7 @@ export enum BackgroundJobStatus {
 }
 
 @Entity('background_jobs')
-export class BackgroundJobEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class BackgroundJobEntity extends UuidV7BaseEntity {
   @Column({ type: 'varchar', name: 'job_type' })
   jobType: string;
 
@@ -44,15 +36,15 @@ export class BackgroundJobEntity {
   @Column({ type: 'timestamptz', name: 'scheduled_from' })
   scheduledFrom: Date;
 
-  @Column({ type: 'timestamptz' })
-  ttl: Date;
+  @Column({ type: 'timestamptz', name: 'expires_at' })
+  expiresAt: Date;
 
   @Column({ type: 'timestamptz', nullable: true, name: 'last_attempted_at' })
   lastAttemptedAt: Date | null;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 }
