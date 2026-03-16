@@ -1,6 +1,6 @@
 # Plan 02: DB Entities & Migrations
 
-> **For agentic workers:** REQUIRED: Use superpowers:subagent-driven-development (if subagents available) or superpowers:executing-plans to implement this plan. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Status: COMPLETE** — All tasks implemented and merged. See [Implementation Notes](#implementation-notes) for deviations from the original spec.
 
 **Goal:** Create all five TypeORM entities (User, Vehicle, MaintenanceCard, MaintenanceHistory, BackgroundJob), register them, generate a single migration, and verify it runs cleanly against the database.
 
@@ -14,6 +14,80 @@
 
 ---
 
+## Implementation Notes
+
+The following deviations from the original spec were made during implementation, driven by code review feedback (PR #7):
+
+### 1. UUIDv7 base entity extracted (`backend/src/db/entities/base.entity.ts`)
+
+**Original plan:** Each entity used `@PrimaryGeneratedColumn('uuid')` directly, generating UUIDv4 via PostgreSQL's `uuid_generate_v4()` function (requires `uuid-ossp` extension).
+
+**Actual implementation:** A shared `UuidV7BaseEntity` abstract class was introduced. It uses `@PrimaryColumn({ type: 'uuid' })` + `@BeforeInsert()` to generate UUIDv7 IDs at the application layer via the `uuidv7` package. All five entities extend `UuidV7BaseEntity` instead of declaring `id` directly.
+
+**Why:** Avoids the `uuid-ossp` PostgreSQL extension dependency. UUIDv7 is also time-sortable, which is better for index locality than random UUIDv4.
+
+### 2. All timestamp columns use `timestamptz`
+
+**Original plan:** `@CreateDateColumn`, `@UpdateDateColumn`, `@DeleteDateColumn` were used with no explicit type (TypeORM defaults to `timestamp without time zone`). `BackgroundJob` used `timestamptz` for its job-specific columns.
+
+**Actual implementation:** All date columns across all entities specify `type: 'timestamptz'` explicitly.
+
+**Why:** Code review flagged timezone inconsistency. Using `timestamptz` everywhere prevents subtle bugs when the server timezone differs from UTC.
+
+### 3. `UserEntity` gained `updatedAt` and `deletedAt`
+
+**Original plan:** `UserEntity` had only `createdAt`.
+
+**Actual implementation:** `UserEntity` also has `@UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })` and `@DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })`.
+
+**Why:** Code review flagged the absence. Users may need to be soft-deleted or have their email updated; without these columns there would be no infrastructure to support that.
+
+### 4. `UserEntity.email` is now unique
+
+**Original plan:** `email` column had no `unique: true`.
+
+**Actual implementation:** `@Column({ type: 'varchar', unique: true })`.
+
+**Why:** Code review flagged missing unique constraint. Two accounts sharing an email would cause silent bugs on any email-based lookup.
+
+### 5. FK columns have `@Index()` decorators
+
+**Original plan:** No indexes on FK columns.
+
+**Actual implementation:** `VehicleEntity.userId`, `MaintenanceCardEntity.vehicleId`, and `MaintenanceHistoryEntity.maintenanceCardId` all carry `@Index()` from TypeORM.
+
+**Why:** PostgreSQL does not auto-create indexes on FK columns. Without them, JOINs and FK lookups do full sequential scans. The `@Index()` decorator also ensures the index survives future `migration:generate` regenerations (the migration was regenerated once without them and the indexes were silently dropped, which the code review caught).
+
+### 6. `MaintenanceHistoryEntity` gained soft-delete
+
+**Original plan:** `MaintenanceHistoryEntity` had only `createdAt` — no `deletedAt`.
+
+**Actual implementation:** `@DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })` added.
+
+**Why:** Code review noted that history records are audit-trail data; hard-deleting them could destroy important records. Soft-delete gives a recovery path.
+
+### 7. `BackgroundJobEntity.ttl` renamed to `expiresAt`
+
+**Original plan:** Column was named `ttl: Date`.
+
+**Actual implementation:** Column is named `expiresAt: Date` with `name: 'expires_at'`.
+
+**Why:** `ttl` (time-to-live) conventionally represents a duration, not a timestamp. `expiresAt` makes the semantic — an absolute expiry timestamp — unambiguous.
+
+### 8. `decimalTransformer` handles `undefined`
+
+**Original plan:** `to` signature was `(value: number | null): number | null`.
+
+**Actual implementation:** `to` signature is `(value: number | null | undefined): number | null | undefined`.
+
+**Why:** TypeORM may call `to` with `undefined` for optional columns not set on an insert. The original types were misleading; the fix aligns TypeScript types with actual runtime behaviour.
+
+### 9. Migration file
+
+The final migration file is `backend/src/db/migrations/1773633630216-init.ts` (not `InitialSchema` as planned — TypeORM generated the name from the `--name=init` flag used on the final regeneration). It correctly includes all five tables, FK constraints, enum types, unique constraints, and FK indexes, with a complete `down()` that reverses in the correct order.
+
+---
+
 ## Chunk 1: Entity Files
 
 ### Task 1: Create decimal transformer utility
@@ -23,15 +97,15 @@
 
 TypeORM returns PostgreSQL `decimal`/`numeric` columns as **strings** at runtime. Use this transformer on every `decimal` column to ensure TypeScript types match runtime values.
 
-- [ ] **Step 1: Create the transformer file**
+- [x] **Step 1: Create the transformer file**
 
-Create `backend/src/db/transformers/decimal.transformer.ts`:
+Actual implementation (updated from plan — `undefined` added to handle optional columns):
 
 ```typescript
 import { ValueTransformer } from 'typeorm';
 
 export const decimalTransformer: ValueTransformer = {
-  to: (value: number | null): number | null => value,
+  to: (value: number | null | undefined): number | null | undefined => value,
   from: (value: string | null): number | null =>
     value === null ? null : parseFloat(value),
 };
@@ -44,31 +118,36 @@ export const decimalTransformer: ValueTransformer = {
 **Files:**
 - Create: `backend/src/db/entities/user.entity.ts`
 
-- [ ] **Step 1: Create the entity file**
+- [x] **Step 1: Create the entity file**
 
-Create `backend/src/db/entities/user.entity.ts`:
+Actual implementation (updated from plan — extends `UuidV7BaseEntity`, `email` unique, `updatedAt`/`deletedAt` added, all timestamps `timestamptz`):
 
 ```typescript
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
-  PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
+import { UuidV7BaseEntity } from './base.entity';
 
 @Entity('users')
-export class UserEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
-  @Column({ type: 'varchar' })
+export class UserEntity extends UuidV7BaseEntity {
+  @Column({ type: 'varchar', unique: true })
   email: string;
 
   @Column({ type: 'varchar', unique: true, name: 'firebase_uid' })
   firebaseUid: string;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
+
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
+  updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  deletedAt: Date | null;
 }
 ```
 
@@ -79,9 +158,9 @@ export class UserEntity {
 **Files:**
 - Create: `backend/src/db/entities/vehicle.entity.ts`
 
-- [ ] **Step 1: Create the entity file**
+- [x] **Step 1: Create the entity file**
 
-Create `backend/src/db/entities/vehicle.entity.ts`:
+Actual implementation (updated from plan — extends `UuidV7BaseEntity`, `@Index()` on `userId`, all timestamps `timestamptz`):
 
 ```typescript
 import {
@@ -89,13 +168,14 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   ManyToOne,
   JoinColumn,
-  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserEntity } from './user.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
+import { UuidV7BaseEntity } from './base.entity';
 
 export enum MileageUnit {
   KM = 'km',
@@ -103,10 +183,8 @@ export enum MileageUnit {
 }
 
 @Entity('vehicles')
-export class VehicleEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class VehicleEntity extends UuidV7BaseEntity {
+  @Index()
   @Column({ type: 'uuid', name: 'user_id' })
   userId: string;
 
@@ -140,13 +218,13 @@ export class VehicleEntity {
   })
   mileageUnit: MileageUnit;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
 }
 ```
@@ -158,9 +236,9 @@ export class VehicleEntity {
 **Files:**
 - Create: `backend/src/db/entities/maintenance-card.entity.ts`
 
-- [ ] **Step 1: Create the entity file**
+- [x] **Step 1: Create the entity file**
 
-Create `backend/src/db/entities/maintenance-card.entity.ts`:
+Actual implementation (updated from plan — extends `UuidV7BaseEntity`, `@Index()` on `vehicleId`, all timestamps `timestamptz`):
 
 ```typescript
 import {
@@ -168,13 +246,14 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { VehicleEntity } from './vehicle.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
+import { UuidV7BaseEntity } from './base.entity';
 
 export enum MaintenanceCardType {
   TASK = 'task',
@@ -183,10 +262,8 @@ export enum MaintenanceCardType {
 }
 
 @Entity('maintenance_cards')
-export class MaintenanceCardEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class MaintenanceCardEntity extends UuidV7BaseEntity {
+  @Index()
   @Column({ type: 'uuid', name: 'vehicle_id' })
   vehicleId: string;
 
@@ -229,13 +306,13 @@ export class MaintenanceCardEntity {
   @Column({ type: 'date', nullable: true, name: 'next_due_date' })
   nextDueDate: Date | null;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
   deletedAt: Date | null;
 }
 ```
@@ -247,27 +324,27 @@ export class MaintenanceCardEntity {
 **Files:**
 - Create: `backend/src/db/entities/maintenance-history.entity.ts`
 
-- [ ] **Step 1: Create the entity file**
+- [x] **Step 1: Create the entity file**
 
-Create `backend/src/db/entities/maintenance-history.entity.ts`:
+Actual implementation (updated from plan — extends `UuidV7BaseEntity`, `@Index()` on `maintenanceCardId`, `deletedAt` soft-delete added, all timestamps `timestamptz`):
 
 ```typescript
 import {
   Column,
   CreateDateColumn,
+  DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
-  PrimaryGeneratedColumn,
 } from 'typeorm';
 import { MaintenanceCardEntity } from './maintenance-card.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
+import { UuidV7BaseEntity } from './base.entity';
 
 @Entity('maintenance_histories')
-export class MaintenanceHistoryEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class MaintenanceHistoryEntity extends UuidV7BaseEntity {
+  @Index()
   @Column({ type: 'uuid', name: 'maintenance_card_id' })
   maintenanceCardId: string;
 
@@ -291,8 +368,11 @@ export class MaintenanceHistoryEntity {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz', nullable: true })
+  deletedAt: Date | null;
 }
 ```
 
@@ -303,18 +383,13 @@ export class MaintenanceHistoryEntity {
 **Files:**
 - Create: `backend/src/db/entities/background-job.entity.ts`
 
-- [ ] **Step 1: Create the entity file**
+- [x] **Step 1: Create the entity file**
 
-Create `backend/src/db/entities/background-job.entity.ts`:
+Actual implementation (updated from plan — extends `UuidV7BaseEntity`, `ttl` renamed to `expiresAt`/`expires_at`, all timestamps `timestamptz`):
 
 ```typescript
-import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { Column, CreateDateColumn, Entity, UpdateDateColumn } from 'typeorm';
+import { UuidV7BaseEntity } from './base.entity';
 
 export enum BackgroundJobStatus {
   PENDING = 'pending',
@@ -325,10 +400,7 @@ export enum BackgroundJobStatus {
 }
 
 @Entity('background_jobs')
-export class BackgroundJobEntity {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+export class BackgroundJobEntity extends UuidV7BaseEntity {
   @Column({ type: 'varchar', name: 'job_type' })
   jobType: string;
 
@@ -354,17 +426,40 @@ export class BackgroundJobEntity {
   @Column({ type: 'timestamptz', name: 'scheduled_from' })
   scheduledFrom: Date;
 
-  @Column({ type: 'timestamptz' })
-  ttl: Date;
+  @Column({ type: 'timestamptz', name: 'expires_at' })
+  expiresAt: Date;
 
   @Column({ type: 'timestamptz', nullable: true, name: 'last_attempted_at' })
   lastAttemptedAt: Date | null;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
+}
+```
+
+---
+
+### New file: `base.entity.ts`
+
+Not in the original plan. Created at `backend/src/db/entities/base.entity.ts`:
+
+```typescript
+import { BeforeInsert, PrimaryColumn } from 'typeorm';
+import { uuidv7 } from 'uuidv7';
+
+export abstract class UuidV7BaseEntity {
+  @PrimaryColumn({ type: 'uuid' })
+  id: string;
+
+  @BeforeInsert()
+  generateId() {
+    if (!this.id) {
+      this.id = uuidv7();
+    }
+  }
 }
 ```
 
@@ -377,111 +472,24 @@ export class BackgroundJobEntity {
 **Files:**
 - Modify: `backend/src/db/entity-model.ts`
 
-- [ ] **Step 1: Register all entities in `entity-model.ts`**
+- [x] **Step 1: Register all entities in `entity-model.ts`**
 
-Replace the content of `backend/src/db/entity-model.ts`:
+Implemented as specified.
 
-```typescript
-import { BackgroundJobEntity } from './entities/background-job.entity';
-import { MaintenanceCardEntity } from './entities/maintenance-card.entity';
-import { MaintenanceHistoryEntity } from './entities/maintenance-history.entity';
-import { UserEntity } from './entities/user.entity';
-import { VehicleEntity } from './entities/vehicle.entity';
+- [x] **Step 2: Format and lint** — Passed.
 
-export const ENTITY_MODELS = [
-  UserEntity,
-  VehicleEntity,
-  MaintenanceCardEntity,
-  MaintenanceHistoryEntity,
-  BackgroundJobEntity,
-];
+- [x] **Step 3: Start services** — Services running via `just up-build`.
 
-export type ModelConstructorType = (typeof ENTITY_MODELS)[number];
-```
+- [x] **Step 4: Build the backend** — `dist/` built successfully.
 
-- [ ] **Step 2: Format and lint**
+- [x] **Step 5: Generate the migration** — Final migration: `backend/src/db/migrations/1773633630216-init.ts`. The migration was regenerated multiple times during code review iterations; the final version includes all five tables, FK constraints, enum types, unique constraints on `users.email` and `background_jobs.idempotency_key`, and FK indexes (`IDX_88b36924d769e4df751bcfbf24` on `vehicles.user_id`, `IDX_5fb1428f4f64339bb2d4fd853b` on `maintenance_cards.vehicle_id`, `IDX_c1ae546d5f00a7677c491c377b` on `maintenance_histories.maintenance_card_id`).
 
-```bash
-just format && just lint
-```
+- [x] **Step 6: Verify migration runs cleanly** — Passed.
 
-Expected: No errors.
+- [x] **Step 7: Verify tables exist in the database** — All five tables confirmed present.
 
-- [ ] **Step 3: Start services (if not already running)**
+- [x] **Step 8: Run all unit tests** — Passed.
 
-```bash
-just up-build
-```
+- [x] **Step 9: Format and lint** — Passed.
 
-Expected: postgres, redis, server, and client services all healthy.
-
-- [ ] **Step 4: Build the backend to produce `dist/` for the migration CLI**
-
-The TypeORM migration CLI uses the compiled `dist/` output. Run:
-
-```bash
-cd backend && pnpm run build
-```
-
-Expected: `dist/` directory is created/updated with no TypeScript errors.
-
-- [ ] **Step 5: Generate the migration**
-
-```bash
-cd backend && pnpm run migration:generate --name=InitialSchema
-```
-
-Expected: A new file is created at `backend/src/db/migrations/<timestamp>-InitialSchema.ts` containing `CREATE TABLE` statements for all 5 tables.
-
-Verify the migration file contains all expected tables:
-- `users`
-- `vehicles`
-- `maintenance_cards`
-- `maintenance_histories`
-- `background_jobs`
-
-- [ ] **Step 6: Verify migration runs cleanly**
-
-```bash
-cd backend && pnpm run migration:run
-```
-
-Expected: Output shows the `InitialSchema` migration executed successfully with no errors.
-
-- [ ] **Step 7: Verify tables exist in the database**
-
-```bash
-docker exec -it maintenance-tracker-postgres-1 psql -U postgres -d project_db -c "\dt"
-```
-
-Expected output includes:
-```
- public | background_jobs        | table | postgres
- public | maintenance_cards      | table | postgres
- public | maintenance_histories  | table | postgres
- public | users                  | table | postgres
- public | vehicles               | table | postgres
-```
-
-- [ ] **Step 8: Run all unit tests to confirm nothing is broken**
-
-```bash
-just test-unit
-```
-
-Expected: All tests pass.
-
-- [ ] **Step 9: Format and lint**
-
-```bash
-just format && just lint
-```
-
-Expected: No errors.
-
-- [ ] **Step 10: Commit**
-
-```bash
-git add backend/src/db/
-git commit -m "feat: add all TypeORM entities and generate initial schema migration"
-```
+- [x] **Step 10: Commit** — Committed on branch `claude/slack-execute-implementation-plan-two-SrjE7`.
