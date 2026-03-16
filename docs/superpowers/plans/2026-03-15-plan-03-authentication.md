@@ -14,6 +14,48 @@
 
 ---
 
+## Status: ✅ COMPLETE
+
+**Commits:**
+- `26e8f49` — add IAuthUser shared type
+- `94dd311` — implement Firebase auth guard with user auto-creation
+- `91d7287` — fix auth guard: throw on missing email, add logger, fix token parsing, fix request.user type
+
+**All 10 unit tests passing** (5 test files).
+
+---
+
+## Implementation Diffs vs Plan
+
+### `FirebaseAuthGuard` — deviations from plan
+
+The guard was extended beyond the plan in commit `91d7287`:
+
+1. **Added `Logger`** — `private readonly logger = new Logger(FirebaseAuthGuard.name)` logs token verification failures via `this.logger.warn(...)` instead of silently swallowing the error.
+
+2. **Stricter token parsing** — Plan used `authHeader.split(' ')[1]`. Implementation uses destructuring `const [, token] = authHeader.split(' ')` with an additional null-check: throws `UnauthorizedException` if `token` is falsy (e.g. `"Bearer "` with no trailing value).
+
+3. **Email required** — Plan used `decoded.email ?? ''` (fallback to empty string). Implementation throws `UnauthorizedException('Firebase token must include an email address')` when `decoded.email` is absent. This removes the silent empty-email footgun.
+
+4. **`request.user` typed as `UserEntity`** — Plan typed as `Request & { user: unknown }`. Implementation uses `Request & { user: UserEntity }` for stronger type safety downstream.
+
+### Guard spec — additional test case
+
+One test was added beyond the plan:
+
+```typescript
+it('throws UnauthorizedException when token has no email', async () => {
+  mockVerifyIdToken.mockResolvedValue({ uid: 'firebase-uid-1' });
+  await expect(
+    guard.canActivate(makeContext('Bearer valid-token')),
+  ).rejects.toThrow(UnauthorizedException);
+});
+```
+
+This covers the new "email required" behaviour (deviation #3 above).
+
+---
+
 ## Chunk 1: Shared Types
 
 ### Task 1: Add `IAuthUser` interface to `@project/types`
@@ -24,7 +66,7 @@
 
 The authenticated user shape is shared between the guard and controllers.
 
-- [ ] **Step 1: Create `auth.dto.ts`**
+- [x] **Step 1: Create `auth.dto.ts`**
 
 Create `packages/types/src/dtos/auth.dto.ts`:
 
@@ -36,7 +78,7 @@ export interface IAuthUser {
 }
 ```
 
-- [ ] **Step 2: Re-export from `packages/types/src/dtos/index.ts`**
+- [x] **Step 2: Re-export from `packages/types/src/dtos/index.ts`**
 
 Add to `packages/types/src/dtos/index.ts`:
 
@@ -44,7 +86,7 @@ Add to `packages/types/src/dtos/index.ts`:
 export * from './auth.dto';
 ```
 
-- [ ] **Step 3: Build `@project/types`**
+- [x] **Step 3: Build `@project/types`**
 
 ```bash
 cd packages/types && pnpm run build
@@ -52,7 +94,7 @@ cd packages/types && pnpm run build
 
 Expected: `dist/` is updated with no TypeScript errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/types/src/dtos/auth.dto.ts packages/types/src/dtos/index.ts
@@ -71,7 +113,7 @@ git commit -m "feat: add IAuthUser shared type"
 
 Wraps TypeORM operations for `UserEntity`. Extends `BaseDBUtil`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/auth/repositories/user.repository.spec.ts`:
 
@@ -133,7 +175,7 @@ describe('UserRepository', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/auth/repositories/user.repository.spec.ts
@@ -141,7 +183,7 @@ cd backend && pnpm exec vitest run src/modules/auth/repositories/user.repository
 
 Expected: FAIL — `UserRepository` not found.
 
-- [ ] **Step 3: Create `user.repository.ts`**
+- [x] **Step 3: Create `user.repository.ts`**
 
 Create `backend/src/modules/auth/repositories/user.repository.ts`:
 
@@ -185,7 +227,7 @@ export class UserRepository extends BaseDBUtil<UserEntity, CreateUserData> {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/auth/repositories/user.repository.spec.ts
@@ -203,7 +245,7 @@ Expected: PASS
 
 `resolveUser` finds or creates the `User` record given Firebase token claims.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/auth/services/auth.service.spec.ts`:
 
@@ -277,7 +319,7 @@ describe('AuthService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/auth/services/auth.service.spec.ts
@@ -285,7 +327,7 @@ cd backend && pnpm exec vitest run src/modules/auth/services/auth.service.spec.t
 
 Expected: FAIL — `AuthService` not found.
 
-- [ ] **Step 3: Create `AuthService`**
+- [x] **Step 3: Create `AuthService`**
 
 Create `backend/src/modules/auth/services/auth.service.ts`:
 
@@ -317,7 +359,7 @@ export class AuthService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/auth/services/auth.service.spec.ts
@@ -334,7 +376,7 @@ Expected: PASS
 - Create: `backend/src/modules/auth/guards/firebase-auth.guard.spec.ts`
 - Create: `backend/src/modules/auth/decorators/current-user.decorator.ts`
 
-- [ ] **Step 1: Write the failing guard test**
+- [x] **Step 1: Write the failing guard test**
 
 Create `backend/src/modules/auth/guards/firebase-auth.guard.spec.ts`:
 
@@ -417,7 +459,7 @@ describe('FirebaseAuthGuard', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/auth/guards/firebase-auth.guard.spec.ts
@@ -425,7 +467,7 @@ cd backend && pnpm exec vitest run src/modules/auth/guards/firebase-auth.guard.s
 
 Expected: FAIL — `FirebaseAuthGuard` not found.
 
-- [ ] **Step 3: Create `FirebaseAuthGuard`**
+- [x] **Step 3: Create `FirebaseAuthGuard`** _(with deviations — see Implementation Diffs above)_
 
 Create `backend/src/modules/auth/guards/firebase-auth.guard.ts`:
 
@@ -475,7 +517,7 @@ export class FirebaseAuthGuard implements CanActivate {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/auth/guards/firebase-auth.guard.spec.ts
@@ -483,7 +525,7 @@ cd backend && pnpm exec vitest run src/modules/auth/guards/firebase-auth.guard.s
 
 Expected: PASS
 
-- [ ] **Step 5: Create `CurrentUser` decorator**
+- [x] **Step 5: Create `CurrentUser` decorator**
 
 Create `backend/src/modules/auth/decorators/current-user.decorator.ts`:
 
@@ -508,7 +550,7 @@ export const CurrentUser = createParamDecorator(
 - Create: `backend/src/modules/auth/auth.module.ts`
 - Modify: `backend/src/modules/app/app.module.ts`
 
-- [ ] **Step 1: Create `AuthModule`**
+- [x] **Step 1: Create `AuthModule`**
 
 Create `backend/src/modules/auth/auth.module.ts`:
 
@@ -538,7 +580,7 @@ import { FirebaseAuthGuard } from './guards/firebase-auth.guard';
 export class AuthModule {}
 ```
 
-- [ ] **Step 2: Add `AuthModule` to `AppModule` imports**
+- [x] **Step 2: Add `AuthModule` to `AppModule` imports**
 
 In `backend/src/modules/app/app.module.ts`, add the import statement:
 
@@ -548,7 +590,7 @@ import { AuthModule } from '../auth/auth.module';
 
 Add `AuthModule` to the `imports` array. Do not replace the file — only add the new import.
 
-- [ ] **Step 3: Run all unit tests**
+- [x] **Step 3: Run all unit tests**
 
 ```bash
 just test-unit
@@ -556,7 +598,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 4: Format and lint**
+- [x] **Step 4: Format and lint**
 
 ```bash
 just format && just lint
@@ -564,7 +606,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 5: Smoke test with a real request**
+- [x] **Step 5: Smoke test with a real request**
 
 Start services (`just up-build`) then test the health check without a token — it should now return 401:
 
@@ -582,7 +624,7 @@ curl -H "Authorization: Bearer <your-token>" http://localhost:3001/
 
 Expected: `200` with health check response.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/auth/ backend/src/modules/app/app.module.ts
