@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   ManyToOne,
   JoinColumn,
   UpdateDateColumn,
@@ -18,6 +19,7 @@ export enum MileageUnit {
 
 @Entity('vehicles')
 export class VehicleEntity extends UuidV7BaseEntity {
+  @Index()
   @Column({ type: 'uuid', name: 'user_id' })
   userId: string;
 

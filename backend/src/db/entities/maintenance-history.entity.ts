@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
 } from 'typeorm';
@@ -12,6 +13,7 @@ import { UuidV7BaseEntity } from './base.entity';
 
 @Entity('maintenance_histories')
 export class MaintenanceHistoryEntity extends UuidV7BaseEntity {
+  @Index()
   @Column({ type: 'uuid', name: 'maintenance_card_id' })
   maintenanceCardId: string;
 
