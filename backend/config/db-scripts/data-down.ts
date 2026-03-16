@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 
-import { dataSource } from 'config/data-source';
+import { dataSource } from '../../src/db/migration-config/data-source.js';
 
 const dataDown = async () => {
   const db = await dataSource.initialize();

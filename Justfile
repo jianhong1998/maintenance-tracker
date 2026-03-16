@@ -1,5 +1,8 @@
 PROJECT_NAME := "maintenance-tracker"
 
+help:
+  @just -l
+
 # Docker commands (not handled by TurboRepo)
 up-build:
     @docker compose \
@@ -58,6 +61,10 @@ test-api:
         pnpm run test
 
 # Database commands using TurboRepo
+db-generate-migrate name:
+    @cd backend && \
+        bash scripts/generate-db-migration.sh {{name}}
+
 db-data-up:
     @cd backend && \
         pnpm run build && \
