@@ -56,6 +56,13 @@ describe('FirebaseAuthGuard', () => {
     ).rejects.toThrow(UnauthorizedException);
   });
 
+  it('throws UnauthorizedException when token has no email', async () => {
+    mockVerifyIdToken.mockResolvedValue({ uid: 'firebase-uid-1' });
+    await expect(
+      guard.canActivate(makeContext('Bearer valid-token')),
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
   it('attaches resolved user to request and returns true for valid token', async () => {
     const decodedToken = { uid: 'firebase-uid-1', email: 'user@example.com' };
     const resolvedUser = {
