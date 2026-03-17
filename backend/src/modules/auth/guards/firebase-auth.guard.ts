@@ -10,6 +10,8 @@ import { UserEntity } from 'src/db/entities/user.entity';
 import { FirebaseService } from 'src/modules/firebase/firebase.service';
 import { AuthService } from '../services/auth.service';
 
+const BEARER_PREFIX = 'Bearer ';
+
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
   private readonly logger = new Logger(FirebaseAuthGuard.name);
@@ -23,17 +25,15 @@ export class FirebaseAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     const authHeader = request.headers['authorization'];
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith(BEARER_PREFIX)) {
       throw new UnauthorizedException(
         'Missing or invalid Authorization header',
       );
     }
 
     const [, token] = authHeader.split(' ');
-    if (!token) {
-      throw new UnauthorizedException(
-        'Missing or invalid Authorization header',
-      );
+    if (!token || token.trim() === '') {
+      throw new UnauthorizedException('Missing bearer token');
     }
 
     let decoded: { uid: string; email?: string };
