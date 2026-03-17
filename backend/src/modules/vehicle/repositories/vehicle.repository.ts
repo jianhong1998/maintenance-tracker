@@ -1,18 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
-import type { MileageUnit } from '@project/types';
+import type { ICreateVehicleReqDTO } from '@project/types';
 import { VehicleEntity } from 'src/db/entities/vehicle.entity';
 import { BaseDBUtil } from 'src/modules/common/base-classes/base-db-util';
 
-export type CreateVehicleData = {
-  userId: string;
-  brand: string;
-  model: string;
-  colour: string;
-  mileage: number;
-  mileageUnit: MileageUnit;
-};
+export type CreateVehicleData = ICreateVehicleReqDTO & { userId: string };
 
 @Injectable()
 export class VehicleRepository extends BaseDBUtil<

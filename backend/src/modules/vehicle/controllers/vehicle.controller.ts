@@ -50,6 +50,7 @@ export class VehicleController {
   }
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   async create(
     @Body() dto: CreateVehicleDto,
     @CurrentUser() user: IAuthUser,

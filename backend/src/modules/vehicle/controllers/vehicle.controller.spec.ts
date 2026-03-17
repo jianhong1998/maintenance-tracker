@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { HttpStatus, NotFoundException } from '@nestjs/common';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { VehicleController } from './vehicle.controller';
 import { VehicleService } from '../services/vehicle.service';
@@ -73,6 +73,15 @@ describe('VehicleController', () => {
     await expect(controller.getOne('vehicle-1', authUser)).rejects.toThrow(
       NotFoundException,
     );
+  });
+
+  it('POST /vehicles create handler has HTTP 201 status code', () => {
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const createFn = VehicleController.prototype.create;
+    const httpCode = Reflect.getMetadata('__httpCode__', createFn) as
+      | number
+      | undefined;
+    expect(httpCode).toBe(HttpStatus.CREATED);
   });
 
   it('POST /vehicles creates vehicle', async () => {
