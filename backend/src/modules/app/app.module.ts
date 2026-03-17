@@ -6,6 +6,7 @@ import { CommonModule } from '../common/common.module';
 import { FirebaseModule } from '../firebase/firebase.module';
 import { AuthModule } from '../auth/auth.module';
 import { VehicleModule } from '../vehicle/vehicle.module';
+import { MaintenanceCardModule } from '../maintenance-card/maintenance-card.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { VehicleModule } from '../vehicle/vehicle.module';
     FirebaseModule,
     AuthModule,
     VehicleModule,
+    MaintenanceCardModule,
   ],
   controllers: [AppController],
   providers: [AppService],
