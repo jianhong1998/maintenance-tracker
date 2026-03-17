@@ -52,6 +52,8 @@ This is a **TurboRepo monorepo** with pnpm workspaces. Build order matters: `pac
 - Shared types must be built before backend/frontend (`turbo.json` enforces `^build` dependency)
 - Environment variables sourced from root `.env` (see `.env.template`)
 - Docker Compose services: `postgres`, `server` (NestJS), `client` (Next.js), `db-migration-service`
+- **No TypeScript enums** — use `const` object or `as const` array pattern instead (enums cause nominal type incompatibilities across package boundaries)
+- **`import type` for `@project/types` in NestJS decorated classes** — TypeScript requires `import type` (or a namespace import) when a type from an external package is referenced in a decorated method/property signature (`isolatedModules` + `emitDecoratorMetadata` enforces this)
 
 ## Committing — Husky prepare-commit-msg hook
 

@@ -24,3 +24,9 @@ pnpm clean     # Remove dist/
 - **Must run `pnpm build` after any change** before backend or frontend will see the update (TurboRepo handles this in `just build`, but not in watch mode)
 - Add new feature DTOs as `src/dtos/<feature>.dto.ts` and re-export from `src/dtos/index.ts`
 - Interface naming convention: `I<Name>ReqDTO` for request bodies, `I<Name>ResDTO` for responses
+- **Enum-like values** — use a `const` array with `as const` and derive the type from it. This keeps the runtime value and the type in sync, and avoids TypeScript enum nominal-type incompatibilities:
+  ```typescript
+  export const MILEAGE_UNITS = ['km', 'mile'] as const;
+  export type MileageUnit = (typeof MILEAGE_UNITS)[number];
+  ```
+  Consumers can use `MILEAGE_UNITS` directly in validators (e.g. `@IsIn(MILEAGE_UNITS)`) without duplicating the string literals.

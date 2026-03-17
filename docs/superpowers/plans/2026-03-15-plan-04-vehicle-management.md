@@ -12,6 +12,13 @@
 
 **Prerequisites:** Plans 01–03 must be complete. `VehicleEntity` and its migration were created in Plan 02.
 
+> **Post-implementation note:** Code snippets in this plan use `MileageUnit` as a TypeScript enum exported from `vehicle.entity.ts` and `MileageUnit.KM` in tests. The actual implementation diverges from this:
+> - `MileageUnit` is **not** a TS enum. It is a `const` array + derived type in `@project/types`: `export const MILEAGE_UNITS = ['km', 'mile'] as const; export type MileageUnit = (typeof MILEAGE_UNITS)[number];`
+> - `vehicle.entity.ts` uses an unexported local enum (`MileageUnitEnum`) only for the TypeORM `{ type: 'enum', enum: MileageUnitEnum }` column config. The entity field itself is typed as `MileageUnit` from `@project/types`.
+> - DTOs use `@IsIn(MILEAGE_UNITS)` instead of `@IsEnum(...)`.
+> - Tests use the string literal `'km'` instead of `MileageUnit.KM`.
+> - All `@project/types` imports in NestJS decorated classes use `import type`.
+
 **API convention:** All request and response fields use camelCase (e.g. `mileageUnit`, not `mileage_unit`). This is consistent with the existing codebase pattern.
 
 **Cascade note:** Spec Section 7 requires that deleting a Vehicle also soft-deletes all its `MaintenanceCard` records and cancels their `BackgroundJob` records. The `MaintenanceCardRepository` and `BackgroundJobRepository` do not exist yet. The cascade will be completed in Plan 05 (Maintenance Card Management). The `deleteVehicle` method in this plan performs the vehicle soft-delete only; Plan 05 will extend it with the full cascade.
