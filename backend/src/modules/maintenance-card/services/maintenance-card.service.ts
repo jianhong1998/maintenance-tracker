@@ -78,7 +78,7 @@ function sortByUrgency(
     });
 
   const noDueInfo = cards.filter(
-    (c) => !isOverdue(c) && c.nextDueDate === null && c.nextDueMileage === null,
+    (c) => c.nextDueDate === null && c.nextDueMileage === null,
   );
 
   return [
