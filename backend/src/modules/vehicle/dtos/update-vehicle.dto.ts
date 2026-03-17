@@ -6,7 +6,8 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { IUpdateVehicleReqDTO, MileageUnit } from '@project/types';
+import type { IUpdateVehicleReqDTO, MileageUnit } from '@project/types';
+import { MileageUnit as MileageUnitEnum } from 'src/db/entities/vehicle.entity';
 
 export class UpdateVehicleDto implements IUpdateVehicleReqDTO {
   @IsOptional()
@@ -30,6 +31,6 @@ export class UpdateVehicleDto implements IUpdateVehicleReqDTO {
   mileage?: number;
 
   @IsOptional()
-  @IsIn(['km', 'mile'])
+  @IsIn(Object.values(MileageUnitEnum))
   mileageUnit?: MileageUnit;
 }
