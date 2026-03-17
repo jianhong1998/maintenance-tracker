@@ -26,7 +26,7 @@
 - Create: `packages/types/src/dtos/vehicle.dto.ts`
 - Modify: `packages/types/src/dtos/index.ts`
 
-- [ ] **Step 1: Create `vehicle.dto.ts`**
+- [x] **Step 1: Create `vehicle.dto.ts`**
 
 Create `packages/types/src/dtos/vehicle.dto.ts`:
 
@@ -61,7 +61,7 @@ export interface IVehicleResDTO {
 }
 ```
 
-- [ ] **Step 2: Re-export from `packages/types/src/dtos/index.ts`**
+- [x] **Step 2: Re-export from `packages/types/src/dtos/index.ts`**
 
 Add to `packages/types/src/dtos/index.ts`:
 
@@ -69,7 +69,7 @@ Add to `packages/types/src/dtos/index.ts`:
 export * from './vehicle.dto';
 ```
 
-- [ ] **Step 3: Build `@project/types`**
+- [x] **Step 3: Build `@project/types`**
 
 ```bash
 cd packages/types && pnpm run build
@@ -77,7 +77,7 @@ cd packages/types && pnpm run build
 
 Expected: No TypeScript errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/types/src/dtos/vehicle.dto.ts packages/types/src/dtos/index.ts
@@ -94,7 +94,7 @@ git commit -m "feat: add Vehicle DTOs to shared types"
 - Create: `backend/src/modules/vehicle/repositories/vehicle.repository.ts`
 - Create: `backend/src/modules/vehicle/repositories/vehicle.repository.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/vehicle/repositories/vehicle.repository.spec.ts`:
 
@@ -162,7 +162,7 @@ describe('VehicleRepository', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/vehicle/repositories/vehicle.repository.spec.ts
@@ -170,7 +170,7 @@ cd backend && pnpm exec vitest run src/modules/vehicle/repositories/vehicle.repo
 
 Expected: FAIL — `VehicleRepository` not found.
 
-- [ ] **Step 3: Create `VehicleRepository`**
+- [x] **Step 3: Create `VehicleRepository`**
 
 Create `backend/src/modules/vehicle/repositories/vehicle.repository.ts`:
 
@@ -214,7 +214,7 @@ export class VehicleRepository extends BaseDBUtil<VehicleEntity, CreateVehicleDa
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/vehicle/repositories/vehicle.repository.spec.ts
@@ -230,7 +230,7 @@ Expected: PASS
 - Create: `backend/src/modules/vehicle/services/vehicle.service.ts`
 - Create: `backend/src/modules/vehicle/services/vehicle.service.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/vehicle/services/vehicle.service.spec.ts`:
 
@@ -376,7 +376,7 @@ describe('VehicleService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/vehicle/services/vehicle.service.spec.ts
@@ -384,7 +384,7 @@ cd backend && pnpm exec vitest run src/modules/vehicle/services/vehicle.service.
 
 Expected: FAIL — `VehicleService` not found.
 
-- [ ] **Step 3: Create `VehicleService`**
+- [x] **Step 3: Create `VehicleService`**
 
 Create `backend/src/modules/vehicle/services/vehicle.service.ts`:
 
@@ -454,7 +454,7 @@ export class VehicleService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/vehicle/services/vehicle.service.spec.ts
@@ -470,7 +470,7 @@ Expected: PASS
 - Create: `backend/src/modules/vehicle/controllers/vehicle.controller.ts`
 - Create: `backend/src/modules/vehicle/controllers/vehicle.controller.spec.ts`
 
-- [ ] **Step 1: Create request body DTOs**
+- [x] **Step 1: Create request body DTOs**
 
 Create `backend/src/modules/vehicle/dtos/create-vehicle.dto.ts`:
 
@@ -530,7 +530,7 @@ export class UpdateVehicleDto implements IUpdateVehicleReqDTO {
 }
 ```
 
-- [ ] **Step 2: Write the failing controller test**
+- [x] **Step 2: Write the failing controller test**
 
 Create `backend/src/modules/vehicle/controllers/vehicle.controller.spec.ts`:
 
@@ -640,7 +640,7 @@ describe('VehicleController', () => {
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [x] **Step 3: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/vehicle/controllers/vehicle.controller.spec.ts
@@ -648,7 +648,7 @@ cd backend && pnpm exec vitest run src/modules/vehicle/controllers/vehicle.contr
 
 Expected: FAIL — `VehicleController` not found.
 
-- [ ] **Step 4: Create `VehicleController`**
+- [x] **Step 4: Create `VehicleController`**
 
 Create `backend/src/modules/vehicle/controllers/vehicle.controller.ts`:
 
@@ -734,7 +734,7 @@ export class VehicleController {
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/vehicle/controllers/vehicle.controller.spec.ts
@@ -750,7 +750,7 @@ Expected: PASS
 - Create: `backend/src/modules/vehicle/vehicle.module.ts`
 - Modify: `backend/src/modules/app/app.module.ts`
 
-- [ ] **Step 1: Create `VehicleModule`**
+- [x] **Step 1: Create `VehicleModule`**
 
 Create `backend/src/modules/vehicle/vehicle.module.ts`:
 
@@ -770,7 +770,7 @@ import { VehicleController } from './controllers/vehicle.controller';
 export class VehicleModule {}
 ```
 
-- [ ] **Step 2: Add `VehicleModule` to `AppModule` imports**
+- [x] **Step 2: Add `VehicleModule` to `AppModule` imports**
 
 In `backend/src/modules/app/app.module.ts`, add the import statement:
 
@@ -780,7 +780,7 @@ import { VehicleModule } from '../vehicle/vehicle.module';
 
 Add `VehicleModule` to the `imports` array. Do not replace the file — only add the new import.
 
-- [ ] **Step 3: Run all unit tests**
+- [x] **Step 3: Run all unit tests**
 
 ```bash
 just test-unit
@@ -788,7 +788,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 4: Format and lint**
+- [x] **Step 4: Format and lint**
 
 ```bash
 just format && just lint
@@ -796,7 +796,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 5: Smoke test the API**
+- [x] **Step 5: Smoke test the API**
 
 Start services (`just up-build`), obtain a Firebase ID token, then run:
 
@@ -828,7 +828,7 @@ curl -s -o /dev/null -w "%{http_code}" -X DELETE http://localhost:3001/vehicles/
 
 Expected: 201 on create, 200 on list/get/update, 204 on delete.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/vehicle/ backend/src/modules/app/app.module.ts
