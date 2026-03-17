@@ -31,6 +31,6 @@ export class UpdateVehicleDto implements IUpdateVehicleReqDTO {
   mileage?: number;
 
   @IsOptional()
-  @IsIn(MILEAGE_UNITS)
+  @IsIn(Object.values(MILEAGE_UNITS))
   mileageUnit?: MileageUnit;
 }

@@ -19,6 +19,6 @@ export class CreateVehicleDto implements ICreateVehicleReqDTO {
   @Min(0)
   mileage: number;
 
-  @IsIn(MILEAGE_UNITS)
+  @IsIn(Object.values(MILEAGE_UNITS))
   mileageUnit: MileageUnit;
 }

@@ -13,9 +13,9 @@
 **Prerequisites:** Plans 01–03 must be complete. `VehicleEntity` and its migration were created in Plan 02.
 
 > **Post-implementation note:** Code snippets in this plan use `MileageUnit` as a TypeScript enum exported from `vehicle.entity.ts` and `MileageUnit.KM` in tests. The actual implementation diverges from this:
-> - `MileageUnit` is **not** a TS enum. It is a `const` array + derived type in `@project/types`: `export const MILEAGE_UNITS = ['km', 'mile'] as const; export type MileageUnit = (typeof MILEAGE_UNITS)[number];`
-> - `vehicle.entity.ts` uses an unexported local enum (`MileageUnitEnum`) only for the TypeORM `{ type: 'enum', enum: MileageUnitEnum }` column config. The entity field itself is typed as `MileageUnit` from `@project/types`.
-> - DTOs use `@IsIn(MILEAGE_UNITS)` instead of `@IsEnum(...)`.
+> - `MileageUnit` is **not** a TS enum. It is a frozen `const` object + derived type in `@project/types`: `export const MILEAGE_UNITS = Object.freeze({ KM: 'km', MILE: 'mile' } as const); export type MileageUnit = (typeof MILEAGE_UNITS)[keyof typeof MILEAGE_UNITS];`
+> - `vehicle.entity.ts` has no local enum. It imports `MILEAGE_UNITS` from `@project/types` and uses `Object.values(MILEAGE_UNITS)` for the TypeORM `enum:` option and `MILEAGE_UNITS.KM` for the `default:`.
+> - DTOs use `@IsIn(Object.values(MILEAGE_UNITS))` instead of `@IsEnum(...)`.
 > - Tests use the string literal `'km'` instead of `MileageUnit.KM`.
 > - All `@project/types` imports in NestJS decorated classes use `import type`.
 
