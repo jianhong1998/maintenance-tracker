@@ -1,23 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import type { MileageUnit } from '@project/types';
+import type {
+  ICreateVehicleReqDTO,
+  IUpdateVehicleReqDTO,
+} from '@project/types';
 import { VehicleEntity } from 'src/db/entities/vehicle.entity';
 import { VehicleRepository } from '../repositories/vehicle.repository';
-
-export type CreateVehicleInput = {
-  brand: string;
-  model: string;
-  colour: string;
-  mileage: number;
-  mileageUnit: MileageUnit;
-};
-
-export type UpdateVehicleInput = {
-  brand?: string;
-  model?: string;
-  colour?: string;
-  mileage?: number;
-  mileageUnit?: MileageUnit;
-};
 
 @Injectable()
 export class VehicleService {
@@ -37,7 +24,7 @@ export class VehicleService {
 
   async createVehicle(
     userId: string,
-    input: CreateVehicleInput,
+    input: ICreateVehicleReqDTO,
   ): Promise<VehicleEntity> {
     return this.vehicleRepository.create({
       creationData: { userId, ...input },
@@ -47,7 +34,7 @@ export class VehicleService {
   async updateVehicle(
     id: string,
     userId: string,
-    input: UpdateVehicleInput,
+    input: IUpdateVehicleReqDTO,
   ): Promise<VehicleEntity> {
     const vehicle = await this.getVehicle(id, userId);
     Object.assign(vehicle, input);
@@ -58,7 +45,9 @@ export class VehicleService {
   }
 
   async deleteVehicle(id: string, userId: string): Promise<void> {
-    await this.getVehicle(id, userId);
-    await this.vehicleRepository.delete({ criteria: { id, userId } });
+    const result = await this.vehicleRepository.delete({
+      criteria: { id, userId },
+    });
+    if (!result) throw new NotFoundException('Vehicle not found');
   }
 }
