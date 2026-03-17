@@ -4,8 +4,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MaintenanceCardService } from './maintenance-card.service';
 import { MaintenanceCardRepository } from '../repositories/maintenance-card.repository';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
-import { MaintenanceCardType } from 'src/db/entities/maintenance-card.entity';
-import { MILEAGE_UNITS } from '@project/types';
+import { MILEAGE_UNITS, MAINTENANCE_CARD_TYPES } from '@project/types';
 
 const mockMaintenanceCardRepository = {
   getAll: vi.fn(),
@@ -33,7 +32,7 @@ const baseVehicle = {
 const baseCard = {
   id: cardId,
   vehicleId,
-  type: MaintenanceCardType.TASK,
+  type: MAINTENANCE_CARD_TYPES.TASK,
   name: 'CVT Cleaning',
   description: null,
   intervalMileage: 6000,
@@ -265,7 +264,7 @@ describe('MaintenanceCardService', () => {
       mockMaintenanceCardRepository.create.mockResolvedValue(baseCard);
 
       const result = await service.createCard(vehicleId, userId, {
-        type: MaintenanceCardType.TASK,
+        type: MAINTENANCE_CARD_TYPES.TASK,
         name: 'CVT Cleaning',
         description: null,
         intervalMileage: 6000,
@@ -278,7 +277,7 @@ describe('MaintenanceCardService', () => {
     it('throws BadRequestException when both intervalMileage and intervalTimeMonths are null', async () => {
       await expect(
         service.createCard(vehicleId, userId, {
-          type: MaintenanceCardType.TASK,
+          type: MAINTENANCE_CARD_TYPES.TASK,
           name: 'CVT Cleaning',
           description: null,
           intervalMileage: null,

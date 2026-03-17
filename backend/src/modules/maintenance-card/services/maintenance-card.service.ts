@@ -5,10 +5,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import {
-  MaintenanceCardEntity,
-  MaintenanceCardType,
-} from 'src/db/entities/maintenance-card.entity';
+import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
+import type { MaintenanceCardType } from '@project/types';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
 import { MaintenanceCardRepository } from '../repositories/maintenance-card.repository';
 

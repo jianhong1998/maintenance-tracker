@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MaintenanceCardController } from './maintenance-card.controller';
 import { MaintenanceCardService } from '../services/maintenance-card.service';
-import { MaintenanceCardType } from 'src/db/entities/maintenance-card.entity';
+import { MAINTENANCE_CARD_TYPES } from '@project/types';
 import type { IAuthUser } from '@project/types';
 
 const mockMaintenanceCardService = {
@@ -22,7 +22,7 @@ const authUser: IAuthUser = {
 const baseCard = {
   id: 'card-1',
   vehicleId: 'vehicle-1',
-  type: MaintenanceCardType.TASK,
+  type: MAINTENANCE_CARD_TYPES.TASK,
   name: 'CVT Cleaning',
   description: null,
   intervalMileage: 6000,

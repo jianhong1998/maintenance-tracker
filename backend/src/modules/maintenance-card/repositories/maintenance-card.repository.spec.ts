@@ -2,10 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MaintenanceCardRepository } from './maintenance-card.repository';
-import {
-  MaintenanceCardEntity,
-  MaintenanceCardType,
-} from 'src/db/entities/maintenance-card.entity';
+import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
+import { MAINTENANCE_CARD_TYPES } from '@project/types';
 
 const mockTypeOrmRepo = {
   create: vi.fn(),
@@ -42,7 +40,7 @@ describe('MaintenanceCardRepository', () => {
       const newCard = {
         id: 'card-1',
         vehicleId: 'vehicle-1',
-        type: MaintenanceCardType.TASK,
+        type: MAINTENANCE_CARD_TYPES.TASK,
         name: 'CVT Cleaning',
         description: null,
         intervalMileage: 6000,
@@ -57,7 +55,7 @@ describe('MaintenanceCardRepository', () => {
       const result = await repository.create({
         creationData: {
           vehicleId: 'vehicle-1',
-          type: MaintenanceCardType.TASK,
+          type: MAINTENANCE_CARD_TYPES.TASK,
           name: 'CVT Cleaning',
           description: null,
           intervalMileage: 6000,

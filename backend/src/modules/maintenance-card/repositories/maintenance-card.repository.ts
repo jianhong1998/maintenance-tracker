@@ -1,10 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
-import {
-  MaintenanceCardEntity,
-  MaintenanceCardType,
-} from 'src/db/entities/maintenance-card.entity';
+import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
+import type { MaintenanceCardType } from '@project/types';
 import { BaseDBUtil } from 'src/modules/common/base-classes/base-db-util';
 
 export type CreateMaintenanceCardData = {
