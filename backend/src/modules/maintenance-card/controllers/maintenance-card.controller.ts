@@ -28,9 +28,7 @@ function toResDTO(card: MaintenanceCardEntity): IMaintenanceCardResDTO {
     intervalMileage: card.intervalMileage,
     intervalTimeMonths: card.intervalTimeMonths,
     nextDueMileage: card.nextDueMileage,
-    nextDueDate: card.nextDueDate
-      ? new Date(card.nextDueDate).toISOString()
-      : null,
+    nextDueDate: card.nextDueDate ? card.nextDueDate.toISOString() : null,
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
   };
@@ -62,6 +60,7 @@ export class MaintenanceCardController {
   }
 
   @Post()
+  @HttpCode(HttpStatus.CREATED)
   async create(
     @Param('vehicleId', ParseUUIDPipe) vehicleId: string,
     @Body() dto: CreateMaintenanceCardDto,
