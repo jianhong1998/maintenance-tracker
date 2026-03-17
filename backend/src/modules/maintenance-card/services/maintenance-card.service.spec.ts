@@ -352,24 +352,4 @@ describe('MaintenanceCardService', () => {
       ).rejects.toThrow(NotFoundException);
     });
   });
-
-  describe('#deleteCardsByVehicleId', () => {
-    it('calls delete with vehicleId criteria', async () => {
-      mockMaintenanceCardRepository.delete.mockResolvedValue([baseCard]);
-
-      await service.deleteCardsByVehicleId(vehicleId);
-
-      expect(mockMaintenanceCardRepository.delete).toHaveBeenCalledWith({
-        criteria: { vehicleId },
-      });
-    });
-
-    it('does not throw when the vehicle has no cards', async () => {
-      mockMaintenanceCardRepository.delete.mockResolvedValue(null);
-
-      await expect(
-        service.deleteCardsByVehicleId(vehicleId),
-      ).resolves.toBeUndefined();
-    });
-  });
 });

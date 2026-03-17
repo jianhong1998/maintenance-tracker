@@ -1,7 +1,5 @@
 import {
   BadRequestException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -95,7 +93,6 @@ function sortByUrgency(
 export class MaintenanceCardService {
   constructor(
     private readonly cardRepository: MaintenanceCardRepository,
-    @Inject(forwardRef(() => VehicleService))
     private readonly vehicleService: VehicleService,
   ) {}
 
@@ -161,9 +158,5 @@ export class MaintenanceCardService {
   ): Promise<void> {
     await this.getCard(id, vehicleId, userId);
     await this.cardRepository.delete({ criteria: { id, vehicleId } });
-  }
-
-  async deleteCardsByVehicleId(vehicleId: string): Promise<void> {
-    await this.cardRepository.delete({ criteria: { vehicleId } });
   }
 }
