@@ -23,9 +23,7 @@ export class UserRepository extends BaseDBUtil<UserEntity, CreateUserData> {
     entityManager?: EntityManager;
   }): Promise<UserEntity> {
     const { creationData, entityManager } = params;
-    const repo =
-      (entityManager?.getRepository(UserEntity) as Repository<UserEntity>) ??
-      this.userRepo;
+    const repo = entityManager?.getRepository(UserEntity) ?? this.userRepo;
 
     const user = repo.create({
       email: creationData.email,

@@ -49,6 +49,12 @@ describe('FirebaseAuthGuard', () => {
     );
   });
 
+  it('throws UnauthorizedException when bearer token is missing', async () => {
+    await expect(guard.canActivate(makeContext('Bearer '))).rejects.toThrow(
+      'Missing bearer token',
+    );
+  });
+
   it('throws UnauthorizedException when token is invalid', async () => {
     mockVerifyIdToken.mockRejectedValue(new Error('invalid token'));
     await expect(
