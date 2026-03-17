@@ -33,14 +33,7 @@ export class MaintenanceCardEntity extends UuidV7BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   description: string | null;
 
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    nullable: true,
-    name: 'interval_mileage',
-    transformer: decimalTransformer,
-  })
+  @Column({ type: 'int', nullable: true, name: 'interval_mileage' })
   intervalMileage: number | null;
 
   @Column({ type: 'int', nullable: true, name: 'interval_time_months' })
