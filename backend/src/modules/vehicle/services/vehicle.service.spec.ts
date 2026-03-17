@@ -3,7 +3,6 @@ import { NotFoundException } from '@nestjs/common';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { VehicleService } from './vehicle.service';
 import { VehicleRepository } from '../repositories/vehicle.repository';
-import { MileageUnit } from 'src/db/entities/vehicle.entity';
 
 const mockVehicleRepository = {
   getAll: vi.fn(),
@@ -23,7 +22,7 @@ const baseVehicle = {
   model: 'PCX',
   colour: 'White',
   mileage: 1000,
-  mileageUnit: MileageUnit.KM,
+  mileageUnit: 'km',
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
@@ -85,7 +84,7 @@ describe('VehicleService', () => {
         model: 'PCX',
         colour: 'White',
         mileage: 1000,
-        mileageUnit: MileageUnit.KM,
+        mileageUnit: 'km',
       });
 
       expect(mockVehicleRepository.create).toHaveBeenCalledWith({
@@ -95,7 +94,7 @@ describe('VehicleService', () => {
           model: 'PCX',
           colour: 'White',
           mileage: 1000,
-          mileageUnit: MileageUnit.KM,
+          mileageUnit: 'km',
         },
       });
       expect(result).toEqual(baseVehicle);

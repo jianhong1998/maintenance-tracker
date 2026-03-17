@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
-import { VehicleEntity, MileageUnit } from 'src/db/entities/vehicle.entity';
+import type { MileageUnit } from '@project/types';
+import { VehicleEntity } from 'src/db/entities/vehicle.entity';
 import { BaseDBUtil } from 'src/modules/common/base-classes/base-db-util';
 
 export type CreateVehicleData = {

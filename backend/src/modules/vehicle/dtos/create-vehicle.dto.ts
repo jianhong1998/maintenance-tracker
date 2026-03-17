@@ -1,6 +1,6 @@
 import { IsIn, IsNotEmpty, IsNumber, IsString, Min } from 'class-validator';
+import { MILEAGE_UNITS } from '@project/types';
 import type { ICreateVehicleReqDTO, MileageUnit } from '@project/types';
-import { MileageUnit as MileageUnitEnum } from 'src/db/entities/vehicle.entity';
 
 export class CreateVehicleDto implements ICreateVehicleReqDTO {
   @IsString()
@@ -19,6 +19,6 @@ export class CreateVehicleDto implements ICreateVehicleReqDTO {
   @Min(0)
   mileage: number;
 
-  @IsIn(Object.values(MileageUnitEnum))
+  @IsIn(MILEAGE_UNITS)
   mileageUnit: MileageUnit;
 }

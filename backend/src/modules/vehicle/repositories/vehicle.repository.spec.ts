@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { VehicleRepository } from './vehicle.repository';
-import { VehicleEntity, MileageUnit } from 'src/db/entities/vehicle.entity';
+import { VehicleEntity } from 'src/db/entities/vehicle.entity';
 
 const mockTypeOrmRepo = {
   create: vi.fn(),
@@ -41,7 +41,7 @@ describe('VehicleRepository', () => {
         model: 'PCX',
         colour: 'White',
         mileage: 1000,
-        mileageUnit: MileageUnit.KM,
+        mileageUnit: 'km',
       } as VehicleEntity;
 
       mockTypeOrmRepo.create.mockReturnValue(newVehicle);
@@ -54,7 +54,7 @@ describe('VehicleRepository', () => {
           model: 'PCX',
           colour: 'White',
           mileage: 1000,
-          mileageUnit: MileageUnit.KM,
+          mileageUnit: 'km',
         },
       });
 
@@ -64,7 +64,7 @@ describe('VehicleRepository', () => {
         model: 'PCX',
         colour: 'White',
         mileage: 1000,
-        mileageUnit: MileageUnit.KM,
+        mileageUnit: 'km',
       });
       expect(mockTypeOrmRepo.save).toHaveBeenCalledWith(newVehicle);
       expect(result).toEqual(newVehicle);

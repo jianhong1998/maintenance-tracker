@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { VehicleEntity, MileageUnit } from 'src/db/entities/vehicle.entity';
+import type { MileageUnit } from '@project/types';
+import { VehicleEntity } from 'src/db/entities/vehicle.entity';
 import { VehicleRepository } from '../repositories/vehicle.repository';
 
 export type CreateVehicleInput = {

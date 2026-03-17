@@ -10,7 +10,7 @@ import {
   Patch,
   Post,
 } from '@nestjs/common';
-import { IAuthUser, IVehicleResDTO } from '@project/types';
+import type { IAuthUser, IVehicleResDTO } from '@project/types';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { VehicleEntity } from 'src/db/entities/vehicle.entity';
 import { VehicleService } from '../services/vehicle.service';

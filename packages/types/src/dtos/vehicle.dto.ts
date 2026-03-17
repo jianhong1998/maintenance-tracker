@@ -1,4 +1,5 @@
-export type MileageUnit = 'km' | 'mile';
+export const MILEAGE_UNITS = ['km', 'mile'] as const;
+export type MileageUnit = (typeof MILEAGE_UNITS)[number];
 
 export interface ICreateVehicleReqDTO {
   brand: string;

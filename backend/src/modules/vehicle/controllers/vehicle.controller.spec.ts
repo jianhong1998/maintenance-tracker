@@ -3,7 +3,6 @@ import { NotFoundException } from '@nestjs/common';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { VehicleController } from './vehicle.controller';
 import { VehicleService } from '../services/vehicle.service';
-import { MileageUnit } from 'src/db/entities/vehicle.entity';
 import { IAuthUser } from '@project/types';
 
 const mockVehicleService = {
@@ -27,7 +26,7 @@ const baseVehicle = {
   model: 'PCX',
   colour: 'White',
   mileage: 1000,
-  mileageUnit: MileageUnit.KM,
+  mileageUnit: 'km',
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,

@@ -8,11 +8,12 @@ import {
   JoinColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import type { MileageUnit } from '@project/types';
 import { UserEntity } from './user.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
 import { UuidV7BaseEntity } from './base.entity';
 
-export enum MileageUnit {
+enum MileageUnitEnum {
   KM = 'km',
   MILE = 'mile',
 }
@@ -47,9 +48,9 @@ export class VehicleEntity extends UuidV7BaseEntity {
 
   @Column({
     type: 'enum',
-    enum: MileageUnit,
+    enum: MileageUnitEnum,
     name: 'mileage_unit',
-    default: MileageUnit.KM,
+    default: MileageUnitEnum.KM,
   })
   mileageUnit: MileageUnit;
 
