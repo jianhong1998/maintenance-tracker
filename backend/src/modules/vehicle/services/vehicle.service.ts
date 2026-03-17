@@ -1,14 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type {
   ICreateVehicleReqDTO,
   IUpdateVehicleReqDTO,
 } from '@project/types';
 import { VehicleEntity } from 'src/db/entities/vehicle.entity';
 import { VehicleRepository } from '../repositories/vehicle.repository';
+import { MaintenanceCardService } from 'src/modules/maintenance-card/services/maintenance-card.service';
 
 @Injectable()
 export class VehicleService {
-  constructor(private readonly vehicleRepository: VehicleRepository) {}
+  constructor(
+    private readonly vehicleRepository: VehicleRepository,
+    @Inject(forwardRef(() => MaintenanceCardService))
+    private readonly maintenanceCardService: MaintenanceCardService,
+  ) {}
 
   async listVehicles(userId: string): Promise<VehicleEntity[]> {
     return this.vehicleRepository.getAll({ criteria: { userId } });
@@ -45,9 +55,8 @@ export class VehicleService {
   }
 
   async deleteVehicle(id: string, userId: string): Promise<void> {
-    const result = await this.vehicleRepository.delete({
-      criteria: { id, userId },
-    });
-    if (!result) throw new NotFoundException('Vehicle not found');
+    await this.getVehicle(id, userId);
+    await this.maintenanceCardService.deleteCardsByVehicleId(id);
+    await this.vehicleRepository.delete({ criteria: { id, userId } });
   }
 }

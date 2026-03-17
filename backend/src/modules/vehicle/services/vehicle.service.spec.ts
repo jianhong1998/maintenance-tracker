@@ -3,6 +3,7 @@ import { NotFoundException } from '@nestjs/common';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { VehicleService } from './vehicle.service';
 import { VehicleRepository } from '../repositories/vehicle.repository';
+import { MaintenanceCardService } from 'src/modules/maintenance-card/services/maintenance-card.service';
 
 const mockVehicleRepository = {
   getAll: vi.fn(),
@@ -10,6 +11,10 @@ const mockVehicleRepository = {
   create: vi.fn(),
   updateWithSave: vi.fn(),
   delete: vi.fn(),
+};
+
+const mockMaintenanceCardService = {
+  deleteCardsByVehicleId: vi.fn(),
 };
 
 const userId = 'user-1';
@@ -38,6 +43,10 @@ describe('VehicleService', () => {
       providers: [
         VehicleService,
         { provide: VehicleRepository, useValue: mockVehicleRepository },
+        {
+          provide: MaintenanceCardService,
+          useValue: mockMaintenanceCardService,
+        },
       ],
     }).compile();
 
@@ -129,7 +138,11 @@ describe('VehicleService', () => {
 
   describe('#deleteVehicle', () => {
     it('soft deletes the vehicle when it belongs to the user', async () => {
+      mockVehicleRepository.getOne.mockResolvedValue(baseVehicle);
       mockVehicleRepository.delete.mockResolvedValue([baseVehicle]);
+      mockMaintenanceCardService.deleteCardsByVehicleId.mockResolvedValue(
+        undefined,
+      );
 
       await service.deleteVehicle(vehicleId, userId);
 
@@ -139,11 +152,26 @@ describe('VehicleService', () => {
     });
 
     it('throws NotFoundException when vehicle not found', async () => {
-      mockVehicleRepository.delete.mockResolvedValue(null);
+      mockVehicleRepository.getOne.mockResolvedValue(null);
 
       await expect(service.deleteVehicle(vehicleId, userId)).rejects.toThrow(
         NotFoundException,
       );
+    });
+
+    it('deletes all maintenance cards before soft-deleting the vehicle', async () => {
+      mockVehicleRepository.getOne.mockResolvedValue(baseVehicle);
+      mockVehicleRepository.delete.mockResolvedValue([baseVehicle]);
+      mockMaintenanceCardService.deleteCardsByVehicleId.mockResolvedValue(
+        undefined,
+      );
+
+      await service.deleteVehicle(vehicleId, userId);
+
+      expect(
+        mockMaintenanceCardService.deleteCardsByVehicleId,
+      ).toHaveBeenCalledWith(vehicleId);
+      expect(mockVehicleRepository.delete).toHaveBeenCalled();
     });
   });
 });
