@@ -3,7 +3,7 @@ import { HttpStatus, NotFoundException } from '@nestjs/common';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { VehicleController } from './vehicle.controller';
 import { VehicleService } from '../services/vehicle.service';
-import { IAuthUser } from '@project/types';
+import type { IAuthUser } from '@project/types';
 
 const mockVehicleService = {
   listVehicles: vi.fn(),

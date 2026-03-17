@@ -31,6 +31,18 @@ describe('CreateVehicleDto', () => {
       expect(mileageUnitErrors).toBeDefined();
     });
 
+    it('rejects an invalid string mileageUnit', async () => {
+      const dto = plainToInstance(CreateVehicleDto, {
+        ...validPayload,
+        mileageUnit: 'gallons',
+      });
+      const errors = await validate(dto);
+      const mileageUnitErrors = errors.find(
+        (e) => e.property === 'mileageUnit',
+      );
+      expect(mileageUnitErrors).toBeDefined();
+    });
+
     it('accepts a valid string mileageUnit', async () => {
       const dto = plainToInstance(CreateVehicleDto, validPayload);
       const errors = await validate(dto);
