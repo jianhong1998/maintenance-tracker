@@ -1,4 +1,10 @@
-export type MaintenanceCardType = 'task' | 'part' | 'item';
+export const MAINTENANCE_CARD_TYPES = Object.freeze({
+  TASK: 'task',
+  PART: 'part',
+  ITEM: 'item',
+} as const);
+
+export type MaintenanceCardType = (typeof MAINTENANCE_CARD_TYPES)[keyof typeof MAINTENANCE_CARD_TYPES];
 
 export interface ICreateMaintenanceCardReqDTO {
   type: MaintenanceCardType;
