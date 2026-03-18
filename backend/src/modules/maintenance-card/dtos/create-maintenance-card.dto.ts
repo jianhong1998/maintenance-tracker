@@ -25,7 +25,7 @@ export class CreateMaintenanceCardDto implements ICreateMaintenanceCardReqDTO {
   @IsString()
   description?: string | null;
 
-  // @ValidateIf skips @IsNumber/@Min when null is sent, allowing null to clear the field.
+  // @ValidateIf skips @IsInt/@Min when null is sent, allowing null to clear the field.
   // The service enforces the at-least-one-interval constraint after both fields are resolved.
   @IsOptional()
   @ValidateIf((o: CreateMaintenanceCardDto) => o.intervalMileage !== null)

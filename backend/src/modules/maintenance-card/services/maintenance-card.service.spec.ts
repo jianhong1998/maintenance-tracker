@@ -270,6 +270,14 @@ describe('MaintenanceCardService', () => {
         userId,
       );
     });
+
+    it('throws NotFoundException when vehicle does not exist', async () => {
+      mockVehicleService.getVehicle.mockRejectedValue(new NotFoundException());
+
+      await expect(
+        service.listCards(vehicleId, userId, 'name'),
+      ).rejects.toThrow(NotFoundException);
+    });
   });
 
   describe('#getCard', () => {
