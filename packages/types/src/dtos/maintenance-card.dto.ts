@@ -31,6 +31,7 @@ export interface IMaintenanceCardResDTO {
   intervalMileage: number | null;
   intervalTimeMonths: number | null;
   nextDueMileage: number | null;
+  /** ISO date string (YYYY-MM-DD), e.g. "2026-09-01", or null if not yet set */
   nextDueDate: string | null;
   createdAt: string;
   updatedAt: string;

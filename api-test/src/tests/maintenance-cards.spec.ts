@@ -356,6 +356,28 @@ describe('#MaintenanceCards', () => {
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
 
+    it('returns 404 when card belongs to a different vehicle', async () => {
+      const otherVehicleRes = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        { ...baseVehiclePayload, model: 'MT-07' },
+        authHeaders(),
+      );
+      const otherVehicleId = otherVehicleRes.data.id;
+
+      try {
+        await expect(
+          axiosInstance.get(
+            `/vehicles/${otherVehicleId}/maintenance-cards/${cardId}`,
+            authHeaders(),
+          ),
+        ).rejects.toMatchObject({ response: { status: 404 } });
+      } finally {
+        await axiosInstance
+          .delete(`/vehicles/${otherVehicleId}`, authHeaders())
+          .catch(() => undefined);
+      }
+    });
+
     it('returns 401 when no auth token is provided', async () => {
       await expect(
         axiosInstance.get(`/vehicles/${vehicleId}/maintenance-cards/${cardId}`),
