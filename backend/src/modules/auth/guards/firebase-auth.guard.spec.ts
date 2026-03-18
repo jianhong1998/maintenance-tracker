@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { FirebaseAuthGuard } from './firebase-auth.guard';
 import { FirebaseService } from 'src/modules/firebase/firebase.service';
 import { AuthService } from '../services/auth.service';
+import { EnvironmentVariableUtil } from 'src/modules/common/utils/environment-variable.util';
 
 const mockVerifyIdToken = vi.fn();
 const mockFirebaseService = {
@@ -17,14 +17,9 @@ const mockAuthService = {
   resolveUser: vi.fn(),
 };
 
-function makeConfigService(enableApiTestMode = false) {
+function makeEnvUtil(enableApiTestMode = false) {
   return {
-    get: vi.fn((key: string, defaultValue: string) => {
-      if (key === 'BACKEND_ENABLE_API_TEST_MODE') {
-        return enableApiTestMode ? 'true' : 'false';
-      }
-      return defaultValue;
-    }),
+    getFeatureFlags: vi.fn(() => ({ enableApiTestMode })),
   };
 }
 
@@ -47,8 +42,8 @@ async function buildGuard(
       { provide: FirebaseService, useValue: mockFirebaseService },
       { provide: AuthService, useValue: mockAuthService },
       {
-        provide: ConfigService,
-        useValue: makeConfigService(enableApiTestMode),
+        provide: EnvironmentVariableUtil,
+        useValue: makeEnvUtil(enableApiTestMode),
       },
     ],
   }).compile();

@@ -405,7 +405,7 @@ describe('MaintenanceCardService', () => {
       await service.deleteCard(cardId, vehicleId, userId);
 
       expect(mockMaintenanceCardRepository.delete).toHaveBeenCalledWith({
-        criteria: { id: cardId, vehicleId },
+        entities: [baseCard],
       });
     });
 

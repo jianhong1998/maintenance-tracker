@@ -88,22 +88,25 @@ export abstract class BaseDBUtil<
   }
 
   public async delete(params: {
-    criteria: FindOptionsWhere<ModelType>;
+    criteria?: FindOptionsWhere<ModelType>;
+    entities?: ModelType[];
     entityManager?: EntityManager;
     relation?: FindOptionsRelations<ModelType>;
   }): Promise<ModelType[] | null> {
-    const { criteria, entityManager, relation } = params;
+    const { criteria, entities, entityManager, relation } = params;
     const repo =
       (entityManager?.getRepository(this.model) as Repository<ModelType>) ??
       this.repo;
 
-    const existingData = await repo.find({
-      where: criteria,
-      relations: relation,
-    });
+    const toDelete =
+      entities ??
+      (await repo.find({
+        where: criteria,
+        relations: relation,
+      }));
 
-    if (!existingData.length) return null;
+    if (!toDelete.length) return null;
 
-    return await repo.softRemove(existingData);
+    return await repo.softRemove(toDelete);
   }
 }

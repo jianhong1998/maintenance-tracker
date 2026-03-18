@@ -149,7 +149,7 @@ export class MaintenanceCardService {
     vehicleId: string,
     userId: string,
   ): Promise<void> {
-    await this.getCard(id, vehicleId, userId);
-    await this.cardRepository.delete({ criteria: { id, vehicleId } });
+    const card = await this.getCard(id, vehicleId, userId);
+    await this.cardRepository.delete({ entities: [card] });
   }
 }

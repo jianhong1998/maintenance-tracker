@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsString,
   Min,
-  ValidateIf,
 } from 'class-validator';
 import type {
   IUpdateMaintenanceCardReqDTO,
@@ -27,16 +26,14 @@ export class UpdateMaintenanceCardDto implements IUpdateMaintenanceCardReqDTO {
   @IsString()
   description?: string | null;
 
-  // @IsOptional() skips all validators when value is null or undefined (class-validator behaviour)
-  // Sending null explicitly clears the field; the service enforces at-least-one-interval constraint.
+  // @IsOptional skips @IsInt/@Min when null or undefined is sent, allowing null to clear the field.
+  // The service enforces the at-least-one-interval constraint after both fields are resolved.
   @IsOptional()
-  @ValidateIf((o: UpdateMaintenanceCardDto) => o.intervalMileage !== null)
   @IsInt()
   @Min(1)
   intervalMileage?: number | null;
 
   @IsOptional()
-  @ValidateIf((o: UpdateMaintenanceCardDto) => o.intervalTimeMonths !== null)
   @IsInt()
   @Min(1)
   intervalTimeMonths?: number | null;
