@@ -200,6 +200,37 @@ describe('MaintenanceCardService', () => {
       expect(result[1].id).toBe('card-far');
     });
 
+    it('treats nextDueMileage equal to vehicle mileage as overdue', async () => {
+      const today = new Date();
+      const future = new Date(today);
+      future.setDate(today.getDate() + 30);
+
+      // baseVehicle.mileage = 10000
+      const exactMileageCard = {
+        ...baseCard,
+        id: 'card-exact',
+        name: 'At Exact Mileage',
+        nextDueDate: null,
+        nextDueMileage: 10000, // == vehicle mileage, should be overdue
+      };
+      const futureCard = {
+        ...baseCard,
+        id: 'card-future',
+        name: 'Future Task',
+        nextDueDate: future,
+        nextDueMileage: null,
+      };
+      mockMaintenanceCardRepository.getAll.mockResolvedValue([
+        futureCard,
+        exactMileageCard,
+      ]);
+
+      const result = await service.listCards(vehicleId, userId, 'urgency');
+
+      expect(result[0].id).toBe('card-exact');
+      expect(result[1].id).toBe('card-future');
+    });
+
     it('places cards with no due info last when sort=urgency', async () => {
       const today = new Date();
       const future = new Date(today);

@@ -101,6 +101,15 @@ describe('MaintenanceCardController', () => {
     expect(result.name).toBe('Updated');
   });
 
+  it('serialises nextDueDate as a date-only string (YYYY-MM-DD)', async () => {
+    mockMaintenanceCardService.getCard.mockResolvedValue({
+      ...baseCard,
+      nextDueDate: new Date('2026-09-01'),
+    });
+    const result = await controller.getOne('vehicle-1', 'card-1', authUser);
+    expect(result.nextDueDate).toBe('2026-09-01');
+  });
+
   it('DELETE /vehicles/:vehicleId/maintenance-cards/:id returns 204', async () => {
     mockMaintenanceCardService.deleteCard.mockResolvedValue(undefined);
     await expect(
