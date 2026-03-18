@@ -111,7 +111,6 @@ describe('VehicleService', () => {
         colour: 'Black',
       });
 
-      // Verify Object.assign applied the patch before calling the repository
       expect(mockVehicleRepository.updateWithSave).toHaveBeenCalledWith({
         dataArray: [expect.objectContaining({ colour: 'Black' })],
       });
@@ -128,13 +127,14 @@ describe('VehicleService', () => {
   });
 
   describe('#deleteVehicle', () => {
-    it('soft deletes the vehicle when it belongs to the user', async () => {
+    it('soft deletes the vehicle with cascade to maintenance cards', async () => {
       mockVehicleRepository.delete.mockResolvedValue([baseVehicle]);
 
       await service.deleteVehicle(vehicleId, userId);
 
       expect(mockVehicleRepository.delete).toHaveBeenCalledWith({
         criteria: { id: vehicleId, userId },
+        relation: { maintenanceCards: true },
       });
     });
 

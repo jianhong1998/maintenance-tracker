@@ -5,12 +5,14 @@ import {
   Entity,
   Index,
   ManyToOne,
+  OneToMany,
   JoinColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { MILEAGE_UNITS } from '@project/types';
 import type { MileageUnit } from '@project/types';
 import { UserEntity } from './user.entity';
+import { MaintenanceCardEntity } from './maintenance-card.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
 import { UuidV7BaseEntity } from './base.entity';
 
@@ -49,6 +51,11 @@ export class VehicleEntity extends UuidV7BaseEntity {
     default: MILEAGE_UNITS.KM,
   })
   mileageUnit: MileageUnit;
+
+  @OneToMany(() => MaintenanceCardEntity, (card) => card.vehicle, {
+    cascade: ['soft-remove'],
+  })
+  maintenanceCards: MaintenanceCardEntity[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

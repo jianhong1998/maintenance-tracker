@@ -47,6 +47,7 @@ export class VehicleService {
   async deleteVehicle(id: string, userId: string): Promise<void> {
     const result = await this.vehicleRepository.delete({
       criteria: { id, userId },
+      relation: { maintenanceCards: true },
     });
     if (!result) throw new NotFoundException('Vehicle not found');
   }

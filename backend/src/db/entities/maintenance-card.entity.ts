@@ -8,15 +8,11 @@ import {
   ManyToOne,
   UpdateDateColumn,
 } from 'typeorm';
+import type { MaintenanceCardType } from '@project/types';
+import { MAINTENANCE_CARD_TYPES } from '@project/types';
 import { VehicleEntity } from './vehicle.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
 import { UuidV7BaseEntity } from './base.entity';
-
-export enum MaintenanceCardType {
-  TASK = 'task',
-  PART = 'part',
-  ITEM = 'item',
-}
 
 @Entity('maintenance_cards')
 export class MaintenanceCardEntity extends UuidV7BaseEntity {
@@ -28,7 +24,7 @@ export class MaintenanceCardEntity extends UuidV7BaseEntity {
   @JoinColumn({ name: 'vehicle_id' })
   vehicle: VehicleEntity;
 
-  @Column({ type: 'enum', enum: MaintenanceCardType })
+  @Column({ type: 'enum', enum: Object.values(MAINTENANCE_CARD_TYPES) })
   type: MaintenanceCardType;
 
   @Column({ type: 'varchar' })
@@ -37,14 +33,7 @@ export class MaintenanceCardEntity extends UuidV7BaseEntity {
   @Column({ type: 'varchar', nullable: true })
   description: string | null;
 
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    nullable: true,
-    name: 'interval_mileage',
-    transformer: decimalTransformer,
-  })
+  @Column({ type: 'int', nullable: true, name: 'interval_mileage' })
   intervalMileage: number | null;
 
   @Column({ type: 'int', nullable: true, name: 'interval_time_months' })

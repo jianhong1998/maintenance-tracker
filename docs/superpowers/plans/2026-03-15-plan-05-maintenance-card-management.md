@@ -22,7 +22,7 @@
 - Create: `packages/types/src/dtos/maintenance-card.dto.ts`
 - Modify: `packages/types/src/dtos/index.ts`
 
-- [ ] **Step 1: Create `maintenance-card.dto.ts`**
+- [x] **Step 1: Create `maintenance-card.dto.ts`**
 
 Create `packages/types/src/dtos/maintenance-card.dto.ts`:
 
@@ -60,7 +60,7 @@ export interface IMaintenanceCardResDTO {
 }
 ```
 
-- [ ] **Step 2: Re-export from `packages/types/src/dtos/index.ts`**
+- [x] **Step 2: Re-export from `packages/types/src/dtos/index.ts`**
 
 Add to `packages/types/src/dtos/index.ts`:
 
@@ -68,7 +68,7 @@ Add to `packages/types/src/dtos/index.ts`:
 export * from './maintenance-card.dto';
 ```
 
-- [ ] **Step 3: Build `@project/types`**
+- [x] **Step 3: Build `@project/types`**
 
 ```bash
 cd packages/types && pnpm run build
@@ -76,7 +76,7 @@ cd packages/types && pnpm run build
 
 Expected: No TypeScript errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/types/src/dtos/maintenance-card.dto.ts packages/types/src/dtos/index.ts
@@ -93,7 +93,7 @@ git commit -m "feat: add MaintenanceCard DTOs to shared types"
 - Create: `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts`
 - Create: `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts`:
 
@@ -169,7 +169,7 @@ describe('MaintenanceCardRepository', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts
@@ -177,7 +177,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: FAIL — `MaintenanceCardRepository` not found.
 
-- [ ] **Step 3: Create `MaintenanceCardRepository`**
+- [x] **Step 3: Create `MaintenanceCardRepository`**
 
 Create `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts`:
 
@@ -228,7 +228,7 @@ export class MaintenanceCardRepository extends BaseDBUtil<
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts
@@ -236,7 +236,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/repositories/
@@ -255,7 +255,7 @@ git commit -m "feat: add MaintenanceCardRepository"
 - `urgency`: overdue cards first (date overdue, then mileage-only overdue), then non-overdue by `nextDueDate` asc, then by `nextDueMileage` asc, then cards with no due info last.
 - `name`: alphabetical by name asc.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts`:
 
@@ -620,7 +620,7 @@ describe('MaintenanceCardService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/services/maintenance-card.service.spec.ts
@@ -628,7 +628,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/services/mainten
 
 Expected: FAIL — `MaintenanceCardService` not found.
 
-- [ ] **Step 3: Create `MaintenanceCardService`**
+- [x] **Step 3: Create `MaintenanceCardService`**
 
 Create `backend/src/modules/maintenance-card/services/maintenance-card.service.ts`:
 
@@ -789,7 +789,7 @@ export class MaintenanceCardService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/services/maintenance-card.service.spec.ts
@@ -797,7 +797,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/services/mainten
 
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/services/
@@ -814,7 +814,7 @@ git commit -m "feat: add MaintenanceCardService with urgency sort"
 - Create: `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.ts`
 - Create: `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts`
 
-- [ ] **Step 1: Create request body DTOs**
+- [x] **Step 1: Create request body DTOs**
 
 Create `backend/src/modules/maintenance-card/dtos/create-maintenance-card.dto.ts`:
 
@@ -908,7 +908,7 @@ export class UpdateMaintenanceCardDto implements IUpdateMaintenanceCardReqDTO {
 }
 ```
 
-- [ ] **Step 2: Write the failing controller test**
+- [x] **Step 2: Write the failing controller test**
 
 Create `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts`:
 
@@ -1015,7 +1015,7 @@ describe('MaintenanceCardController', () => {
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [x] **Step 3: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts
@@ -1023,7 +1023,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/controllers/main
 
 Expected: FAIL — `MaintenanceCardController` not found.
 
-- [ ] **Step 4: Create `MaintenanceCardController`**
+- [x] **Step 4: Create `MaintenanceCardController`**
 
 Create `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.ts`:
 
@@ -1128,7 +1128,7 @@ export class MaintenanceCardController {
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts
@@ -1136,7 +1136,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/controllers/main
 
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/dtos/ \
@@ -1150,6 +1150,8 @@ git commit -m "feat: add MaintenanceCardController with DTOs"
 
 ### Task 5: Complete Vehicle delete cascade
 
+> **Note:** This task was initially implemented as described (via `MaintenanceCardService.deleteCardsByVehicleId`), then superseded by code-review-fixes-005 which replaced the service-call cascade with a TypeORM `@OneToMany(cascade: ['soft-remove'])` relation, eliminating the circular dependency. Final implementation uses `vehicleRepository.delete({ relation: { maintenanceCards: true } })`.
+
 **Files:**
 - Modify: `backend/src/modules/vehicle/services/vehicle.service.ts`
 - Modify: `backend/src/modules/vehicle/services/vehicle.service.spec.ts`
@@ -1157,7 +1159,7 @@ git commit -m "feat: add MaintenanceCardController with DTOs"
 
 Now that `MaintenanceCardService` exists, extend `VehicleService.deleteVehicle` to cascade.
 
-- [ ] **Step 1: Add cascade test to `vehicle.service.spec.ts`**
+- [x] **Step 1: Add cascade test to `vehicle.service.spec.ts`**
 
 In `backend/src/modules/vehicle/services/vehicle.service.spec.ts`, add `MaintenanceCardService` mock and cascade test:
 
@@ -1192,7 +1194,7 @@ it('deletes all maintenance cards before soft-deleting the vehicle', async () =>
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/vehicle/services/vehicle.service.spec.ts
@@ -1200,7 +1202,7 @@ cd backend && pnpm exec vitest run src/modules/vehicle/services/vehicle.service.
 
 Expected: FAIL — `MaintenanceCardService` import error or cascade test fails.
 
-- [ ] **Step 3: Update `VehicleService` to inject `MaintenanceCardService` and cascade**
+- [x] **Step 3: Update `VehicleService` to inject `MaintenanceCardService` and cascade**
 
 In `backend/src/modules/vehicle/services/vehicle.service.ts`:
 
@@ -1228,7 +1230,7 @@ async deleteVehicle(id: string, userId: string): Promise<void> {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/vehicle/services/vehicle.service.spec.ts
@@ -1236,7 +1238,7 @@ cd backend && pnpm exec vitest run src/modules/vehicle/services/vehicle.service.
 
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/vehicle/services/vehicle.service.ts \
@@ -1253,7 +1255,7 @@ git commit -m "feat: cascade soft-delete maintenance cards on vehicle delete"
 - Modify: `backend/src/modules/vehicle/vehicle.module.ts`
 - Modify: `backend/src/modules/app/app.module.ts`
 
-- [ ] **Step 1: Create `MaintenanceCardModule`**
+- [x] **Step 1: Create `MaintenanceCardModule`**
 
 Create `backend/src/modules/maintenance-card/maintenance-card.module.ts`:
 
@@ -1278,7 +1280,7 @@ import { MaintenanceCardController } from './controllers/maintenance-card.contro
 export class MaintenanceCardModule {}
 ```
 
-- [ ] **Step 2: Update `VehicleModule` to use `forwardRef` and export `VehicleService`**
+- [x] **Step 2: Update `VehicleModule` to use `forwardRef` and export `VehicleService`**
 
 In `backend/src/modules/vehicle/vehicle.module.ts`, update to:
 ```typescript
@@ -1302,7 +1304,7 @@ import { VehicleController } from './controllers/vehicle.controller';
 export class VehicleModule {}
 ```
 
-- [ ] **Step 3: Add `MaintenanceCardModule` to `AppModule` imports**
+- [x] **Step 3: Add `MaintenanceCardModule` to `AppModule` imports**
 
 In `backend/src/modules/app/app.module.ts`, add the import statement:
 
@@ -1312,7 +1314,7 @@ import { MaintenanceCardModule } from '../maintenance-card/maintenance-card.modu
 
 Add `MaintenanceCardModule` to the `imports` array. Do not replace the file — only add the new import.
 
-- [ ] **Step 4: Run all unit tests**
+- [x] **Step 4: Run all unit tests**
 
 ```bash
 just test-unit
@@ -1320,7 +1322,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -1328,7 +1330,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Smoke test**
+- [x] **Step 6: Smoke test** _(not verified — requires running Docker services)_
 
 Start services (`just up-build`), obtain a Firebase token, then:
 
@@ -1357,7 +1359,7 @@ curl -s "http://localhost:3001/vehicles/$VEHICLE_ID/maintenance-cards?sort=urgen
 
 Expected: 201 on create, 200 with card list on list.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/ \
