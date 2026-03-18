@@ -366,16 +366,18 @@ describe('#MaintenanceCards', () => {
     });
 
     it('defaults to name sort when sort param is omitted', async () => {
-      await axiosInstance.post(
-        `/vehicles/${vehicleId}/maintenance-cards`,
-        { type: 'task', name: 'Zzz Last', intervalMileage: 5000 },
-        authHeaders(),
-      );
-      await axiosInstance.post(
-        `/vehicles/${vehicleId}/maintenance-cards`,
-        { type: 'task', name: 'Aaa First', intervalMileage: 5000 },
-        authHeaders(),
-      );
+      await Promise.all([
+        axiosInstance.post(
+          `/vehicles/${vehicleId}/maintenance-cards`,
+          { type: 'task', name: 'Zzz Last', intervalMileage: 5000 },
+          authHeaders(),
+        ),
+        axiosInstance.post(
+          `/vehicles/${vehicleId}/maintenance-cards`,
+          { type: 'task', name: 'Aaa First', intervalMileage: 5000 },
+          authHeaders(),
+        ),
+      ]);
 
       const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
         `/vehicles/${vehicleId}/maintenance-cards`,
