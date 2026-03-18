@@ -344,6 +344,32 @@ describe('MaintenanceCardService', () => {
       ).rejects.toThrow(NotFoundException);
     });
 
+    it('preserves existing fields when input has undefined values (class-transformer ES2023 behaviour)', async () => {
+      mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
+      mockMaintenanceCardRepository.updateWithSave.mockResolvedValue([
+        { ...baseCard, name: 'New Name' },
+      ]);
+
+      // Simulate what class-transformer produces: all DTO class fields are own properties,
+      // those absent from the request JSON are undefined but still enumerable.
+      await service.updateCard(cardId, vehicleId, userId, {
+        name: 'New Name',
+        intervalMileage: undefined,
+        intervalTimeMonths: undefined,
+      });
+
+      expect(mockMaintenanceCardRepository.updateWithSave).toHaveBeenCalledWith(
+        {
+          dataArray: [
+            expect.objectContaining({
+              intervalMileage: baseCard.intervalMileage,
+              intervalTimeMonths: baseCard.intervalTimeMonths,
+            }),
+          ],
+        },
+      );
+    });
+
     it('throws BadRequestException when update would nullify both intervals', async () => {
       const cardWithBothIntervals = {
         ...baseCard,

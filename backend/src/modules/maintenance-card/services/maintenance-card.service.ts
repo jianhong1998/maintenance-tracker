@@ -12,7 +12,7 @@ import {
 
 export type CreateCardInput = Omit<CreateMaintenanceCardData, 'vehicleId'>;
 
-export type UpdateCardInput = Partial<CreateCardInput>;
+type UpdateCardInput = Partial<CreateCardInput>;
 
 function assertAtLeastOneInterval(input: {
   intervalMileage?: number | null;
@@ -32,7 +32,7 @@ function sortByUrgency(
   const today = new Date();
 
   const isDateOverdue = (card: MaintenanceCardEntity): boolean =>
-    card.nextDueDate !== null && new Date(card.nextDueDate) < today;
+    card.nextDueDate !== null && card.nextDueDate < today;
 
   const isMileageOverdue = (card: MaintenanceCardEntity): boolean =>
     card.nextDueMileage !== null && card.nextDueMileage <= vehicleMileage;
@@ -55,17 +55,14 @@ function sortByUrgency(
   }
 
   overdueByDate.sort(
-    (a, b) =>
-      new Date(a.nextDueDate!).getTime() - new Date(b.nextDueDate!).getTime(),
+    (a, b) => a.nextDueDate!.getTime() - b.nextDueDate!.getTime(),
   );
   overdueByMileageOnly.sort(
     (a, b) => (a.nextDueMileage ?? 0) - (b.nextDueMileage ?? 0),
   );
   nonOverdue.sort((a, b) => {
     if (a.nextDueDate && b.nextDueDate) {
-      return (
-        new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime()
-      );
+      return a.nextDueDate.getTime() - b.nextDueDate.getTime();
     }
     if (a.nextDueDate) return -1;
     if (b.nextDueDate) return 1;
@@ -98,7 +95,7 @@ export class MaintenanceCardService {
     ]);
 
     if (sort === 'name') {
-      return cards.sort((a, b) => a.name.localeCompare(b.name));
+      return [...cards].sort((a, b) => a.name.localeCompare(b.name));
     }
 
     return sortByUrgency(cards, vehicle.mileage);
@@ -136,7 +133,10 @@ export class MaintenanceCardService {
     input: UpdateCardInput,
   ): Promise<MaintenanceCardEntity> {
     const card = await this.getCard(id, vehicleId, userId);
-    Object.assign(card, input);
+    const patch = Object.fromEntries(
+      Object.entries(input).filter(([, v]) => v !== undefined),
+    );
+    Object.assign(card, patch);
     assertAtLeastOneInterval(card);
     const [updated] = await this.cardRepository.updateWithSave({
       dataArray: [card],
