@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { FirebaseAuthGuard } from './firebase-auth.guard';
 import { FirebaseService } from 'src/modules/firebase/firebase.service';
@@ -16,6 +17,17 @@ const mockAuthService = {
   resolveUser: vi.fn(),
 };
 
+function makeConfigService(enableApiTestMode = false) {
+  return {
+    get: vi.fn((key: string, defaultValue: string) => {
+      if (key === 'BACKEND_ENABLE_API_TEST_MODE') {
+        return enableApiTestMode ? 'true' : 'false';
+      }
+      return defaultValue;
+    }),
+  };
+}
+
 function makeContext(authHeader?: string): ExecutionContext {
   const request = {
     headers: { authorization: authHeader },
@@ -26,21 +38,30 @@ function makeContext(authHeader?: string): ExecutionContext {
   } as unknown as ExecutionContext;
 }
 
+async function buildGuard(
+  enableApiTestMode = false,
+): Promise<FirebaseAuthGuard> {
+  const module: TestingModule = await Test.createTestingModule({
+    providers: [
+      FirebaseAuthGuard,
+      { provide: FirebaseService, useValue: mockFirebaseService },
+      { provide: AuthService, useValue: mockAuthService },
+      {
+        provide: ConfigService,
+        useValue: makeConfigService(enableApiTestMode),
+      },
+    ],
+  }).compile();
+
+  return module.get<FirebaseAuthGuard>(FirebaseAuthGuard);
+}
+
 describe('FirebaseAuthGuard', () => {
   let guard: FirebaseAuthGuard;
 
   beforeEach(async () => {
     vi.clearAllMocks();
-
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        FirebaseAuthGuard,
-        { provide: FirebaseService, useValue: mockFirebaseService },
-        { provide: AuthService, useValue: mockAuthService },
-      ],
-    }).compile();
-
-    guard = module.get<FirebaseAuthGuard>(FirebaseAuthGuard);
+    guard = await buildGuard();
   });
 
   it('throws UnauthorizedException when Authorization header is missing', async () => {
@@ -85,5 +106,57 @@ describe('FirebaseAuthGuard', () => {
     expect(result).toBe(true);
     const request = ctx.switchToHttp().getRequest<{ user: unknown }>();
     expect(request.user).toEqual(resolvedUser);
+  });
+
+  describe('API test mode (BACKEND_ENABLE_API_TEST_MODE=true)', () => {
+    beforeEach(async () => {
+      vi.clearAllMocks();
+      guard = await buildGuard(true);
+    });
+
+    it('resolves test user and returns true for the api-test-token', async () => {
+      const testUser = {
+        id: 'test-user-id',
+        email: 'api-test@example.com',
+        firebaseUid: 'api-test-uid',
+      };
+      mockAuthService.resolveUser.mockResolvedValue(testUser);
+
+      const ctx = makeContext('Bearer api-test-token');
+      const result = await guard.canActivate(ctx);
+
+      expect(result).toBe(true);
+      expect(mockAuthService.resolveUser).toHaveBeenCalledWith({
+        firebaseUid: 'api-test-uid',
+        email: 'api-test@example.com',
+      });
+      expect(mockVerifyIdToken).not.toHaveBeenCalled();
+      const request = ctx.switchToHttp().getRequest<{ user: unknown }>();
+      expect(request.user).toEqual(testUser);
+    });
+
+    it('falls through to Firebase verification for non-test tokens', async () => {
+      mockVerifyIdToken.mockRejectedValue(new Error('invalid'));
+
+      await expect(
+        guard.canActivate(makeContext('Bearer some-real-token')),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(mockVerifyIdToken).toHaveBeenCalledWith('some-real-token');
+    });
+  });
+
+  describe('api-test-token is rejected when API test mode is disabled', () => {
+    it('falls through to Firebase verification and throws for the api-test-token', async () => {
+      mockVerifyIdToken.mockRejectedValue(
+        new Error('not a real firebase token'),
+      );
+
+      await expect(
+        guard.canActivate(makeContext('Bearer api-test-token')),
+      ).rejects.toThrow(UnauthorizedException);
+
+      expect(mockVerifyIdToken).toHaveBeenCalledWith('api-test-token');
+    });
   });
 });

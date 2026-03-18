@@ -5,12 +5,16 @@ import {
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { UserEntity } from 'src/db/entities/user.entity';
 import { FirebaseService } from 'src/modules/firebase/firebase.service';
 import { AuthService } from '../services/auth.service';
 
 const BEARER_PREFIX = 'Bearer ';
+const API_TEST_TOKEN = 'api-test-token';
+const API_TEST_FIREBASE_UID = 'api-test-uid';
+const API_TEST_EMAIL = 'api-test@example.com';
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
@@ -19,6 +23,7 @@ export class FirebaseAuthGuard implements CanActivate {
   constructor(
     private readonly firebaseService: FirebaseService,
     private readonly authService: AuthService,
+    private readonly configService: ConfigService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,6 +39,21 @@ export class FirebaseAuthGuard implements CanActivate {
     const [, token] = authHeader.split(' ');
     if (!token || token.trim() === '') {
       throw new UnauthorizedException('Missing bearer token');
+    }
+
+    const isApiTestMode =
+      this.configService.get<string>(
+        'BACKEND_ENABLE_API_TEST_MODE',
+        'false',
+      ) === 'true';
+
+    if (isApiTestMode && token === API_TEST_TOKEN) {
+      const user = await this.authService.resolveUser({
+        firebaseUid: API_TEST_FIREBASE_UID,
+        email: API_TEST_EMAIL,
+      });
+      (request as Request & { user: UserEntity }).user = user;
+      return true;
     }
 
     let decoded: { uid: string; email?: string };
