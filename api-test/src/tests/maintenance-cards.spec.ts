@@ -198,6 +198,71 @@ describe('#MaintenanceCards', () => {
         }),
       ).rejects.toMatchObject({ response: { status: 401 } });
     });
+
+    it('returns 400 when both intervals are explicitly null', async () => {
+      await expect(
+        axiosInstance.post(
+          `/vehicles/${vehicleId}/maintenance-cards`,
+          {
+            type: 'task',
+            name: 'Tyre Check',
+            intervalMileage: null,
+            intervalTimeMonths: null,
+          },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when intervalMileage is negative', async () => {
+      await expect(
+        axiosInstance.post(
+          `/vehicles/${vehicleId}/maintenance-cards`,
+          { type: 'task', name: 'Oil Change', intervalMileage: -1 },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when intervalTimeMonths is 0 (minimum is 1)', async () => {
+      await expect(
+        axiosInstance.post(
+          `/vehicles/${vehicleId}/maintenance-cards`,
+          { type: 'task', name: 'Oil Change', intervalTimeMonths: 0 },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when intervalTimeMonths is negative', async () => {
+      await expect(
+        axiosInstance.post(
+          `/vehicles/${vehicleId}/maintenance-cards`,
+          { type: 'task', name: 'Oil Change', intervalTimeMonths: -6 },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when name is missing entirely', async () => {
+      await expect(
+        axiosInstance.post(
+          `/vehicles/${vehicleId}/maintenance-cards`,
+          { type: 'task', intervalMileage: 5000 },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when vehicleId in path is not a valid UUID', async () => {
+      await expect(
+        axiosInstance.post(
+          '/vehicles/not-a-uuid/maintenance-cards',
+          { type: 'task', name: 'Oil Change', intervalMileage: 5000 },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
   });
 
   // ─── GET list ─────────────────────────────────────────────────────────────
@@ -289,6 +354,61 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.get(`/vehicles/${vehicleId}/maintenance-cards`),
       ).rejects.toMatchObject({ response: { status: 401 } });
+    });
+
+    it('returns 400 when vehicleId in path is not a valid UUID', async () => {
+      await expect(
+        axiosInstance.get(
+          '/vehicles/not-a-uuid/maintenance-cards',
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('defaults to name sort when sort param is omitted', async () => {
+      await axiosInstance.post(
+        `/vehicles/${vehicleId}/maintenance-cards`,
+        { type: 'task', name: 'Zzz Last', intervalMileage: 5000 },
+        authHeaders(),
+      );
+      await axiosInstance.post(
+        `/vehicles/${vehicleId}/maintenance-cards`,
+        { type: 'task', name: 'Aaa First', intervalMileage: 5000 },
+        authHeaders(),
+      );
+
+      const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
+        `/vehicles/${vehicleId}/maintenance-cards`,
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.data)).toBe(true);
+      // default sort should be deterministic (not throw or 400)
+      expect(res.data.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('response objects contain all IMaintenanceCardResDTO fields', async () => {
+      const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
+        `/vehicles/${vehicleId}/maintenance-cards`,
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      const card = res.data[0];
+      expect(card).toMatchObject({
+        id: expect.any(String) as string,
+        vehicleId: expect.any(String) as string,
+        type: expect.any(String) as string,
+        name: expect.any(String) as string,
+        createdAt: expect.any(String) as string,
+        updatedAt: expect.any(String) as string,
+      } as Partial<IMaintenanceCardResDTO>);
+      expect('description' in card).toBe(true);
+      expect('intervalMileage' in card).toBe(true);
+      expect('intervalTimeMonths' in card).toBe(true);
+      expect('nextDueMileage' in card).toBe(true);
+      expect('nextDueDate' in card).toBe(true);
     });
   });
 
@@ -382,6 +502,15 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.get(`/vehicles/${vehicleId}/maintenance-cards/${cardId}`),
       ).rejects.toMatchObject({ response: { status: 401 } });
+    });
+
+    it('returns 400 when vehicleId in path is not a valid UUID', async () => {
+      await expect(
+        axiosInstance.get(
+          `/vehicles/not-a-uuid/maintenance-cards/${cardId}`,
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
     });
   });
 
@@ -503,6 +632,94 @@ describe('#MaintenanceCards', () => {
         ),
       ).rejects.toMatchObject({ response: { status: 401 } });
     });
+
+    it('returns 400 when both intervals are explicitly set to null', async () => {
+      // Card has intervalMileage: 8000; nullifying both must be rejected
+      await expect(
+        axiosInstance.patch(
+          `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
+          { intervalMileage: null, intervalTimeMonths: null },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when intervalMileage is negative', async () => {
+      await expect(
+        axiosInstance.patch(
+          `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
+          { intervalMileage: -500 },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when intervalTimeMonths is 0', async () => {
+      await expect(
+        axiosInstance.patch(
+          `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
+          { intervalTimeMonths: 0 },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('preserves unmodified fields on a partial update', async () => {
+      const res = await axiosInstance.patch<IMaintenanceCardResDTO>(
+        `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
+        { name: 'Coolant Flush' },
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      // Non-updated fields must be unchanged
+      expect(res.data.type).toBe('task');
+      expect(res.data.intervalMileage).toBe(8000);
+      expect(res.data.vehicleId).toBe(vehicleId);
+    });
+
+    it('returns 404 when card belongs to a different vehicle', async () => {
+      const otherVehicleRes = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        { ...baseVehiclePayload, model: 'CBR650R' },
+        authHeaders(),
+      );
+      const otherVehicleId = otherVehicleRes.data.id;
+
+      try {
+        await expect(
+          axiosInstance.patch(
+            `/vehicles/${otherVehicleId}/maintenance-cards/${cardId}`,
+            { name: 'Hijack' },
+            authHeaders(),
+          ),
+        ).rejects.toMatchObject({ response: { status: 404 } });
+      } finally {
+        await axiosInstance
+          .delete(`/vehicles/${otherVehicleId}`, authHeaders())
+          .catch(() => undefined);
+      }
+    });
+
+    it('returns 400 when vehicleId in path is not a valid UUID', async () => {
+      await expect(
+        axiosInstance.patch(
+          `/vehicles/not-a-uuid/maintenance-cards/${cardId}`,
+          { name: 'Updated' },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when card id in path is not a valid UUID', async () => {
+      await expect(
+        axiosInstance.patch(
+          `/vehicles/${vehicleId}/maintenance-cards/not-a-uuid`,
+          { name: 'Updated' },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
   });
 
   // ─── DELETE ───────────────────────────────────────────────────────────────
@@ -562,6 +779,46 @@ describe('#MaintenanceCards', () => {
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
         ),
       ).rejects.toMatchObject({ response: { status: 401 } });
+    });
+
+    it('returns 400 when card id in path is not a valid UUID', async () => {
+      await expect(
+        axiosInstance.delete(
+          `/vehicles/${vehicleId}/maintenance-cards/not-a-uuid`,
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 400 when vehicleId in path is not a valid UUID', async () => {
+      await expect(
+        axiosInstance.delete(
+          `/vehicles/not-a-uuid/maintenance-cards/${cardId}`,
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
+
+    it('returns 404 when card belongs to a different vehicle', async () => {
+      const otherVehicleRes = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        { ...baseVehiclePayload, model: 'Z900' },
+        authHeaders(),
+      );
+      const otherVehicleId = otherVehicleRes.data.id;
+
+      try {
+        await expect(
+          axiosInstance.delete(
+            `/vehicles/${otherVehicleId}/maintenance-cards/${cardId}`,
+            authHeaders(),
+          ),
+        ).rejects.toMatchObject({ response: { status: 404 } });
+      } finally {
+        await axiosInstance
+          .delete(`/vehicles/${otherVehicleId}`, authHeaders())
+          .catch(() => undefined);
+      }
     });
   });
 });
