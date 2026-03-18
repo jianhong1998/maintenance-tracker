@@ -128,7 +128,6 @@ describe('VehicleService', () => {
 
   describe('#deleteVehicle', () => {
     it('soft deletes the vehicle with cascade to maintenance cards', async () => {
-      mockVehicleRepository.getOne.mockResolvedValue(baseVehicle);
       mockVehicleRepository.delete.mockResolvedValue([baseVehicle]);
 
       await service.deleteVehicle(vehicleId, userId);
@@ -140,7 +139,7 @@ describe('VehicleService', () => {
     });
 
     it('throws NotFoundException when vehicle not found', async () => {
-      mockVehicleRepository.getOne.mockResolvedValue(null);
+      mockVehicleRepository.delete.mockResolvedValue(null);
 
       await expect(service.deleteVehicle(vehicleId, userId)).rejects.toThrow(
         NotFoundException,

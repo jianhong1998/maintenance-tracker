@@ -57,16 +57,14 @@ function sortByUrgency(
   overdueByDate.sort(
     (a, b) => a.nextDueDate!.getTime() - b.nextDueDate!.getTime(),
   );
-  overdueByMileageOnly.sort(
-    (a, b) => (a.nextDueMileage ?? 0) - (b.nextDueMileage ?? 0),
-  );
+  overdueByMileageOnly.sort((a, b) => a.nextDueMileage! - b.nextDueMileage!);
   nonOverdue.sort((a, b) => {
     if (a.nextDueDate && b.nextDueDate) {
       return a.nextDueDate.getTime() - b.nextDueDate.getTime();
     }
     if (a.nextDueDate) return -1;
     if (b.nextDueDate) return 1;
-    return (a.nextDueMileage ?? 0) - (b.nextDueMileage ?? 0);
+    return a.nextDueMileage! - b.nextDueMileage!;
   });
 
   return [

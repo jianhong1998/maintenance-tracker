@@ -45,10 +45,10 @@ export class VehicleService {
   }
 
   async deleteVehicle(id: string, userId: string): Promise<void> {
-    await this.getVehicle(id, userId);
-    await this.vehicleRepository.delete({
+    const result = await this.vehicleRepository.delete({
       criteria: { id, userId },
       relation: { maintenanceCards: true },
     });
+    if (!result) throw new NotFoundException('Vehicle not found');
   }
 }
