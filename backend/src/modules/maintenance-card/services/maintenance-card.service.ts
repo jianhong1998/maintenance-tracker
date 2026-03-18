@@ -4,25 +4,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
-import type { MaintenanceCardType } from '@project/types';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
-import { MaintenanceCardRepository } from '../repositories/maintenance-card.repository';
+import {
+  MaintenanceCardRepository,
+  type CreateMaintenanceCardData,
+} from '../repositories/maintenance-card.repository';
 
-export type CreateCardInput = {
-  type: MaintenanceCardType;
-  name: string;
-  description: string | null;
-  intervalMileage: number | null;
-  intervalTimeMonths: number | null;
-};
+export type CreateCardInput = Omit<CreateMaintenanceCardData, 'vehicleId'>;
 
-export type UpdateCardInput = {
-  type?: MaintenanceCardType;
-  name?: string;
-  description?: string | null;
-  intervalMileage?: number | null;
-  intervalTimeMonths?: number | null;
-};
+export type UpdateCardInput = Partial<CreateCardInput>;
 
 function assertAtLeastOneInterval(input: {
   intervalMileage?: number | null;
@@ -47,39 +37,40 @@ function sortByUrgency(
   const isMileageOverdue = (card: MaintenanceCardEntity): boolean =>
     card.nextDueMileage !== null && card.nextDueMileage < vehicleMileage;
 
-  const isOverdue = (card: MaintenanceCardEntity): boolean =>
-    isDateOverdue(card) || isMileageOverdue(card);
+  const overdueByDate: MaintenanceCardEntity[] = [];
+  const overdueByMileageOnly: MaintenanceCardEntity[] = [];
+  const nonOverdue: MaintenanceCardEntity[] = [];
+  const noDueInfo: MaintenanceCardEntity[] = [];
 
-  const overdueByDate = cards
-    .filter((c) => isDateOverdue(c))
-    .sort(
-      (a, b) =>
-        new Date(a.nextDueDate!).getTime() - new Date(b.nextDueDate!).getTime(),
-    );
+  for (const card of cards) {
+    if (isDateOverdue(card)) {
+      overdueByDate.push(card);
+    } else if (isMileageOverdue(card)) {
+      overdueByMileageOnly.push(card);
+    } else if (card.nextDueDate !== null || card.nextDueMileage !== null) {
+      nonOverdue.push(card);
+    } else {
+      noDueInfo.push(card);
+    }
+  }
 
-  const overdueByMileageOnly = cards
-    .filter((c) => !isDateOverdue(c) && isMileageOverdue(c))
-    .sort((a, b) => (a.nextDueMileage ?? 0) - (b.nextDueMileage ?? 0));
-
-  const nonOverdue = cards
-    .filter(
-      (c) =>
-        !isOverdue(c) && (c.nextDueDate !== null || c.nextDueMileage !== null),
-    )
-    .sort((a, b) => {
-      if (a.nextDueDate && b.nextDueDate) {
-        return (
-          new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime()
-        );
-      }
-      if (a.nextDueDate) return -1;
-      if (b.nextDueDate) return 1;
-      return (a.nextDueMileage ?? 0) - (b.nextDueMileage ?? 0);
-    });
-
-  const noDueInfo = cards.filter(
-    (c) => c.nextDueDate === null && c.nextDueMileage === null,
+  overdueByDate.sort(
+    (a, b) =>
+      new Date(a.nextDueDate!).getTime() - new Date(b.nextDueDate!).getTime(),
   );
+  overdueByMileageOnly.sort(
+    (a, b) => (a.nextDueMileage ?? 0) - (b.nextDueMileage ?? 0),
+  );
+  nonOverdue.sort((a, b) => {
+    if (a.nextDueDate && b.nextDueDate) {
+      return (
+        new Date(a.nextDueDate).getTime() - new Date(b.nextDueDate).getTime()
+      );
+    }
+    if (a.nextDueDate) return -1;
+    if (b.nextDueDate) return 1;
+    return (a.nextDueMileage ?? 0) - (b.nextDueMileage ?? 0);
+  });
 
   return [
     ...overdueByDate,
@@ -101,8 +92,10 @@ export class MaintenanceCardService {
     userId: string,
     sort: 'urgency' | 'name',
   ): Promise<MaintenanceCardEntity[]> {
-    const vehicle = await this.vehicleService.getVehicle(vehicleId, userId);
-    const cards = await this.cardRepository.getAll({ criteria: { vehicleId } });
+    const [vehicle, cards] = await Promise.all([
+      this.vehicleService.getVehicle(vehicleId, userId),
+      this.cardRepository.getAll({ criteria: { vehicleId } }),
+    ]);
 
     if (sort === 'name') {
       return cards.sort((a, b) => a.name.localeCompare(b.name));
@@ -116,10 +109,10 @@ export class MaintenanceCardService {
     vehicleId: string,
     userId: string,
   ): Promise<MaintenanceCardEntity> {
-    await this.vehicleService.getVehicle(vehicleId, userId);
-    const card = await this.cardRepository.getOne({
-      criteria: { id, vehicleId },
-    });
+    const [, card] = await Promise.all([
+      this.vehicleService.getVehicle(vehicleId, userId),
+      this.cardRepository.getOne({ criteria: { id, vehicleId } }),
+    ]);
     if (!card) throw new NotFoundException('Maintenance card not found');
     return card;
   }
