@@ -1,7 +1,7 @@
 import {
-  IsEnum,
+  IsIn,
+  IsInt,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   Min,
@@ -15,7 +15,7 @@ import { MAINTENANCE_CARD_TYPES } from '@project/types';
 
 export class UpdateMaintenanceCardDto implements IUpdateMaintenanceCardReqDTO {
   @IsOptional()
-  @IsEnum(Object.values(MAINTENANCE_CARD_TYPES))
+  @IsIn(Object.values(MAINTENANCE_CARD_TYPES))
   type?: MaintenanceCardType;
 
   @IsOptional()
@@ -31,13 +31,13 @@ export class UpdateMaintenanceCardDto implements IUpdateMaintenanceCardReqDTO {
   // Sending null explicitly clears the field; the service enforces at-least-one-interval constraint.
   @IsOptional()
   @ValidateIf((o: UpdateMaintenanceCardDto) => o.intervalMileage !== null)
-  @IsNumber()
+  @IsInt()
   @Min(1)
   intervalMileage?: number | null;
 
   @IsOptional()
   @ValidateIf((o: UpdateMaintenanceCardDto) => o.intervalTimeMonths !== null)
-  @IsNumber()
+  @IsInt()
   @Min(1)
   intervalTimeMonths?: number | null;
 }

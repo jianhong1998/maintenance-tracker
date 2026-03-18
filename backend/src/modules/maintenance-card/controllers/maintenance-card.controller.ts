@@ -28,7 +28,9 @@ function toResDTO(card: MaintenanceCardEntity): IMaintenanceCardResDTO {
     intervalMileage: card.intervalMileage,
     intervalTimeMonths: card.intervalTimeMonths,
     nextDueMileage: card.nextDueMileage,
-    nextDueDate: card.nextDueDate ? card.nextDueDate.toISOString() : null,
+    nextDueDate: card.nextDueDate
+      ? card.nextDueDate.toISOString().slice(0, 10)
+      : null,
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
   };

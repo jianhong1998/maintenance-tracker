@@ -35,7 +35,7 @@ function sortByUrgency(
     card.nextDueDate !== null && new Date(card.nextDueDate) < today;
 
   const isMileageOverdue = (card: MaintenanceCardEntity): boolean =>
-    card.nextDueMileage !== null && card.nextDueMileage < vehicleMileage;
+    card.nextDueMileage !== null && card.nextDueMileage <= vehicleMileage;
 
   const overdueByDate: MaintenanceCardEntity[] = [];
   const overdueByMileageOnly: MaintenanceCardEntity[] = [];
