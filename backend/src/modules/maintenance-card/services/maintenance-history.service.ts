@@ -19,7 +19,9 @@ export class MaintenanceHistoryService {
   ): Promise<MaintenanceHistoryEntity[]> {
     const [, card] = await Promise.all([
       this.vehicleService.getVehicle(vehicleId, userId),
-      this.cardRepository.getOneWithDeleted({ id: cardId, vehicleId }),
+      this.cardRepository.getOneWithDeleted({
+        criteria: { id: cardId, vehicleId },
+      }),
     ]);
     if (!card) throw new NotFoundException('Maintenance card not found');
 

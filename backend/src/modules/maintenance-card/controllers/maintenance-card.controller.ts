@@ -50,7 +50,7 @@ function historyToResDTO(
     id: history.id,
     maintenanceCardId: history.maintenanceCardId,
     doneAtMileage: history.doneAtMileage,
-    doneAtDate: new Date(history.doneAtDate).toISOString(),
+    doneAtDate: history.doneAtDate.toISOString(),
     notes: history.notes,
     createdAt: history.createdAt.toISOString(),
   };

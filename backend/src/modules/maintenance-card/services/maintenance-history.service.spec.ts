@@ -105,8 +105,7 @@ describe('MaintenanceHistoryService', () => {
       await service.listHistory(cardId, vehicleId, userId);
 
       expect(mockCardRepository.getOneWithDeleted).toHaveBeenCalledWith({
-        id: cardId,
-        vehicleId,
+        criteria: { id: cardId, vehicleId },
       });
     });
 
