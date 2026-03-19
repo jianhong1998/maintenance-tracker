@@ -1,8 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { getDataSourceToken } from '@nestjs/typeorm';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MaintenanceCardService } from './maintenance-card.service';
 import { MaintenanceCardRepository } from '../repositories/maintenance-card.repository';
+import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
+import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
 import { MILEAGE_UNITS, MAINTENANCE_CARD_TYPES } from '@project/types';
 
@@ -16,6 +19,21 @@ const mockMaintenanceCardRepository = {
 
 const mockVehicleService = {
   getVehicle: vi.fn(),
+  updateVehicle: vi.fn(),
+};
+
+const mockHistoryRepository = {
+  create: vi.fn(),
+  findByCardId: vi.fn(),
+};
+
+const mockEntityManager = {};
+const mockDataSource = {
+  transaction: vi
+    .fn()
+    .mockImplementation(async (callback: (em: object) => Promise<unknown>) =>
+      callback(mockEntityManager),
+    ),
 };
 
 const userId = 'user-1';
@@ -28,6 +46,15 @@ const baseVehicle = {
   mileage: 10000,
   mileageUnit: MILEAGE_UNITS.KM,
 };
+
+const baseHistory = {
+  id: 'history-1',
+  maintenanceCardId: cardId,
+  doneAtMileage: 12500,
+  doneAtDate: new Date('2026-03-15'),
+  notes: null,
+  createdAt: new Date(),
+} as MaintenanceHistoryEntity;
 
 const baseCard = {
   id: cardId,
@@ -59,6 +86,11 @@ describe('MaintenanceCardService', () => {
           useValue: mockMaintenanceCardRepository,
         },
         { provide: VehicleService, useValue: mockVehicleService },
+        {
+          provide: MaintenanceHistoryRepository,
+          useValue: mockHistoryRepository,
+        },
+        { provide: getDataSourceToken(), useValue: mockDataSource },
       ],
     }).compile();
 
@@ -415,6 +447,182 @@ describe('MaintenanceCardService', () => {
       await expect(
         service.deleteCard(cardId, vehicleId, userId),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('#markDone', () => {
+    beforeEach(() => {
+      mockMaintenanceCardRepository.getOne.mockResolvedValue({
+        ...baseCard,
+        intervalMileage: 6000,
+        intervalTimeMonths: 6,
+        nextDueMileage: null,
+        nextDueDate: null,
+      });
+      mockHistoryRepository.create.mockResolvedValue(baseHistory);
+      mockMaintenanceCardRepository.updateWithSave.mockImplementation(
+        ({ dataArray }) => Promise.resolve(dataArray),
+      );
+      mockVehicleService.updateVehicle.mockResolvedValue({
+        ...baseVehicle,
+        mileage: 12500,
+      });
+    });
+
+    it('creates a history record with server-side today as doneAtDate', async () => {
+      const before = new Date();
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+      const after = new Date();
+
+      const call = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+        creationData: {
+          maintenanceCardId: string;
+          doneAtMileage: number;
+          doneAtDate: Date;
+          notes: string | null;
+        };
+      };
+      expect(call.creationData.maintenanceCardId).toBe(cardId);
+      expect(call.creationData.doneAtMileage).toBe(12500);
+      expect(call.creationData.doneAtDate.getTime()).toBeGreaterThanOrEqual(
+        before.getTime(),
+      );
+      expect(call.creationData.doneAtDate.getTime()).toBeLessThanOrEqual(
+        after.getTime(),
+      );
+      expect(call.creationData.notes).toBeNull();
+    });
+
+    it('resets nextDueMileage when intervalMileage is set', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+
+      const savedCard = (
+        mockMaintenanceCardRepository.updateWithSave.mock.calls[0]?.[0] as {
+          dataArray: Array<{ nextDueMileage: number }>;
+        }
+      ).dataArray[0];
+      expect(savedCard.nextDueMileage).toBe(18500); // 12500 + 6000
+    });
+
+    it('resets nextDueDate when intervalTimeMonths is set', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+
+      const savedCard = (
+        mockMaintenanceCardRepository.updateWithSave.mock.calls[0]?.[0] as {
+          dataArray: Array<{ nextDueDate: Date | null }>;
+        }
+      ).dataArray[0];
+      expect(savedCard.nextDueDate).toBeDefined();
+      expect(savedCard.nextDueDate).not.toBeNull();
+    });
+
+    it('auto-updates vehicle mileage when doneAtMileage > vehicle.mileage', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+
+      expect(mockVehicleService.updateVehicle).toHaveBeenCalledWith(
+        vehicleId,
+        userId,
+        {
+          mileage: 12500,
+        },
+      );
+    });
+
+    it('does NOT update vehicle mileage when doneAtMileage <= vehicle.mileage', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 9000,
+      });
+
+      expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when card has intervalMileage but doneAtMileage is not provided', async () => {
+      await expect(
+        service.markDone(cardId, vehicleId, userId, {}),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('succeeds for a time-only card when doneAtMileage is not provided', async () => {
+      mockMaintenanceCardRepository.getOne.mockResolvedValue({
+        ...baseCard,
+        intervalMileage: null,
+        intervalTimeMonths: 6,
+        nextDueMileage: null,
+        nextDueDate: null,
+      });
+
+      const result = await service.markDone(cardId, vehicleId, userId, {});
+
+      expect(result).toEqual(baseHistory);
+      expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+      const call = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+        creationData: { doneAtMileage: number | null };
+      };
+      expect(call.creationData.doneAtMileage).toBeNull();
+    });
+
+    it('passes notes through to the history record', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+        notes: 'replaced oil filter too',
+      });
+
+      const call = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+        creationData: { notes: string | null };
+      };
+      expect(call.creationData.notes).toBe('replaced oil filter too');
+    });
+
+    it('returns the created history record', async () => {
+      const result = await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+      expect(result).toEqual(baseHistory);
+    });
+
+    it('runs card update and history creation within the same transaction', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+
+      const updateCall = mockMaintenanceCardRepository.updateWithSave.mock
+        .calls[0]?.[0] as { entityManager: unknown };
+      expect(updateCall.entityManager).toBe(mockEntityManager);
+
+      const createCall = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+        entityManager: unknown;
+      };
+      expect(createCall.entityManager).toBe(mockEntityManager);
+    });
+
+    it('propagates error and does not commit when history creation fails', async () => {
+      mockHistoryRepository.create.mockRejectedValue(
+        new Error('DB insert failed'),
+      );
+
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
+      ).rejects.toThrow('DB insert failed');
+    });
+
+    it('does NOT update vehicle mileage when the transaction fails', async () => {
+      mockHistoryRepository.create.mockRejectedValue(
+        new Error('DB insert failed'),
+      );
+
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
+      ).rejects.toThrow('DB insert failed');
+
+      expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
     });
   });
 });

@@ -3,12 +3,17 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import type { IMarkDoneReqDTO } from '@project/types';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
+import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
 import {
   MaintenanceCardRepository,
   type CreateMaintenanceCardData,
 } from '../repositories/maintenance-card.repository';
+import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
 
 export type CreateCardInput = Omit<CreateMaintenanceCardData, 'vehicleId'>;
 
@@ -79,7 +84,9 @@ function sortByUrgency(
 export class MaintenanceCardService {
   constructor(
     private readonly cardRepository: MaintenanceCardRepository,
+    private readonly historyRepository: MaintenanceHistoryRepository,
     private readonly vehicleService: VehicleService,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async listCards(
@@ -149,5 +156,64 @@ export class MaintenanceCardService {
   ): Promise<void> {
     const card = await this.getCard(id, vehicleId, userId);
     await this.cardRepository.delete({ entities: [card] });
+  }
+
+  async markDone(
+    id: string,
+    vehicleId: string,
+    userId: string,
+    input: IMarkDoneReqDTO,
+  ): Promise<MaintenanceHistoryEntity> {
+    const [vehicle, card] = await Promise.all([
+      this.vehicleService.getVehicle(vehicleId, userId),
+      this.cardRepository.getOne({ criteria: { id, vehicleId } }),
+    ]);
+    if (!card) throw new NotFoundException('Maintenance card not found');
+
+    if (card.intervalMileage !== null && input.doneAtMileage == null) {
+      throw new BadRequestException(
+        'doneAtMileage is required when the card has an intervalMileage',
+      );
+    }
+
+    const today = new Date();
+
+    if (card.intervalMileage !== null) {
+      card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
+    }
+    if (card.intervalTimeMonths !== null) {
+      const nextDue = new Date(today);
+      nextDue.setMonth(nextDue.getMonth() + card.intervalTimeMonths);
+      card.nextDueDate = nextDue;
+    }
+
+    // TODO: BackgroundJob cancellation deferred to Plan 08
+
+    const history = await this.dataSource.transaction(async (em) => {
+      await this.cardRepository.updateWithSave({
+        dataArray: [card],
+        entityManager: em,
+      });
+      return this.historyRepository.create({
+        creationData: {
+          maintenanceCardId: id,
+          doneAtMileage: input.doneAtMileage ?? null,
+          doneAtDate: today,
+          notes: input.notes ?? null,
+        },
+        entityManager: em,
+      });
+    });
+
+    // Known limitation: updateVehicle runs after the transaction commits.
+    // A failure here leaves the vehicle mileage stale while the history record persists.
+    // Cross-service atomicity requires a saga/outbox pattern (out of scope).
+    if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
+      await this.vehicleService.updateVehicle(vehicleId, userId, {
+        mileage: input.doneAtMileage,
+      });
+    }
+
+    return history;
   }
 }

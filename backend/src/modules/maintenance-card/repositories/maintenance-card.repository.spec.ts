@@ -8,6 +8,7 @@ import { MAINTENANCE_CARD_TYPES } from '@project/types';
 const mockTypeOrmRepo = {
   create: vi.fn(),
   save: vi.fn(),
+  findOne: vi.fn(),
 };
 
 describe('MaintenanceCardRepository', () => {
@@ -64,6 +65,29 @@ describe('MaintenanceCardRepository', () => {
       });
 
       expect(result).toEqual(newCard);
+    });
+  });
+
+  describe('#getOneWithDeleted', () => {
+    it('calls findOne with withDeleted: true', async () => {
+      const card = { id: 'card-1', vehicleId: 'vehicle-1' };
+      mockTypeOrmRepo.findOne.mockResolvedValue(card);
+
+      const result = await repository.getOneWithDeleted('card-1', 'vehicle-1');
+
+      expect(mockTypeOrmRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'card-1', vehicleId: 'vehicle-1' },
+        withDeleted: true,
+      });
+      expect(result).toEqual(card);
+    });
+
+    it('returns null when card not found', async () => {
+      mockTypeOrmRepo.findOne.mockResolvedValue(null);
+
+      const result = await repository.getOneWithDeleted('card-1', 'vehicle-1');
+
+      expect(result).toBeNull();
     });
   });
 });
