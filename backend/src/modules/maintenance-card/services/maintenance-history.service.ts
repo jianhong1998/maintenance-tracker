@@ -17,12 +17,10 @@ export class MaintenanceHistoryService {
     vehicleId: string,
     userId: string,
   ): Promise<MaintenanceHistoryEntity[]> {
-    await this.vehicleService.getVehicle(vehicleId, userId);
-
-    const card = await this.cardRepository.getOneWithDeleted({
-      id: cardId,
-      vehicleId,
-    });
+    const [, card] = await Promise.all([
+      this.vehicleService.getVehicle(vehicleId, userId),
+      this.cardRepository.getOneWithDeleted({ id: cardId, vehicleId }),
+    ]);
     if (!card) throw new NotFoundException('Maintenance card not found');
 
     return this.historyRepository.findByCardId(cardId);

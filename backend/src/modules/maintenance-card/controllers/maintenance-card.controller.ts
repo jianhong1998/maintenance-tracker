@@ -23,7 +23,7 @@ import { MaintenanceCardService } from '../services/maintenance-card.service';
 import { MaintenanceHistoryService } from '../services/maintenance-history.service';
 import { CreateMaintenanceCardDto } from '../dtos/create-maintenance-card.dto';
 import { UpdateMaintenanceCardDto } from '../dtos/update-maintenance-card.dto';
-import { MarkDoneDto } from '../dtos/complete.dto';
+import { MarkDoneDto } from '../dtos/mark-done.dto';
 
 function toResDTO(card: MaintenanceCardEntity): IMaintenanceCardResDTO {
   return {

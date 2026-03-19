@@ -185,11 +185,8 @@ export class MaintenanceCardService {
       });
     }
 
-    const mileageForReset =
-      input.doneAtMileage != null ? input.doneAtMileage : vehicle.mileage;
-
     if (card.intervalMileage !== null) {
-      card.nextDueMileage = mileageForReset + card.intervalMileage;
+      card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
     }
 
     if (card.intervalTimeMonths !== null) {
