@@ -70,7 +70,7 @@ describe('MaintenanceHistoryRepository', () => {
   });
 
   describe('#findByCardId', () => {
-    it('returns history records ordered by doneAtDate DESC', async () => {
+    it('returns history records ordered by doneAtDate DESC, createdAt DESC', async () => {
       const records = [
         {
           id: 'h-2',
@@ -90,7 +90,7 @@ describe('MaintenanceHistoryRepository', () => {
 
       expect(mockTypeOrmRepo.find).toHaveBeenCalledWith({
         where: { maintenanceCardId: 'card-1' },
-        order: { doneAtDate: 'DESC' },
+        order: { doneAtDate: 'DESC', createdAt: 'DESC' },
       });
       expect(result).toEqual(records);
     });

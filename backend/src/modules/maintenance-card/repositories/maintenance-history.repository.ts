@@ -42,7 +42,7 @@ export class MaintenanceHistoryRepository extends BaseDBUtil<
   ): Promise<MaintenanceHistoryEntity[]> {
     return this.historyRepo.find({
       where: { maintenanceCardId },
-      order: { doneAtDate: 'DESC' },
+      order: { doneAtDate: 'DESC', createdAt: 'DESC' },
     });
   }
 }

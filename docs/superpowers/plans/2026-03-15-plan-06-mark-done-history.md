@@ -1302,13 +1302,15 @@ The following changes were made during implementation that differ from the origi
 
 ---
 
-### D8: Redundant `new Date()` wrap removed in `historyToResDTO`
+### D8: `new Date()` wrap in `historyToResDTO` and `toResDTO` (corrected)
 
-**Plan:** `doneAtDate: new Date(history.doneAtDate).toISOString()`
+**Original code (D8 — incorrect):** `doneAtDate: history.doneAtDate.toISOString().slice(0, 10)`
 
-**Actual:** `doneAtDate: history.doneAtDate.toISOString()`
+**D8 stated** the `new Date()` wrap was redundant because "TypeORM maps `TIMESTAMP` columns to native `Date` objects." This was incorrect — `doneAtDate` is a PostgreSQL `date` column, not `TIMESTAMP`. The pg driver returns `date` columns as **strings** (e.g. `"2026-03-15"`), not JavaScript `Date` objects. Only `TIMESTAMP`/`TIMESTAMPTZ` columns are hydrated as `Date` objects.
 
-**Why:** TypeORM maps `TIMESTAMP` columns to native `Date` objects. `history.doneAtDate` is already a `Date` — wrapping it in `new Date()` is a no-op. Removing the redundant wrap is cleaner and reflects the actual type.
+**Fixed code:** `doneAtDate: new Date(history.doneAtDate).toISOString().slice(0, 10)`
+
+**Impact:** Without `new Date()`, calling `.toISOString()` on a string throws `TypeError: history.doneAtDate.toISOString is not a function` at runtime with a real Postgres connection (unit tests are unaffected because mocked data uses `new Date(...)`). The same fix was applied to `nextDueDate` in `toResDTO`, which has the same `date` column type and is now non-null after `markDone` is called.
 
 ---
 
@@ -1332,13 +1334,17 @@ The following changes were made during implementation that differ from the origi
 
 ---
 
-### D11: `doneAtDate` formatted as `YYYY-MM-DD` (post-merge fix)
+### D11: `doneAtDate` formatted as `YYYY-MM-DD` (code review fix)
 
 **Original code:** `doneAtDate: history.doneAtDate.toISOString()`
 
-**Fixed code:** `doneAtDate: history.doneAtDate.toISOString().slice(0, 10)`
+**Fixed code (step 1):** `doneAtDate: history.doneAtDate.toISOString().slice(0, 10)`
 
-**Why:** `MaintenanceHistoryEntity.doneAtDate` is a PostgreSQL `date` column (not `timestamptz`). TypeORM returns it as a JavaScript `Date` object anchored at midnight UTC, so `.toISOString()` produces `"2026-03-15T00:00:00.000Z"` — a timestamp, not a date. Slicing to 10 characters yields `"2026-03-15"`, which is consistent with how `nextDueDate` is serialized in `toResDTO` and correctly represents the intent of a date-only column.
+**Why (step 1):** `MaintenanceHistoryEntity.doneAtDate` is a PostgreSQL `date` column (not `timestamptz`). `.toISOString()` produces `"2026-03-15T00:00:00.000Z"` — a timestamp, not a date. Slicing to 10 characters yields `"2026-03-15"`, consistent with how `nextDueDate` is serialized in `toResDTO`.
+
+**Further fixed code (step 2):** `doneAtDate: new Date(history.doneAtDate).toISOString().slice(0, 10)`
+
+**Why (step 2):** See D8 correction — the pg driver returns `date` columns as strings, so the `new Date()` wrap is required to avoid a runtime `TypeError`. The `.slice(0, 10)` from step 1 remains correct.
 
 ---
 
@@ -1369,3 +1375,23 @@ The following suggestions were raised in code review (2026-03-19) and evaluated 
 **Suggestion:** Align the route path with the PR description, which refers to `POST .../complete`.
 
 **Rejected because:** The route `@Post(':id/mark-done')` is the intentional implementation per D7. The PR description contained stale wording from the original spec; the rename to `mark-done` was a deliberate decision made during implementation for naming consistency across the codebase (method `markDone`, type `MarkDoneInput`, DTO `IMarkDoneReqDTO`, file `mark-done.dto.ts`). The code is correct; the PR description was the source of the discrepancy.
+
+---
+
+### R4: `findByCardId` sort non-deterministic for same-day records — ACCEPTED AND FIXED
+
+**Suggestion:** Add `createdAt: 'DESC'` as a tiebreaker in the `findByCardId` order clause.
+
+**Accepted and fixed.** `doneAtDate` is a `date` column (day-precision). Two history records created on the same calendar day share the same `doneAtDate`, making their relative ordering non-deterministic from the DB. `createdAt` is a `timestamptz` column on `MaintenanceHistoryEntity` and is a correct tiebreaker — it is always unique per record.
+
+**Fixed:** `order: { doneAtDate: 'DESC', createdAt: 'DESC' }` in `maintenance-history.repository.ts`. Test updated accordingly.
+
+---
+
+### R5: `date` column returned as string by pg driver — ACCEPTED AND FIXED
+
+**Suggestion:** TypeORM with the pg driver returns PostgreSQL `date` columns as strings, not `Date` objects. `history.doneAtDate.toISOString()` would throw `TypeError` at runtime.
+
+**Accepted and fixed.** This was a real runtime bug masked by unit tests (which mock data with `new Date(...)`). The pg driver does return `date` columns (as opposed to `timestamp`/`timestamptz`) as plain strings. D8's reasoning was incorrect — it incorrectly applied `TIMESTAMP` column behaviour to a `date` column.
+
+**Fixed:** `new Date(history.doneAtDate).toISOString().slice(0, 10)` in `historyToResDTO`. Also fixed `nextDueDate` in `toResDTO` for the same reason — it is also a `date` column with no transformer, and it can now be non-null after `markDone` is called. D8 updated to correct the reasoning.

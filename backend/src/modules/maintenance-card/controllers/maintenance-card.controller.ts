@@ -36,7 +36,7 @@ function toResDTO(card: MaintenanceCardEntity): IMaintenanceCardResDTO {
     intervalTimeMonths: card.intervalTimeMonths,
     nextDueMileage: card.nextDueMileage,
     nextDueDate: card.nextDueDate
-      ? card.nextDueDate.toISOString().slice(0, 10)
+      ? new Date(card.nextDueDate).toISOString().slice(0, 10)
       : null,
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
@@ -50,7 +50,7 @@ function historyToResDTO(
     id: history.id,
     maintenanceCardId: history.maintenanceCardId,
     doneAtMileage: history.doneAtMileage,
-    doneAtDate: history.doneAtDate.toISOString().slice(0, 10),
+    doneAtDate: new Date(history.doneAtDate).toISOString().slice(0, 10),
     notes: history.notes,
     createdAt: history.createdAt.toISOString(),
   };
