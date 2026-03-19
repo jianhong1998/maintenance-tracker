@@ -112,6 +112,7 @@ describe('MaintenanceHistoryService', () => {
     it('throws NotFoundException when card does not exist (even with deleted check)', async () => {
       mockVehicleService.getVehicle.mockResolvedValue(baseVehicle);
       mockCardRepository.getOneWithDeleted.mockResolvedValue(null);
+      mockHistoryRepository.findByCardId.mockResolvedValue([]);
 
       await expect(
         service.listHistory(cardId, vehicleId, userId),
