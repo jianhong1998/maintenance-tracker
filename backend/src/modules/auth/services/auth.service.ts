@@ -1,6 +1,10 @@
 import { Injectable } from '@nestjs/common';
+import { QueryFailedError } from 'typeorm';
 import { UserEntity } from 'src/db/entities/user.entity';
 import { UserRepository } from '../repositories/user.repository';
+
+// PostgreSQL error code for unique constraint violation (SQLSTATE 23505)
+const PG_UNIQUE_VIOLATION = '23505';
 
 @Injectable()
 export class AuthService {
@@ -18,11 +22,27 @@ export class AuthService {
 
     if (existing) return existing;
 
-    // NOTE: Potential race condition - concurrent requests for a new user
-    // may both pass the check above and attempt to create. Consider implementing
-    // upsert or wrapping in a transaction with unique constraint handling.
-    return await this.userRepository.create({
-      creationData: { email, firebaseUid },
-    });
+    try {
+      return await this.userRepository.create({
+        creationData: { email, firebaseUid },
+      });
+    } catch (err) {
+      // Concurrent requests can both pass the getOne check and race to INSERT.
+      // If this request lost the race, the other request already created the user —
+      // re-query to return it.
+      if (err instanceof QueryFailedError) {
+        const pgCode = (err as QueryFailedError & { code: string }).code;
+        if (pgCode === PG_UNIQUE_VIOLATION) {
+          const created = await this.userRepository.getOne({
+            criteria: { firebaseUid },
+          });
+          if (created) return created;
+          throw new Error(
+            `Unique violation on INSERT but re-query returned null for firebaseUid=${firebaseUid}`,
+          );
+        }
+      }
+      throw err;
+    }
   }
 }
