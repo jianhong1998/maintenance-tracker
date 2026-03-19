@@ -539,6 +539,25 @@ describe('MaintenanceCardService', () => {
       ).rejects.toThrow(BadRequestException);
     });
 
+    it('succeeds for a time-only card when doneAtMileage is not provided', async () => {
+      mockMaintenanceCardRepository.getOne.mockResolvedValue({
+        ...baseCard,
+        intervalMileage: null,
+        intervalTimeMonths: 6,
+        nextDueMileage: null,
+        nextDueDate: null,
+      });
+
+      const result = await service.markDone(cardId, vehicleId, userId, {});
+
+      expect(result).toEqual(baseHistory);
+      expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+      const call = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+        creationData: { doneAtMileage: number | null };
+      };
+      expect(call.creationData.doneAtMileage).toBeNull();
+    });
+
     it('passes notes through to the history record', async () => {
       await service.markDone(cardId, vehicleId, userId, {
         doneAtMileage: 12500,

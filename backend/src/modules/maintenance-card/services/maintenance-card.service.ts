@@ -1,7 +1,5 @@
 import {
   BadRequestException,
-  forwardRef,
-  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -89,7 +87,6 @@ export class MaintenanceCardService {
   constructor(
     private readonly cardRepository: MaintenanceCardRepository,
     private readonly historyRepository: MaintenanceHistoryRepository,
-    @Inject(forwardRef(() => VehicleService))
     private readonly vehicleService: VehicleService,
   ) {}
 
@@ -168,8 +165,11 @@ export class MaintenanceCardService {
     userId: string,
     input: MarkDoneInput,
   ): Promise<MaintenanceHistoryEntity> {
-    const vehicle = await this.vehicleService.getVehicle(vehicleId, userId);
-    const card = await this.getCard(id, vehicleId, userId);
+    const [vehicle, card] = await Promise.all([
+      this.vehicleService.getVehicle(vehicleId, userId),
+      this.cardRepository.getOne({ criteria: { id, vehicleId } }),
+    ]);
+    if (!card) throw new NotFoundException('Maintenance card not found');
 
     if (card.intervalMileage !== null && input.doneAtMileage == null) {
       throw new BadRequestException(
