@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import type { IMarkDoneReqDTO } from '@project/types';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
@@ -17,11 +18,6 @@ import { MaintenanceHistoryRepository } from '../repositories/maintenance-histor
 export type CreateCardInput = Omit<CreateMaintenanceCardData, 'vehicleId'>;
 
 type UpdateCardInput = Partial<CreateCardInput>;
-
-export type MarkDoneInput = {
-  doneAtMileage?: number | null;
-  notes?: string | null;
-};
 
 function assertAtLeastOneInterval(input: {
   intervalMileage?: number | null;
@@ -166,7 +162,7 @@ export class MaintenanceCardService {
     id: string,
     vehicleId: string,
     userId: string,
-    input: MarkDoneInput,
+    input: IMarkDoneReqDTO,
   ): Promise<MaintenanceHistoryEntity> {
     const [vehicle, card] = await Promise.all([
       this.vehicleService.getVehicle(vehicleId, userId),
@@ -182,17 +178,18 @@ export class MaintenanceCardService {
 
     const today = new Date();
 
+    if (card.intervalMileage !== null) {
+      card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
+    }
+    if (card.intervalTimeMonths !== null) {
+      const nextDue = new Date(today);
+      nextDue.setMonth(nextDue.getMonth() + card.intervalTimeMonths);
+      card.nextDueDate = nextDue;
+    }
+
     // TODO: BackgroundJob cancellation deferred to Plan 08
 
     const history = await this.dataSource.transaction(async (em) => {
-      if (card.intervalMileage !== null) {
-        card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
-      }
-      if (card.intervalTimeMonths !== null) {
-        const nextDue = new Date(today);
-        nextDue.setMonth(nextDue.getMonth() + card.intervalTimeMonths);
-        card.nextDueDate = nextDue;
-      }
       await this.cardRepository.updateWithSave({
         dataArray: [card],
         entityManager: em,
