@@ -130,10 +130,12 @@ export class MaintenanceCardController {
     @Body() dto: MarkDoneDto,
     @CurrentUser() user: IAuthUser,
   ): Promise<IMaintenanceHistoryResDTO> {
-    const history = await this.cardService.markDone(id, vehicleId, user.id, {
-      doneAtMileage: dto.doneAtMileage ?? null,
-      notes: dto.notes ?? null,
-    });
+    const history = await this.cardService.markDone(
+      id,
+      vehicleId,
+      user.id,
+      dto,
+    );
     return historyToResDTO(history);
   }
 

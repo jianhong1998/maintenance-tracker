@@ -174,26 +174,25 @@ export class MaintenanceCardService {
     ]);
     if (!card) throw new NotFoundException('Maintenance card not found');
 
-    if (card.intervalMileage !== null) {
-      if (input.doneAtMileage == null) {
-        throw new BadRequestException(
-          'doneAtMileage is required when the card has an intervalMileage',
-        );
-      }
-      card.nextDueMileage = input.doneAtMileage + card.intervalMileage;
+    if (card.intervalMileage !== null && input.doneAtMileage == null) {
+      throw new BadRequestException(
+        'doneAtMileage is required when the card has an intervalMileage',
+      );
     }
 
     const today = new Date();
 
-    if (card.intervalTimeMonths !== null) {
-      const nextDue = new Date(today);
-      nextDue.setMonth(nextDue.getMonth() + card.intervalTimeMonths);
-      card.nextDueDate = nextDue;
-    }
-
     // TODO: BackgroundJob cancellation deferred to Plan 08
 
     const history = await this.dataSource.transaction(async (em) => {
+      if (card.intervalMileage !== null) {
+        card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
+      }
+      if (card.intervalTimeMonths !== null) {
+        const nextDue = new Date(today);
+        nextDue.setMonth(nextDue.getMonth() + card.intervalTimeMonths);
+        card.nextDueDate = nextDue;
+      }
       await this.cardRepository.updateWithSave({
         dataArray: [card],
         entityManager: em,

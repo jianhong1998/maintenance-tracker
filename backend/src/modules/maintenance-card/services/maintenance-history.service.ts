@@ -17,6 +17,7 @@ export class MaintenanceHistoryService {
     vehicleId: string,
     userId: string,
   ): Promise<MaintenanceHistoryEntity[]> {
+    // getVehicle throws NotFoundException if the vehicle doesn't belong to userId
     const [, card] = await Promise.all([
       this.vehicleService.getVehicle(vehicleId, userId),
       this.cardRepository.getOneWithDeleted(cardId, vehicleId),
