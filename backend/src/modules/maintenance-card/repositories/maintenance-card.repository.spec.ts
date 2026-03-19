@@ -73,9 +73,7 @@ describe('MaintenanceCardRepository', () => {
       const card = { id: 'card-1', vehicleId: 'vehicle-1' };
       mockTypeOrmRepo.findOne.mockResolvedValue(card);
 
-      const result = await repository.getOneWithDeleted({
-        criteria: { id: 'card-1', vehicleId: 'vehicle-1' },
-      });
+      const result = await repository.getOneWithDeleted('card-1', 'vehicle-1');
 
       expect(mockTypeOrmRepo.findOne).toHaveBeenCalledWith({
         where: { id: 'card-1', vehicleId: 'vehicle-1' },
@@ -87,9 +85,7 @@ describe('MaintenanceCardRepository', () => {
     it('returns null when card not found', async () => {
       mockTypeOrmRepo.findOne.mockResolvedValue(null);
 
-      const result = await repository.getOneWithDeleted({
-        criteria: { id: 'card-1', vehicleId: 'vehicle-1' },
-      });
+      const result = await repository.getOneWithDeleted('card-1', 'vehicle-1');
 
       expect(result).toBeNull();
     });

@@ -104,19 +104,21 @@ describe('MaintenanceHistoryService', () => {
 
       await service.listHistory(cardId, vehicleId, userId);
 
-      expect(mockCardRepository.getOneWithDeleted).toHaveBeenCalledWith({
-        criteria: { id: cardId, vehicleId },
-      });
+      expect(mockCardRepository.getOneWithDeleted).toHaveBeenCalledWith(
+        cardId,
+        vehicleId,
+      );
     });
 
     it('throws NotFoundException when card does not exist (even with deleted check)', async () => {
       mockVehicleService.getVehicle.mockResolvedValue(baseVehicle);
       mockCardRepository.getOneWithDeleted.mockResolvedValue(null);
-      mockHistoryRepository.findByCardId.mockResolvedValue([]);
 
       await expect(
         service.listHistory(cardId, vehicleId, userId),
       ).rejects.toThrow(NotFoundException);
+
+      expect(mockHistoryRepository.findByCardId).not.toHaveBeenCalled();
     });
 
     it('returns history records ordered by doneAtDate DESC', async () => {

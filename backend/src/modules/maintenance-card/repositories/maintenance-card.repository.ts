@@ -40,12 +40,12 @@ export class MaintenanceCardRepository extends BaseDBUtil<
     return await repo.save(card);
   }
 
-  async getOneWithDeleted(params: {
-    criteria: { id: string; vehicleId: string };
-  }): Promise<MaintenanceCardEntity | null> {
-    const { criteria } = params;
+  async getOneWithDeleted(
+    id: string,
+    vehicleId: string,
+  ): Promise<MaintenanceCardEntity | null> {
     return this.cardRepo.findOne({
-      where: { id: criteria.id, vehicleId: criteria.vehicleId },
+      where: { id, vehicleId },
       withDeleted: true,
     });
   }

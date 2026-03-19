@@ -612,5 +612,17 @@ describe('MaintenanceCardService', () => {
         service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
       ).rejects.toThrow('DB insert failed');
     });
+
+    it('does NOT update vehicle mileage when the transaction fails', async () => {
+      mockHistoryRepository.create.mockRejectedValue(
+        new Error('DB insert failed'),
+      );
+
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
+      ).rejects.toThrow('DB insert failed');
+
+      expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+    });
   });
 });

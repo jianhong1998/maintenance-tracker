@@ -183,12 +183,6 @@ export class MaintenanceCardService {
       card.nextDueMileage = input.doneAtMileage + card.intervalMileage;
     }
 
-    if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
-      await this.vehicleService.updateVehicle(vehicleId, userId, {
-        mileage: input.doneAtMileage,
-      });
-    }
-
     const today = new Date();
 
     if (card.intervalTimeMonths !== null) {
@@ -199,7 +193,7 @@ export class MaintenanceCardService {
 
     // TODO: BackgroundJob cancellation deferred to Plan 08
 
-    return this.dataSource.transaction(async (em) => {
+    const history = await this.dataSource.transaction(async (em) => {
       await this.cardRepository.updateWithSave({
         dataArray: [card],
         entityManager: em,
@@ -214,5 +208,13 @@ export class MaintenanceCardService {
         entityManager: em,
       });
     });
+
+    if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
+      await this.vehicleService.updateVehicle(vehicleId, userId, {
+        mileage: input.doneAtMileage,
+      });
+    }
+
+    return history;
   }
 }
