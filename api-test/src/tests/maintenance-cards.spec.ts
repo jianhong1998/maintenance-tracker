@@ -399,6 +399,7 @@ describe('#MaintenanceCards', () => {
       );
 
       expect(res.status).toBe(200);
+      expect(res.data.length).toBeGreaterThan(0);
       const card = res.data[0];
       expect(card).toMatchObject({
         id: expect.any(String) as string,
