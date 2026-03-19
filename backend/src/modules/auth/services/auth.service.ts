@@ -30,15 +30,17 @@ export class AuthService {
       // Concurrent requests can both pass the getOne check and race to INSERT.
       // If this request lost the race, the other request already created the user —
       // re-query to return it.
-      const pgCode = (err as QueryFailedError & { code: string }).code;
-      if (err instanceof QueryFailedError && pgCode === PG_UNIQUE_VIOLATION) {
-        const created = await this.userRepository.getOne({
-          criteria: { firebaseUid },
-        });
-        if (created) return created;
-        throw new Error(
-          `Unique violation on INSERT but re-query returned null for firebaseUid=${firebaseUid}`,
-        );
+      if (err instanceof QueryFailedError) {
+        const pgCode = (err as QueryFailedError & { code: string }).code;
+        if (pgCode === PG_UNIQUE_VIOLATION) {
+          const created = await this.userRepository.getOne({
+            criteria: { firebaseUid },
+          });
+          if (created) return created;
+          throw new Error(
+            `Unique violation on INSERT but re-query returned null for firebaseUid=${firebaseUid}`,
+          );
+        }
       }
       throw err;
     }

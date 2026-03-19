@@ -103,7 +103,6 @@ describe('#MaintenanceCards', () => {
 
       expect(res.status).toBe(201);
       expect(res.data.intervalMileage).toBe(1000);
-      expect(typeof res.data.intervalMileage).toBe('number');
     });
 
     it('nextDueDate is null for a newly created card and createdAt is ISO string', async () => {
@@ -115,7 +114,9 @@ describe('#MaintenanceCards', () => {
 
       expect(res.data.nextDueDate).toBeNull();
       // createdAt must be a valid ISO 8601 timestamp
-      expect(() => new Date(res.data.createdAt)).not.toThrow();
+      expect(new Date(res.data.createdAt).toISOString()).toBe(
+        res.data.createdAt,
+      );
     });
 
     it('returns 400 when neither interval field is provided', async () => {
@@ -386,8 +387,9 @@ describe('#MaintenanceCards', () => {
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.data)).toBe(true);
-      // default sort should be deterministic (not throw or 400)
       expect(res.data.length).toBeGreaterThanOrEqual(2);
+      const names = res.data.map((c) => c.name);
+      expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
     });
 
     it('response objects contain all IMaintenanceCardResDTO fields', async () => {
@@ -405,7 +407,7 @@ describe('#MaintenanceCards', () => {
         name: expect.any(String) as string,
         createdAt: expect.any(String) as string,
         updatedAt: expect.any(String) as string,
-      } as Partial<IMaintenanceCardResDTO>);
+      });
       expect('description' in card).toBe(true);
       expect('intervalMileage' in card).toBe(true);
       expect('intervalTimeMonths' in card).toBe(true);
@@ -722,6 +724,17 @@ describe('#MaintenanceCards', () => {
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
+
+    it('returns 404 when vehicle does not exist', async () => {
+      const nonExistentVehicleId = '01960000-0000-7000-8000-000000000007';
+      await expect(
+        axiosInstance.patch(
+          `/vehicles/${nonExistentVehicleId}/maintenance-cards/${cardId}`,
+          { name: 'Updated' },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 404 } });
+    });
   });
 
   // ─── DELETE ───────────────────────────────────────────────────────────────
@@ -762,14 +775,10 @@ describe('#MaintenanceCards', () => {
     });
 
     it('returns 404 when card does not exist', async () => {
-      await axiosInstance.delete(
-        `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
-        authHeaders(),
-      );
-
+      const nonExistentCardId = '01960000-0000-7000-8000-000000000006';
       await expect(
         axiosInstance.delete(
-          `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
+          `/vehicles/${vehicleId}/maintenance-cards/${nonExistentCardId}`,
           authHeaders(),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
@@ -821,6 +830,16 @@ describe('#MaintenanceCards', () => {
           .delete(`/vehicles/${otherVehicleId}`, authHeaders())
           .catch(() => undefined);
       }
+    });
+
+    it('returns 404 when vehicle does not exist', async () => {
+      const nonExistentVehicleId = '01960000-0000-7000-8000-000000000008';
+      await expect(
+        axiosInstance.delete(
+          `/vehicles/${nonExistentVehicleId}/maintenance-cards/${cardId}`,
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 404 } });
     });
   });
 });
