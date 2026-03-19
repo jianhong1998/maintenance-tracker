@@ -1329,3 +1329,43 @@ The following changes were made during implementation that differ from the origi
 **Actual:** `import type { IMarkDoneReqDTO } from '@project/types'`
 
 **Why:** Per project convention (documented in CLAUDE.md): `isolatedModules` + `emitDecoratorMetadata` requires `import type` (or namespace import) when a type from an external package is referenced in a decorated class. Using a value import causes TypeScript to emit metadata for the type, which fails at runtime when `isolatedModules` strips the type.
+
+---
+
+### D11: `doneAtDate` formatted as `YYYY-MM-DD` (post-merge fix)
+
+**Original code:** `doneAtDate: history.doneAtDate.toISOString()`
+
+**Fixed code:** `doneAtDate: history.doneAtDate.toISOString().slice(0, 10)`
+
+**Why:** `MaintenanceHistoryEntity.doneAtDate` is a PostgreSQL `date` column (not `timestamptz`). TypeORM returns it as a JavaScript `Date` object anchored at midnight UTC, so `.toISOString()` produces `"2026-03-15T00:00:00.000Z"` — a timestamp, not a date. Slicing to 10 characters yields `"2026-03-15"`, which is consistent with how `nextDueDate` is serialized in `toResDTO` and correctly represents the intent of a date-only column.
+
+---
+
+## Rejected Review Feedback
+
+The following suggestions were raised in code review (2026-03-19) and evaluated against the codebase. Each was rejected with technical reasoning.
+
+---
+
+### R1: Move `updateVehicle` inside the transaction
+
+**Suggestion:** Include the vehicle mileage update inside the `dataSource.transaction(...)` block to prevent inconsistency if `updateVehicle` fails after the transaction commits.
+
+**Rejected because:** This is the intentional design documented in D5. External service calls (`VehicleService.updateVehicle`) must not be placed inside a DB transaction — doing so would hold the transaction open across an external call, increasing lock contention and coupling infrastructure concerns across service boundaries. The current ordering (update vehicle only after the transaction commits) is the correct approach: a failed vehicle update leaves the card and history in a consistent committed state with the mileage update as best-effort. Moving `updateVehicle` inside the transaction would be architecturally worse, not better.
+
+---
+
+### R2: Replace `@IsNumber()` with `@IsInt()` on `doneAtMileage`
+
+**Suggestion:** Use `@IsInt()` instead of `@IsNumber()` on `doneAtMileage` in `mark-done.dto.ts` to prevent float inputs.
+
+**Rejected because:** `@IsNumber()` is the established pattern for mileage fields in this codebase — `create-vehicle.dto.ts` and `update-vehicle.dto.ts` both use `@IsNumber()` for their `mileage` field. The `MaintenanceHistoryEntity` also stores `doneAtMileage` as `decimal(10,2)`, a type that explicitly supports fractional values. Switching to `@IsInt()` here would create an inconsistency with the vehicle DTOs and contradict the entity schema.
+
+---
+
+### R3: Route path `/mark-done` inconsistent with PR description `/complete`
+
+**Suggestion:** Align the route path with the PR description, which refers to `POST .../complete`.
+
+**Rejected because:** The route `@Post(':id/mark-done')` is the intentional implementation per D7. The PR description contained stale wording from the original spec; the rename to `mark-done` was a deliberate decision made during implementation for naming consistency across the codebase (method `markDone`, type `MarkDoneInput`, DTO `IMarkDoneReqDTO`, file `mark-done.dto.ts`). The code is correct; the PR description was the source of the discrepancy.
