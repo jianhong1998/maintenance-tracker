@@ -11,12 +11,19 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import type { IAuthUser, IMaintenanceCardResDTO } from '@project/types';
+import type {
+  IAuthUser,
+  IMaintenanceCardResDTO,
+  IMaintenanceHistoryResDTO,
+} from '@project/types';
 import { CurrentUser } from 'src/modules/auth/decorators/current-user.decorator';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
+import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { MaintenanceCardService } from '../services/maintenance-card.service';
+import { MaintenanceHistoryService } from '../services/maintenance-history.service';
 import { CreateMaintenanceCardDto } from '../dtos/create-maintenance-card.dto';
 import { UpdateMaintenanceCardDto } from '../dtos/update-maintenance-card.dto';
+import { MarkDoneDto } from '../dtos/complete.dto';
 
 function toResDTO(card: MaintenanceCardEntity): IMaintenanceCardResDTO {
   return {
@@ -36,9 +43,25 @@ function toResDTO(card: MaintenanceCardEntity): IMaintenanceCardResDTO {
   };
 }
 
+function historyToResDTO(
+  history: MaintenanceHistoryEntity,
+): IMaintenanceHistoryResDTO {
+  return {
+    id: history.id,
+    maintenanceCardId: history.maintenanceCardId,
+    doneAtMileage: history.doneAtMileage,
+    doneAtDate: new Date(history.doneAtDate).toISOString(),
+    notes: history.notes,
+    createdAt: history.createdAt.toISOString(),
+  };
+}
+
 @Controller('vehicles/:vehicleId/maintenance-cards')
 export class MaintenanceCardController {
-  constructor(private readonly cardService: MaintenanceCardService) {}
+  constructor(
+    private readonly cardService: MaintenanceCardService,
+    private readonly historyService: MaintenanceHistoryService,
+  ) {}
 
   @Get()
   async list(
@@ -97,5 +120,34 @@ export class MaintenanceCardController {
     @CurrentUser() user: IAuthUser,
   ): Promise<void> {
     await this.cardService.deleteCard(id, vehicleId, user.id);
+  }
+
+  @Post(':id/complete')
+  @HttpCode(HttpStatus.CREATED)
+  async markDone(
+    @Param('vehicleId', ParseUUIDPipe) vehicleId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: MarkDoneDto,
+    @CurrentUser() user: IAuthUser,
+  ): Promise<IMaintenanceHistoryResDTO> {
+    const history = await this.cardService.markDone(id, vehicleId, user.id, {
+      doneAtMileage: dto.doneAtMileage ?? null,
+      notes: dto.notes ?? null,
+    });
+    return historyToResDTO(history);
+  }
+
+  @Get(':id/history')
+  async listHistory(
+    @Param('vehicleId', ParseUUIDPipe) vehicleId: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: IAuthUser,
+  ): Promise<IMaintenanceHistoryResDTO[]> {
+    const records = await this.historyService.listHistory(
+      id,
+      vehicleId,
+      user.id,
+    );
+    return records.map(historyToResDTO);
   }
 }

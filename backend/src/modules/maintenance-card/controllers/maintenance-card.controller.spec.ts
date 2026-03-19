@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MaintenanceCardController } from './maintenance-card.controller';
 import { MaintenanceCardService } from '../services/maintenance-card.service';
+import { MaintenanceHistoryService } from '../services/maintenance-history.service';
 import { MAINTENANCE_CARD_TYPES } from '@project/types';
 import type { IAuthUser } from '@project/types';
 
@@ -11,6 +12,7 @@ const mockMaintenanceCardService = {
   createCard: vi.fn(),
   updateCard: vi.fn(),
   deleteCard: vi.fn(),
+  markDone: vi.fn(),
 };
 
 const authUser: IAuthUser = {
@@ -34,8 +36,21 @@ const baseCard = {
   deletedAt: null,
 };
 
+const baseHistory = {
+  id: 'history-1',
+  maintenanceCardId: 'card-1',
+  doneAtMileage: 12500,
+  doneAtDate: new Date('2026-03-15'),
+  notes: null,
+  createdAt: new Date(),
+};
+
 describe('MaintenanceCardController', () => {
   let controller: MaintenanceCardController;
+
+  const mockMaintenanceHistoryService = {
+    listHistory: vi.fn(),
+  };
 
   beforeEach(async () => {
     vi.clearAllMocks();
@@ -46,6 +61,10 @@ describe('MaintenanceCardController', () => {
         {
           provide: MaintenanceCardService,
           useValue: mockMaintenanceCardService,
+        },
+        {
+          provide: MaintenanceHistoryService,
+          useValue: mockMaintenanceHistoryService,
         },
       ],
     }).compile();
@@ -115,5 +134,45 @@ describe('MaintenanceCardController', () => {
     await expect(
       controller.delete('vehicle-1', 'card-1', authUser),
     ).resolves.toBeUndefined();
+  });
+
+  it('POST /vehicles/:vehicleId/maintenance-cards/:id/complete returns 201 with history DTO', async () => {
+    mockMaintenanceCardService.markDone.mockResolvedValue(baseHistory);
+
+    const result = await controller.markDone(
+      'vehicle-1',
+      'card-1',
+      { doneAtMileage: 12500, notes: null },
+      authUser,
+    );
+
+    expect(mockMaintenanceCardService.markDone).toHaveBeenCalledWith(
+      'card-1',
+      'vehicle-1',
+      authUser.id,
+      { doneAtMileage: 12500, notes: null },
+    );
+    expect(result.id).toBe('history-1');
+    expect(typeof result.doneAtDate).toBe('string');
+    expect(typeof result.createdAt).toBe('string');
+  });
+
+  it('GET /vehicles/:vehicleId/maintenance-cards/:id/history returns history list', async () => {
+    mockMaintenanceHistoryService.listHistory.mockResolvedValue([baseHistory]);
+
+    const result = await controller.listHistory(
+      'vehicle-1',
+      'card-1',
+      authUser,
+    );
+
+    expect(mockMaintenanceHistoryService.listHistory).toHaveBeenCalledWith(
+      'card-1',
+      'vehicle-1',
+      authUser.id,
+    );
+    expect(result).toHaveLength(1);
+    expect(typeof result[0].doneAtDate).toBe('string');
+    expect(typeof result[0].createdAt).toBe('string');
   });
 });
