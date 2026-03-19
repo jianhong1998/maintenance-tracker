@@ -136,7 +136,7 @@ describe('MaintenanceCardController', () => {
     ).resolves.toBeUndefined();
   });
 
-  it('POST /vehicles/:vehicleId/maintenance-cards/:id/complete returns 201 with history DTO', async () => {
+  it('POST /vehicles/:vehicleId/maintenance-cards/:id/mark-done returns 201 with history DTO', async () => {
     mockMaintenanceCardService.markDone.mockResolvedValue(baseHistory);
 
     const result = await controller.markDone(

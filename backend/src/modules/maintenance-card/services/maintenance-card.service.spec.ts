@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { getDataSourceToken } from '@nestjs/typeorm';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MaintenanceCardService } from './maintenance-card.service';
 import { MaintenanceCardRepository } from '../repositories/maintenance-card.repository';
@@ -24,6 +25,15 @@ const mockVehicleService = {
 const mockHistoryRepository = {
   create: vi.fn(),
   findByCardId: vi.fn(),
+};
+
+const mockEntityManager = {};
+const mockDataSource = {
+  transaction: vi
+    .fn()
+    .mockImplementation(async (callback: (em: object) => Promise<unknown>) =>
+      callback(mockEntityManager),
+    ),
 };
 
 const userId = 'user-1';
@@ -80,6 +90,7 @@ describe('MaintenanceCardService', () => {
           provide: MaintenanceHistoryRepository,
           useValue: mockHistoryRepository,
         },
+        { provide: getDataSourceToken(), useValue: mockDataSource },
       ],
     }).compile();
 
@@ -575,6 +586,31 @@ describe('MaintenanceCardService', () => {
         doneAtMileage: 12500,
       });
       expect(result).toEqual(baseHistory);
+    });
+
+    it('runs card update and history creation within the same transaction', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+
+      const updateCall = mockMaintenanceCardRepository.updateWithSave.mock
+        .calls[0]?.[0] as { entityManager: unknown };
+      expect(updateCall.entityManager).toBe(mockEntityManager);
+
+      const createCall = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+        entityManager: unknown;
+      };
+      expect(createCall.entityManager).toBe(mockEntityManager);
+    });
+
+    it('propagates error and does not commit when history creation fails', async () => {
+      mockHistoryRepository.create.mockRejectedValue(
+        new Error('DB insert failed'),
+      );
+
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
+      ).rejects.toThrow('DB insert failed');
     });
   });
 });

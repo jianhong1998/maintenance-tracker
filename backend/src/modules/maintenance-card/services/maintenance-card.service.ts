@@ -3,6 +3,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
@@ -88,6 +90,7 @@ export class MaintenanceCardService {
     private readonly cardRepository: MaintenanceCardRepository,
     private readonly historyRepository: MaintenanceHistoryRepository,
     private readonly vehicleService: VehicleService,
+    @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
   async listCards(
@@ -171,13 +174,14 @@ export class MaintenanceCardService {
     ]);
     if (!card) throw new NotFoundException('Maintenance card not found');
 
-    if (card.intervalMileage !== null && input.doneAtMileage == null) {
-      throw new BadRequestException(
-        'doneAtMileage is required when the card has an intervalMileage',
-      );
+    if (card.intervalMileage !== null) {
+      if (input.doneAtMileage == null) {
+        throw new BadRequestException(
+          'doneAtMileage is required when the card has an intervalMileage',
+        );
+      }
+      card.nextDueMileage = input.doneAtMileage + card.intervalMileage;
     }
-
-    const today = new Date();
 
     if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
       await this.vehicleService.updateVehicle(vehicleId, userId, {
@@ -185,9 +189,7 @@ export class MaintenanceCardService {
       });
     }
 
-    if (card.intervalMileage !== null) {
-      card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
-    }
+    const today = new Date();
 
     if (card.intervalTimeMonths !== null) {
       const nextDue = new Date(today);
@@ -195,17 +197,22 @@ export class MaintenanceCardService {
       card.nextDueDate = nextDue;
     }
 
-    await this.cardRepository.updateWithSave({ dataArray: [card] });
-
     // TODO: BackgroundJob cancellation deferred to Plan 08
 
-    return this.historyRepository.create({
-      creationData: {
-        maintenanceCardId: id,
-        doneAtMileage: input.doneAtMileage ?? null,
-        doneAtDate: today,
-        notes: input.notes ?? null,
-      },
+    return this.dataSource.transaction(async (em) => {
+      await this.cardRepository.updateWithSave({
+        dataArray: [card],
+        entityManager: em,
+      });
+      return this.historyRepository.create({
+        creationData: {
+          maintenanceCardId: id,
+          doneAtMileage: input.doneAtMileage ?? null,
+          doneAtDate: today,
+          notes: input.notes ?? null,
+        },
+        entityManager: em,
+      });
     });
   }
 }

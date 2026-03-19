@@ -122,7 +122,7 @@ export class MaintenanceCardController {
     await this.cardService.deleteCard(id, vehicleId, user.id);
   }
 
-  @Post(':id/complete')
+  @Post(':id/mark-done')
   @HttpCode(HttpStatus.CREATED)
   async markDone(
     @Param('vehicleId', ParseUUIDPipe) vehicleId: string,
