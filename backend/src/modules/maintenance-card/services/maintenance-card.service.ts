@@ -1,18 +1,27 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
+import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
 import {
   MaintenanceCardRepository,
   type CreateMaintenanceCardData,
 } from '../repositories/maintenance-card.repository';
+import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
 
 export type CreateCardInput = Omit<CreateMaintenanceCardData, 'vehicleId'>;
 
 type UpdateCardInput = Partial<CreateCardInput>;
+
+export type MarkDoneInput = {
+  doneAtMileage?: number | null;
+  notes?: string | null;
+};
 
 function assertAtLeastOneInterval(input: {
   intervalMileage?: number | null;
@@ -79,6 +88,8 @@ function sortByUrgency(
 export class MaintenanceCardService {
   constructor(
     private readonly cardRepository: MaintenanceCardRepository,
+    private readonly historyRepository: MaintenanceHistoryRepository,
+    @Inject(forwardRef(() => VehicleService))
     private readonly vehicleService: VehicleService,
   ) {}
 
@@ -149,5 +160,55 @@ export class MaintenanceCardService {
   ): Promise<void> {
     const card = await this.getCard(id, vehicleId, userId);
     await this.cardRepository.delete({ entities: [card] });
+  }
+
+  async markDone(
+    id: string,
+    vehicleId: string,
+    userId: string,
+    input: MarkDoneInput,
+  ): Promise<MaintenanceHistoryEntity> {
+    const vehicle = await this.vehicleService.getVehicle(vehicleId, userId);
+    const card = await this.getCard(id, vehicleId, userId);
+
+    if (card.intervalMileage !== null && input.doneAtMileage == null) {
+      throw new BadRequestException(
+        'doneAtMileage is required when the card has an intervalMileage',
+      );
+    }
+
+    const today = new Date();
+
+    if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
+      await this.vehicleService.updateVehicle(vehicleId, userId, {
+        mileage: input.doneAtMileage,
+      });
+    }
+
+    const mileageForReset =
+      input.doneAtMileage != null ? input.doneAtMileage : vehicle.mileage;
+
+    if (card.intervalMileage !== null) {
+      card.nextDueMileage = mileageForReset + card.intervalMileage;
+    }
+
+    if (card.intervalTimeMonths !== null) {
+      const nextDue = new Date(today);
+      nextDue.setMonth(nextDue.getMonth() + card.intervalTimeMonths);
+      card.nextDueDate = nextDue;
+    }
+
+    await this.cardRepository.updateWithSave({ dataArray: [card] });
+
+    // TODO: BackgroundJob cancellation deferred to Plan 08
+
+    return this.historyRepository.create({
+      creationData: {
+        maintenanceCardId: id,
+        doneAtMileage: input.doneAtMileage ?? null,
+        doneAtDate: today,
+        notes: input.notes ?? null,
+      },
+    });
   }
 }
