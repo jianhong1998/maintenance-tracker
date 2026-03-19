@@ -22,7 +22,7 @@
 - Create: `packages/types/src/dtos/maintenance-history.dto.ts`
 - Modify: `packages/types/src/dtos/index.ts`
 
-- [ ] **Step 1: Create `maintenance-history.dto.ts`**
+- [x] **Step 1: Create `maintenance-history.dto.ts`**
 
 Create `packages/types/src/dtos/maintenance-history.dto.ts`:
 
@@ -42,7 +42,7 @@ export interface IMaintenanceHistoryResDTO {
 }
 ```
 
-- [ ] **Step 2: Re-export from `packages/types/src/dtos/index.ts`**
+- [x] **Step 2: Re-export from `packages/types/src/dtos/index.ts`**
 
 Add to `packages/types/src/dtos/index.ts`:
 
@@ -50,7 +50,7 @@ Add to `packages/types/src/dtos/index.ts`:
 export * from './maintenance-history.dto';
 ```
 
-- [ ] **Step 3: Build `@project/types`**
+- [x] **Step 3: Build `@project/types`**
 
 ```bash
 cd packages/types && pnpm run build
@@ -58,7 +58,7 @@ cd packages/types && pnpm run build
 
 Expected: No TypeScript errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add packages/types/src/dtos/maintenance-history.dto.ts packages/types/src/dtos/index.ts
@@ -75,7 +75,7 @@ git commit -m "feat: add MaintenanceHistory DTOs to shared types"
 - Create: `backend/src/modules/maintenance-card/repositories/maintenance-history.repository.ts`
 - Create: `backend/src/modules/maintenance-card/repositories/maintenance-history.repository.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/maintenance-card/repositories/maintenance-history.repository.spec.ts`:
 
@@ -170,7 +170,7 @@ describe('MaintenanceHistoryRepository', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-history.repository.spec.ts
@@ -178,7 +178,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: FAIL — `MaintenanceHistoryRepository` not found.
 
-- [ ] **Step 3: Create `MaintenanceHistoryRepository`**
+- [x] **Step 3: Create `MaintenanceHistoryRepository`**
 
 Create `backend/src/modules/maintenance-card/repositories/maintenance-history.repository.ts`:
 
@@ -231,7 +231,7 @@ export class MaintenanceHistoryRepository extends BaseDBUtil<
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-history.repository.spec.ts
@@ -239,7 +239,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/repositories/maintenance-history.repository.ts \
@@ -257,7 +257,9 @@ git commit -m "feat: add MaintenanceHistoryRepository"
 - Modify: `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts`
 - Modify: `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts`
 
-- [ ] **Step 1: Add the failing test**
+- [x] **Step 1: Add the failing test**
+
+> ⚠️ **Deviation [D1]:** Signature uses positional `(id, vehicleId)` instead of `criteria: { id, vehicleId }` object — see [D1](#d1-getoneWithDeleted-positional-signature).
 
 In `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts`, add `findOne: vi.fn()` to the `mockTypeOrmRepo` object at the top:
 
@@ -277,7 +279,7 @@ describe('#getOneWithDeleted', () => {
     const card = { id: 'card-1', vehicleId: 'vehicle-1' };
     mockTypeOrmRepo.findOne.mockResolvedValue(card);
 
-    const result = await repository.getOneWithDeleted({ id: 'card-1', vehicleId: 'vehicle-1' });
+    const result = await repository.getOneWithDeleted('card-1', 'vehicle-1');
 
     expect(mockTypeOrmRepo.findOne).toHaveBeenCalledWith({
       where: { id: 'card-1', vehicleId: 'vehicle-1' },
@@ -289,14 +291,14 @@ describe('#getOneWithDeleted', () => {
   it('returns null when card not found', async () => {
     mockTypeOrmRepo.findOne.mockResolvedValue(null);
 
-    const result = await repository.getOneWithDeleted({ id: 'card-1', vehicleId: 'vehicle-1' });
+    const result = await repository.getOneWithDeleted('card-1', 'vehicle-1');
 
     expect(result).toBeNull();
   });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts
@@ -304,23 +306,23 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: FAIL — `getOneWithDeleted` method not found.
 
-- [ ] **Step 3: Add `getOneWithDeleted` to `MaintenanceCardRepository`**
+- [x] **Step 3: Add `getOneWithDeleted` to `MaintenanceCardRepository`**
 
-In `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts`, add the following method to the `MaintenanceCardRepository` class after the existing `create` method:
+In `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts`, add the following method after the existing `create` method:
 
 ```typescript
-async getOneWithDeleted(criteria: {
-  id: string;
-  vehicleId: string;
-}): Promise<MaintenanceCardEntity | null> {
+async getOneWithDeleted(
+  id: string,
+  vehicleId: string,
+): Promise<MaintenanceCardEntity | null> {
   return this.cardRepo.findOne({
-    where: { id: criteria.id, vehicleId: criteria.vehicleId },
+    where: { id, vehicleId },
     withDeleted: true,
   });
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts
@@ -328,7 +330,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts \
@@ -346,14 +348,17 @@ git commit -m "feat: add getOneWithDeleted to MaintenanceCardRepository"
 - Modify: `backend/src/modules/maintenance-card/services/maintenance-card.service.ts`
 - Modify: `backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts`
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
+
+> ⚠️ **Deviations:** No `forwardRef` [D2]; added `DataSource` transaction [D3]; parallel vehicle+card fetch [D4]; `updateVehicle` after transaction [D5]; removed `mileageForReset` fallback [D6].
 
 In `backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts`:
 
 Add to the import block at the top:
 
 ```typescript
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { getDataSourceToken } from '@nestjs/typeorm';
 import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 ```
@@ -365,14 +370,24 @@ const mockHistoryRepository = {
   create: vi.fn(),
   findByCardId: vi.fn(),
 };
+
+const mockEntityManager = {};
+const mockDataSource = {
+  transaction: vi
+    .fn()
+    .mockImplementation(async (callback: (em: object) => Promise<unknown>) =>
+      callback(mockEntityManager),
+    ),
+};
 ```
 
 Add `updateVehicle: vi.fn()` to the existing `mockVehicleService` object.
 
-Add `MaintenanceHistoryRepository` to the `TestingModule` providers inside `beforeEach`:
+Add `MaintenanceHistoryRepository` and `DataSource` to the `TestingModule` providers inside `beforeEach`:
 
 ```typescript
 { provide: MaintenanceHistoryRepository, useValue: mockHistoryRepository },
+{ provide: getDataSourceToken(), useValue: mockDataSource },
 ```
 
 Add a `baseHistory` constant after the existing `baseCard` constant:
@@ -401,10 +416,13 @@ describe('#markDone', () => {
       nextDueDate: null,
     });
     mockHistoryRepository.create.mockResolvedValue(baseHistory);
-    mockMaintenanceCardRepository.updateWithSave.mockImplementation(({ dataArray }) =>
-      Promise.resolve(dataArray),
+    mockMaintenanceCardRepository.updateWithSave.mockImplementation(
+      ({ dataArray }) => Promise.resolve(dataArray),
     );
-    mockVehicleService.updateVehicle.mockResolvedValue({ ...baseVehicle, mileage: 12500 });
+    mockVehicleService.updateVehicle.mockResolvedValue({
+      ...baseVehicle,
+      mileage: 12500,
+    });
   });
 
   it('creates a history record with server-side today as doneAtDate', async () => {
@@ -412,7 +430,14 @@ describe('#markDone', () => {
     await service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 });
     const after = new Date();
 
-    const call = mockHistoryRepository.create.mock.calls[0][0];
+    const call = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+      creationData: {
+        maintenanceCardId: string;
+        doneAtMileage: number;
+        doneAtDate: Date;
+        notes: string | null;
+      };
+    };
     expect(call.creationData.maintenanceCardId).toBe(cardId);
     expect(call.creationData.doneAtMileage).toBe(12500);
     expect(call.creationData.doneAtDate.getTime()).toBeGreaterThanOrEqual(before.getTime());
@@ -423,14 +448,22 @@ describe('#markDone', () => {
   it('resets nextDueMileage when intervalMileage is set', async () => {
     await service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 });
 
-    const savedCard = mockMaintenanceCardRepository.updateWithSave.mock.calls[0][0].dataArray[0];
+    const savedCard = (
+      mockMaintenanceCardRepository.updateWithSave.mock.calls[0]?.[0] as {
+        dataArray: Array<{ nextDueMileage: number }>;
+      }
+    ).dataArray[0];
     expect(savedCard.nextDueMileage).toBe(18500); // 12500 + 6000
   });
 
   it('resets nextDueDate when intervalTimeMonths is set', async () => {
     await service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 });
 
-    const savedCard = mockMaintenanceCardRepository.updateWithSave.mock.calls[0][0].dataArray[0];
+    const savedCard = (
+      mockMaintenanceCardRepository.updateWithSave.mock.calls[0]?.[0] as {
+        dataArray: Array<{ nextDueDate: Date | null }>;
+      }
+    ).dataArray[0];
     expect(savedCard.nextDueDate).toBeDefined();
     expect(savedCard.nextDueDate).not.toBeNull();
   });
@@ -449,25 +482,29 @@ describe('#markDone', () => {
     expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
   });
 
-  it('uses vehicle.mileage for nextDueMileage when doneAtMileage is not provided', async () => {
-    mockMaintenanceCardRepository.getOne.mockResolvedValue({
-      ...baseCard,
-      intervalMileage: 6000,
-      intervalTimeMonths: null,
-      nextDueMileage: null,
-      nextDueDate: null,
-    });
-
-    await service.markDone(cardId, vehicleId, userId, {});
-
-    const savedCard = mockMaintenanceCardRepository.updateWithSave.mock.calls[0][0].dataArray[0];
-    expect(savedCard.nextDueMileage).toBe(16000); // 10000 (vehicle.mileage) + 6000
-  });
-
   it('throws BadRequestException when card has intervalMileage but doneAtMileage is not provided', async () => {
     await expect(
       service.markDone(cardId, vehicleId, userId, {}),
     ).rejects.toThrow(BadRequestException);
+  });
+
+  it('succeeds for a time-only card when doneAtMileage is not provided', async () => {
+    mockMaintenanceCardRepository.getOne.mockResolvedValue({
+      ...baseCard,
+      intervalMileage: null,
+      intervalTimeMonths: 6,
+      nextDueMileage: null,
+      nextDueDate: null,
+    });
+
+    const result = await service.markDone(cardId, vehicleId, userId, {});
+
+    expect(result).toEqual(baseHistory);
+    expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+    const call = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+      creationData: { doneAtMileage: number | null };
+    };
+    expect(call.creationData.doneAtMileage).toBeNull();
   });
 
   it('passes notes through to the history record', async () => {
@@ -476,7 +513,9 @@ describe('#markDone', () => {
       notes: 'replaced oil filter too',
     });
 
-    const call = mockHistoryRepository.create.mock.calls[0][0];
+    const call = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+      creationData: { notes: string | null };
+    };
     expect(call.creationData.notes).toBe('replaced oil filter too');
   });
 
@@ -484,10 +523,41 @@ describe('#markDone', () => {
     const result = await service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 });
     expect(result).toEqual(baseHistory);
   });
+
+  it('runs card update and history creation within the same transaction', async () => {
+    await service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 });
+
+    const updateCall = mockMaintenanceCardRepository.updateWithSave.mock
+      .calls[0]?.[0] as { entityManager: unknown };
+    expect(updateCall.entityManager).toBe(mockEntityManager);
+
+    const createCall = mockHistoryRepository.create.mock.calls[0]?.[0] as {
+      entityManager: unknown;
+    };
+    expect(createCall.entityManager).toBe(mockEntityManager);
+  });
+
+  it('propagates error and does not commit when history creation fails', async () => {
+    mockHistoryRepository.create.mockRejectedValue(new Error('DB insert failed'));
+
+    await expect(
+      service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
+    ).rejects.toThrow('DB insert failed');
+  });
+
+  it('does NOT update vehicle mileage when the transaction fails', async () => {
+    mockHistoryRepository.create.mockRejectedValue(new Error('DB insert failed'));
+
+    await expect(
+      service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
+    ).rejects.toThrow('DB insert failed');
+
+    expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+  });
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/services/maintenance-card.service.spec.ts
@@ -495,15 +565,17 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/services/mainten
 
 Expected: FAIL — `markDone` not found, provider mismatch.
 
-- [ ] **Step 3: Update `MaintenanceCardService`**
+- [x] **Step 3: Update `MaintenanceCardService`**
 
 In `backend/src/modules/maintenance-card/services/maintenance-card.service.ts`:
 
-Update the `@nestjs/common` import in the file to include `BadRequestException` (add it to the existing import line). Then add the new repository/entity imports:
+Update the `@nestjs/common` import to include `BadRequestException`. Then add new imports:
 
 ```typescript
-import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
+import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
 ```
 
 Add `MarkDoneInput` type after the existing type declarations:
@@ -515,14 +587,14 @@ export type MarkDoneInput = {
 };
 ```
 
-Update the constructor to inject `MaintenanceHistoryRepository`:
+Update the constructor to inject `MaintenanceHistoryRepository` and `DataSource`:
 
 ```typescript
 constructor(
   private readonly cardRepository: MaintenanceCardRepository,
   private readonly historyRepository: MaintenanceHistoryRepository,
-  @Inject(forwardRef(() => VehicleService))
   private readonly vehicleService: VehicleService,
+  @InjectDataSource() private readonly dataSource: DataSource,
 ) {}
 ```
 
@@ -535,29 +607,22 @@ async markDone(
   userId: string,
   input: MarkDoneInput,
 ): Promise<MaintenanceHistoryEntity> {
-  const vehicle = await this.vehicleService.getVehicle(vehicleId, userId);
-  const card = await this.getCard(id, vehicleId, userId);
+  const [vehicle, card] = await Promise.all([
+    this.vehicleService.getVehicle(vehicleId, userId),
+    this.cardRepository.getOne({ criteria: { id, vehicleId } }),
+  ]);
+  if (!card) throw new NotFoundException('Maintenance card not found');
 
-  if (card.intervalMileage !== null && input.doneAtMileage == null) {
-    throw new BadRequestException(
-      'doneAtMileage is required when the card has an intervalMileage',
-    );
+  if (card.intervalMileage !== null) {
+    if (input.doneAtMileage == null) {
+      throw new BadRequestException(
+        'doneAtMileage is required when the card has an intervalMileage',
+      );
+    }
+    card.nextDueMileage = input.doneAtMileage + card.intervalMileage;
   }
 
   const today = new Date();
-
-  if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
-    await this.vehicleService.updateVehicle(vehicleId, userId, {
-      mileage: input.doneAtMileage,
-    });
-  }
-
-  const mileageForReset =
-    input.doneAtMileage != null ? input.doneAtMileage : vehicle.mileage;
-
-  if (card.intervalMileage !== null) {
-    card.nextDueMileage = mileageForReset + card.intervalMileage;
-  }
 
   if (card.intervalTimeMonths !== null) {
     const nextDue = new Date(today);
@@ -565,22 +630,35 @@ async markDone(
     card.nextDueDate = nextDue;
   }
 
-  await this.cardRepository.updateWithSave({ dataArray: [card] });
+  // TODO: BackgroundJob cancellation deferred to Plan 08
 
-  // TODO: BackgroundJob cancellation (pending/processing jobs for this card) deferred to Plan 08 (Background Job Infrastructure)
-
-  return this.historyRepository.create({
-    creationData: {
-      maintenanceCardId: id,
-      doneAtMileage: input.doneAtMileage ?? null,
-      doneAtDate: today,
-      notes: input.notes ?? null,
-    },
+  const history = await this.dataSource.transaction(async (em) => {
+    await this.cardRepository.updateWithSave({
+      dataArray: [card],
+      entityManager: em,
+    });
+    return this.historyRepository.create({
+      creationData: {
+        maintenanceCardId: id,
+        doneAtMileage: input.doneAtMileage ?? null,
+        doneAtDate: today,
+        notes: input.notes ?? null,
+      },
+      entityManager: em,
+    });
   });
+
+  if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
+    await this.vehicleService.updateVehicle(vehicleId, userId, {
+      mileage: input.doneAtMileage,
+    });
+  }
+
+  return history;
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/services/maintenance-card.service.spec.ts
@@ -588,7 +666,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/services/mainten
 
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/services/maintenance-card.service.ts \
@@ -606,7 +684,9 @@ git commit -m "feat: add markDone to MaintenanceCardService"
 - Create: `backend/src/modules/maintenance-card/services/maintenance-history.service.ts`
 - Create: `backend/src/modules/maintenance-card/services/maintenance-history.service.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
+
+> ⚠️ **Deviations:** No `forwardRef` on `VehicleService` [D2]; parallel fetch via `Promise.all` [D4]; `getOneWithDeleted` called with positional args [D1].
 
 Create `backend/src/modules/maintenance-card/services/maintenance-history.service.spec.ts`:
 
@@ -618,8 +698,7 @@ import { MaintenanceHistoryService } from './maintenance-history.service';
 import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
 import { MaintenanceCardRepository } from '../repositories/maintenance-card.repository';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
-import { MaintenanceCardType } from 'src/db/entities/maintenance-card.entity';
-import { MileageUnit } from 'src/db/entities/vehicle.entity';
+import { MILEAGE_UNITS, MAINTENANCE_CARD_TYPES } from '@project/types';
 
 const mockHistoryRepository = {
   findByCardId: vi.fn(),
@@ -641,13 +720,13 @@ const baseVehicle = {
   id: vehicleId,
   userId,
   mileage: 10000,
-  mileageUnit: MileageUnit.KM,
+  mileageUnit: MILEAGE_UNITS.KM,
 };
 
 const baseCard = {
   id: cardId,
   vehicleId,
-  type: MaintenanceCardType.TASK,
+  type: MAINTENANCE_CARD_TYPES.TASK,
   name: 'CVT Cleaning',
   description: null,
   intervalMileage: 6000,
@@ -712,10 +791,10 @@ describe('MaintenanceHistoryService', () => {
 
       await service.listHistory(cardId, vehicleId, userId);
 
-      expect(mockCardRepository.getOneWithDeleted).toHaveBeenCalledWith({
-        id: cardId,
+      expect(mockCardRepository.getOneWithDeleted).toHaveBeenCalledWith(
+        cardId,
         vehicleId,
-      });
+      );
     });
 
     it('throws NotFoundException when card does not exist (even with deleted check)', async () => {
@@ -725,6 +804,8 @@ describe('MaintenanceHistoryService', () => {
       await expect(
         service.listHistory(cardId, vehicleId, userId),
       ).rejects.toThrow(NotFoundException);
+
+      expect(mockHistoryRepository.findByCardId).not.toHaveBeenCalled();
     });
 
     it('returns history records ordered by doneAtDate DESC', async () => {
@@ -749,7 +830,7 @@ describe('MaintenanceHistoryService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/services/maintenance-history.service.spec.ts
@@ -757,12 +838,12 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/services/mainten
 
 Expected: FAIL — `MaintenanceHistoryService` not found.
 
-- [ ] **Step 3: Create `MaintenanceHistoryService`**
+- [x] **Step 3: Create `MaintenanceHistoryService`**
 
 Create `backend/src/modules/maintenance-card/services/maintenance-history.service.ts`:
 
 ```typescript
-import { forwardRef, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
 import { MaintenanceCardRepository } from '../repositories/maintenance-card.repository';
@@ -773,7 +854,6 @@ export class MaintenanceHistoryService {
   constructor(
     private readonly historyRepository: MaintenanceHistoryRepository,
     private readonly cardRepository: MaintenanceCardRepository,
-    @Inject(forwardRef(() => VehicleService))
     private readonly vehicleService: VehicleService,
   ) {}
 
@@ -782,9 +862,10 @@ export class MaintenanceHistoryService {
     vehicleId: string,
     userId: string,
   ): Promise<MaintenanceHistoryEntity[]> {
-    await this.vehicleService.getVehicle(vehicleId, userId);
-
-    const card = await this.cardRepository.getOneWithDeleted({ id: cardId, vehicleId });
+    const [, card] = await Promise.all([
+      this.vehicleService.getVehicle(vehicleId, userId),
+      this.cardRepository.getOneWithDeleted(cardId, vehicleId),
+    ]);
     if (!card) throw new NotFoundException('Maintenance card not found');
 
     return this.historyRepository.findByCardId(cardId);
@@ -792,7 +873,7 @@ export class MaintenanceHistoryService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/services/maintenance-history.service.spec.ts
@@ -800,7 +881,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/services/mainten
 
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/services/maintenance-history.service.ts \
@@ -812,20 +893,22 @@ git commit -m "feat: add MaintenanceHistoryService"
 
 ## Chunk 6: Controller Routes
 
-### Task 6: Add `complete` and `history` routes to `MaintenanceCardController`
+### Task 6: Add `mark-done` and `history` routes to `MaintenanceCardController`
 
 **Files:**
-- Create: `backend/src/modules/maintenance-card/dtos/complete.dto.ts`
+- Create: `backend/src/modules/maintenance-card/dtos/mark-done.dto.ts` _(plan named this `complete.dto.ts` — see [D7](#d7-dto-filename-and-route-path))_
 - Modify: `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.ts`
 - Modify: `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts`
 
-- [ ] **Step 1: Create `mark-done.dto.ts`**
+- [x] **Step 1: Create `mark-done.dto.ts`**
 
-Create `backend/src/modules/maintenance-card/dtos/complete.dto.ts`:
+> ⚠️ **Deviation [D7]:** File created as `mark-done.dto.ts` (not `complete.dto.ts`) — see [D7](#d7-dto-filename-and-route-path).
+
+Create `backend/src/modules/maintenance-card/dtos/mark-done.dto.ts`:
 
 ```typescript
 import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
-import { IMarkDoneReqDTO } from '@project/types';
+import type { IMarkDoneReqDTO } from '@project/types';
 
 export class MarkDoneDto implements IMarkDoneReqDTO {
   @IsOptional()
@@ -839,7 +922,7 @@ export class MarkDoneDto implements IMarkDoneReqDTO {
 }
 ```
 
-- [ ] **Step 2: Add failing tests for the two new routes**
+- [x] **Step 2: Add failing tests for the two new routes**
 
 In `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts`:
 
@@ -849,7 +932,7 @@ Add to the import block at the top:
 import { MaintenanceHistoryService } from '../services/maintenance-history.service';
 ```
 
-Add to mock service declarations:
+Add to mock service declarations (inside the describe block, before `beforeEach`):
 
 ```typescript
 const mockMaintenanceHistoryService = {
@@ -881,7 +964,7 @@ const baseHistory = {
 Add the following test cases inside `describe('MaintenanceCardController', ...)`:
 
 ```typescript
-it('POST /vehicles/:vehicleId/maintenance-cards/:id/complete returns 201 with history DTO', async () => {
+it('POST /vehicles/:vehicleId/maintenance-cards/:id/mark-done returns 201 with history DTO', async () => {
   mockMaintenanceCardService.markDone.mockResolvedValue(baseHistory);
 
   const result = await controller.markDone(
@@ -918,7 +1001,7 @@ it('GET /vehicles/:vehicleId/maintenance-cards/:id/history returns history list'
 });
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [x] **Step 3: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts
@@ -926,28 +1009,32 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/controllers/main
 
 Expected: FAIL — `markDone` and `listHistory` methods not found on controller.
 
-- [ ] **Step 4: Update `MaintenanceCardController`**
+- [x] **Step 4: Update `MaintenanceCardController`**
+
+> ⚠️ **Deviations:** Route is `@Post(':id/mark-done')` (not `/complete`) [D7]; `historyToResDTO` calls `.toISOString()` directly without `new Date()` wrap [D8]; `import type` for `IMarkDoneReqDTO` [D10].
 
 In `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.ts`:
 
 Add to the import block:
 
 ```typescript
-import { IMaintenanceHistoryResDTO } from '@project/types';
+import type { IMaintenanceHistoryResDTO } from '@project/types';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { MaintenanceHistoryService } from '../services/maintenance-history.service';
-import { MarkDoneDto } from '../dtos/complete.dto';
+import { MarkDoneDto } from '../dtos/mark-done.dto';
 ```
 
 Add `historyToResDTO` helper after the existing `toResDTO` function:
 
 ```typescript
-function historyToResDTO(history: MaintenanceHistoryEntity): IMaintenanceHistoryResDTO {
+function historyToResDTO(
+  history: MaintenanceHistoryEntity,
+): IMaintenanceHistoryResDTO {
   return {
     id: history.id,
     maintenanceCardId: history.maintenanceCardId,
     doneAtMileage: history.doneAtMileage,
-    doneAtDate: new Date(history.doneAtDate).toISOString(),
+    doneAtDate: history.doneAtDate.toISOString(),
     notes: history.notes,
     createdAt: history.createdAt.toISOString(),
   };
@@ -966,7 +1053,7 @@ constructor(
 Add the two new route methods after the `delete` method:
 
 ```typescript
-@Post(':id/complete')
+@Post(':id/mark-done')
 @HttpCode(HttpStatus.CREATED)
 async markDone(
   @Param('vehicleId', ParseUUIDPipe) vehicleId: string,
@@ -992,7 +1079,7 @@ async listHistory(
 }
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts
@@ -1000,10 +1087,10 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/controllers/main
 
 Expected: PASS
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
-git add backend/src/modules/maintenance-card/dtos/complete.dto.ts \
+git add backend/src/modules/maintenance-card/dtos/mark-done.dto.ts \
         backend/src/modules/maintenance-card/controllers/maintenance-card.controller.ts \
         backend/src/modules/maintenance-card/controllers/maintenance-card.controller.spec.ts
 git commit -m "feat: add complete and history routes to MaintenanceCardController"
@@ -1018,12 +1105,14 @@ git commit -m "feat: add complete and history routes to MaintenanceCardControlle
 **Files:**
 - Modify: `backend/src/modules/maintenance-card/maintenance-card.module.ts`
 
-- [ ] **Step 1: Update `MaintenanceCardModule`**
+- [x] **Step 1: Update `MaintenanceCardModule`**
+
+> ⚠️ **Deviation [D9]:** `VehicleModule` imported directly without `forwardRef` — see [D9](#d9-no-forwardref-for-vehiclemodule).
 
 Replace the content of `backend/src/modules/maintenance-card/maintenance-card.module.ts` with:
 
 ```typescript
-import { forwardRef, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
@@ -1037,7 +1126,7 @@ import { MaintenanceCardController } from './controllers/maintenance-card.contro
 @Module({
   imports: [
     TypeOrmModule.forFeature([MaintenanceCardEntity, MaintenanceHistoryEntity]),
-    forwardRef(() => VehicleModule),
+    VehicleModule,
   ],
   providers: [
     MaintenanceCardRepository,
@@ -1051,15 +1140,15 @@ import { MaintenanceCardController } from './controllers/maintenance-card.contro
 export class MaintenanceCardModule {}
 ```
 
-- [ ] **Step 2: Run all unit tests**
+- [x] **Step 2: Run all unit tests**
 
 ```bash
 just test-unit
 ```
 
-Expected: All tests pass.
+Expected: All tests pass. ✅ Verified: 70/70 tests pass (2026-03-19).
 
-- [ ] **Step 3: Format and lint**
+- [x] **Step 3: Format and lint**
 
 ```bash
 just format && just lint
@@ -1067,7 +1156,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 4: Smoke test the API**
+- [ ] **Step 4: Smoke test the API** _(manual — requires running services)_
 
 Start services (`just up-build`), obtain a Firebase ID token, then run:
 
@@ -1087,7 +1176,7 @@ CARD=$(curl -s -X POST "http://localhost:3001/vehicles/$VEHICLE_ID/maintenance-c
 CARD_ID=$(echo $CARD | jq -r '.id')
 
 # Mark done with mileage higher than vehicle current mileage (should auto-update vehicle)
-curl -s -X POST "http://localhost:3001/vehicles/$VEHICLE_ID/maintenance-cards/$CARD_ID/complete" \
+curl -s -X POST "http://localhost:3001/vehicles/$VEHICLE_ID/maintenance-cards/$CARD_ID/mark-done" \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"doneAtMileage":12500}' | jq
@@ -1118,9 +1207,125 @@ curl -s "http://localhost:3001/vehicles/$VEHICLE_ID/maintenance-cards/$CARD_ID/h
 # Expected: 200 with history records still returned
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/maintenance-card.module.ts
 git commit -m "feat: register MaintenanceHistoryEntity and providers in MaintenanceCardModule"
 ```
+
+---
+
+## Deviations from Plan
+
+The following changes were made during implementation that differ from the original plan. Each deviation was driven by code review feedback or a correctness bug found during implementation.
+
+---
+
+### D1: `getOneWithDeleted` positional signature
+
+**Plan:** `getOneWithDeleted(criteria: { id: string; vehicleId: string })`
+
+**Actual:** `getOneWithDeleted(id: string, vehicleId: string)`
+
+**Why:** A two-field criteria object is just positional args with extra syntax. Two named positional parameters are equally readable with less ceremony. The object wrapper adds no value when the method has only two parameters that are always passed together.
+
+**Impact:** Tests and all callers (`MaintenanceHistoryService`) updated to use positional args.
+
+---
+
+### D2: No `forwardRef` on `VehicleService`
+
+**Plan:** Constructor used `@Inject(forwardRef(() => VehicleService))` in both `MaintenanceCardService` and `MaintenanceHistoryService`.
+
+**Actual:** `VehicleService` injected as a plain constructor parameter with no `@Inject` decorator.
+
+**Why:** `forwardRef` is only needed when two modules have a circular import dependency at the NestJS module level. `MaintenanceCardModule` imports `VehicleModule` (one direction only); there is no circular dependency. Using `forwardRef` unnecessarily adds runtime complexity and obscures the actual dependency graph.
+
+---
+
+### D3: `DataSource` transaction wrapping in `markDone`
+
+**Plan:** `cardRepository.updateWithSave` and `historyRepository.create` called sequentially as independent operations.
+
+**Actual:** Both are wrapped in a single `dataSource.transaction(async (em) => { ... })` call. `@InjectDataSource() private readonly dataSource: DataSource` added to the constructor.
+
+**Why:** This was a critical correctness bug in the plan. If `updateWithSave` succeeds but `historyRepository.create` fails (e.g. DB constraint violation), the card's `nextDueMileage`/`nextDueDate` would be updated with no corresponding history record — an inconsistent state. Wrapping both writes in a transaction ensures atomicity: either both succeed or neither does. Tests mock `dataSource` with `getDataSourceToken()`.
+
+---
+
+### D4: Parallel fetch of vehicle and card
+
+**Plan:** `markDone` fetched vehicle first (`getVehicle`), then card sequentially (`getCard`). `listHistory` fetched vehicle first, then card sequentially.
+
+**Actual:** Both services use `Promise.all([getVehicle(...), getOne/getOneWithDeleted(...)])` to fire both fetches concurrently.
+
+**Why:** The two fetches are independent — neither result is needed to compute the other's input. Running them in parallel cuts the round-trip latency in half with no correctness trade-off.
+
+---
+
+### D5: `updateVehicle` called after the transaction
+
+**Plan:** `updateVehicle` was called before `updateWithSave` and `historyRepository.create`.
+
+**Actual:** `updateVehicle` is called after the `dataSource.transaction(...)` block completes successfully.
+
+**Why:** External service calls (to `VehicleService`) must not be placed inside a DB transaction. If the vehicle update succeeded but the transaction rolled back, the vehicle mileage would be wrong with no history to explain it. By calling `updateVehicle` only after the transaction commits, the vehicle mileage update is contingent on successful history + card-update persistence.
+
+---
+
+### D6: Removed `mileageForReset` fallback; replaced test
+
+**Plan:**
+- A `mileageForReset` variable was computed as `input.doneAtMileage ?? vehicle.mileage`.
+- A test "uses vehicle.mileage for nextDueMileage when doneAtMileage is not provided" expected `nextDueMileage = vehicle.mileage + intervalMileage`.
+
+**Actual:**
+- No `mileageForReset` variable. When `card.intervalMileage !== null`, `doneAtMileage` is required (throws `BadRequestException` otherwise), so `nextDueMileage = input.doneAtMileage + card.intervalMileage` directly.
+- The "vehicle.mileage fallback" test was replaced with "succeeds for a time-only card when doneAtMileage is not provided" — which verifies that a card with `intervalMileage: null` (time-only) can be marked done without a mileage value.
+
+**Why:** The fallback `vehicle.mileage` case was only reachable when `intervalMileage !== null` and `doneAtMileage == null` — but validation already throws in that case, so the fallback was dead code. Removing it eliminates a branch that can never execute and makes the intent explicit: mileage-based intervals always require the mileage to be provided. The replacement test covers the genuine edge case: cards that track only time (no mileage interval) should never require a mileage.
+
+---
+
+### D7: DTO filename and route path renamed
+
+**Plan:**
+- DTO file: `dtos/complete.dto.ts`
+- Route decorator: `@Post(':id/complete')`
+
+**Actual:**
+- DTO file: `dtos/mark-done.dto.ts`
+- Route decorator: `@Post(':id/mark-done')`
+
+**Why:** The feature is named "mark done" throughout the codebase (method `markDone`, type `MarkDoneInput`, DTO interface `IMarkDoneReqDTO`). Naming the file and route `/complete` was an inconsistency identified in code review. Renaming to `mark-done` makes all names consistent.
+
+---
+
+### D8: Redundant `new Date()` wrap removed in `historyToResDTO`
+
+**Plan:** `doneAtDate: new Date(history.doneAtDate).toISOString()`
+
+**Actual:** `doneAtDate: history.doneAtDate.toISOString()`
+
+**Why:** TypeORM maps `TIMESTAMP` columns to native `Date` objects. `history.doneAtDate` is already a `Date` — wrapping it in `new Date()` is a no-op. Removing the redundant wrap is cleaner and reflects the actual type.
+
+---
+
+### D9: No `forwardRef` for `VehicleModule` in module imports
+
+**Plan:** `forwardRef(() => VehicleModule)` in `MaintenanceCardModule` imports array.
+
+**Actual:** `VehicleModule` imported directly.
+
+**Why:** Same reasoning as D2 — `forwardRef` in module imports is only needed for circular module dependencies. `MaintenanceCardModule → VehicleModule` is a one-way dependency. Using `forwardRef` here was unnecessary and misleading.
+
+---
+
+### D10: `import type` for `@project/types` in controller
+
+**Plan:** `import { IMarkDoneReqDTO } from '@project/types'`
+
+**Actual:** `import type { IMarkDoneReqDTO } from '@project/types'`
+
+**Why:** Per project convention (documented in CLAUDE.md): `isolatedModules` + `emitDecoratorMetadata` requires `import type` (or namespace import) when a type from an external package is referenced in a decorated class. Using a value import causes TypeScript to emit metadata for the type, which fails at runtime when `isolatedModules` strips the type.
