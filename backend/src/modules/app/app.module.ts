@@ -7,6 +7,7 @@ import { FirebaseModule } from '../firebase/firebase.module';
 import { AuthModule } from '../auth/auth.module';
 import { VehicleModule } from '../vehicle/vehicle.module';
 import { MaintenanceCardModule } from '../maintenance-card/maintenance-card.module';
+import { ConfigModule as AppConfigModule } from '../config/config.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { MaintenanceCardModule } from '../maintenance-card/maintenance-card.modu
     AuthModule,
     VehicleModule,
     MaintenanceCardModule,
+    AppConfigModule,
   ],
   controllers: [AppController],
   providers: [AppService],
