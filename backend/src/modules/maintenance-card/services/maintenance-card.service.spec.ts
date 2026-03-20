@@ -7,6 +7,7 @@ import { MaintenanceCardRepository } from '../repositories/maintenance-card.repo
 import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
+import { BackgroundJobRepository } from 'src/modules/background-job/repositories/background-job.repository';
 import { MILEAGE_UNITS, MAINTENANCE_CARD_TYPES } from '@project/types';
 
 const mockMaintenanceCardRepository = {
@@ -25,6 +26,10 @@ const mockVehicleService = {
 const mockHistoryRepository = {
   create: vi.fn(),
   findByCardId: vi.fn(),
+};
+
+const mockBackgroundJobRepository = {
+  cancelJobsForCard: vi.fn(),
 };
 
 const mockEntityManager = {};
@@ -91,6 +96,10 @@ describe('MaintenanceCardService', () => {
           useValue: mockHistoryRepository,
         },
         { provide: getDataSourceToken(), useValue: mockDataSource },
+        {
+          provide: BackgroundJobRepository,
+          useValue: mockBackgroundJobRepository,
+        },
       ],
     }).compile();
 
@@ -586,6 +595,16 @@ describe('MaintenanceCardService', () => {
         doneAtMileage: 12500,
       });
       expect(result).toEqual(baseHistory);
+    });
+
+    it('cancels pending background jobs for the card after creating history', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+
+      expect(
+        mockBackgroundJobRepository.cancelJobsForCard,
+      ).toHaveBeenCalledWith(cardId);
     });
 
     it('runs card update and history creation within the same transaction', async () => {
