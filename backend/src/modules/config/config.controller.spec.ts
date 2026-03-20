@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ConfigController } from './config.controller';
+import { IS_PUBLIC_KEY } from '../auth/decorators/public.decorator';
 
 const mockConfigService = {
   get: vi.fn(),
@@ -23,6 +24,15 @@ describe('ConfigController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('getConfig is decorated with @Public()', () => {
+    const method = Object.getOwnPropertyDescriptor(
+      ConfigController.prototype,
+      'getConfig',
+    )?.value as object;
+    const isPublic = Reflect.getMetadata(IS_PUBLIC_KEY, method) as boolean;
+    expect(isPublic).toBe(true);
   });
 
   describe('#getConfig', () => {
