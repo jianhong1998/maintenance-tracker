@@ -85,5 +85,18 @@ services:
           target: /app/packages
           action: sync+restart
 
-  # worker:
-  #   (added in Plan 08 - Background Job Infrastructure)
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: node dist/main-worker.js
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+    restart: unless-stopped
