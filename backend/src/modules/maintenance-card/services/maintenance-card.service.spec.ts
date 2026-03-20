@@ -597,14 +597,28 @@ describe('MaintenanceCardService', () => {
       expect(result).toEqual(baseHistory);
     });
 
-    it('cancels pending background jobs for the card after creating history', async () => {
+    it('cancels pending background jobs inside the markDone transaction', async () => {
       await service.markDone(cardId, vehicleId, userId, {
         doneAtMileage: 12500,
       });
 
       expect(
         mockBackgroundJobRepository.cancelJobsForCard,
-      ).toHaveBeenCalledWith(cardId);
+      ).toHaveBeenCalledWith(cardId, mockEntityManager);
+    });
+
+    it('does NOT cancel background jobs when the transaction fails', async () => {
+      mockHistoryRepository.create.mockRejectedValue(
+        new Error('DB insert failed'),
+      );
+
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
+      ).rejects.toThrow('DB insert failed');
+
+      expect(
+        mockBackgroundJobRepository.cancelJobsForCard,
+      ).not.toHaveBeenCalled();
     });
 
     it('runs card update and history creation within the same transaction', async () => {

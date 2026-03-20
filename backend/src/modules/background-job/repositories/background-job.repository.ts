@@ -7,6 +7,10 @@ import {
 } from 'src/db/entities/background-job.entity';
 import { BaseDBUtil } from 'src/modules/common/base-classes/base-db-util';
 
+export const BACKGROUND_JOB_REFERENCE_TYPES = {
+  maintenanceCard: 'maintenance_card',
+} as const;
+
 export type CreateBackgroundJobData = {
   jobType: string;
   referenceId: string | null;
@@ -93,14 +97,23 @@ export class BackgroundJobRepository extends BaseDBUtil<
   /**
    * Cancels all pending/processing jobs for a maintenance card.
    * Called when a card is marked done or deleted.
+   * Pass entityManager to run within an existing transaction.
    */
-  async cancelJobsForCard(cardId: string): Promise<void> {
-    await this.backgroundJobRepo
+  async cancelJobsForCard(
+    cardId: string,
+    entityManager?: EntityManager,
+  ): Promise<void> {
+    const repo =
+      (entityManager?.getRepository(
+        BackgroundJobEntity,
+      ) as Repository<BackgroundJobEntity>) ?? this.backgroundJobRepo;
+
+    await repo
       .createQueryBuilder('job')
       .update(BackgroundJobEntity)
       .set({ status: BackgroundJobStatus.CANCELLED })
       .where('job.referenceType = :referenceType', {
-        referenceType: 'maintenance_card',
+        referenceType: BACKGROUND_JOB_REFERENCE_TYPES.maintenanceCard,
       })
       .andWhere('job.referenceId = :cardId', { cardId })
       .andWhere('job.status IN (:...statuses)', {

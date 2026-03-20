@@ -194,7 +194,7 @@ export class MaintenanceCardService {
         dataArray: [card],
         entityManager: em,
       });
-      return this.historyRepository.create({
+      const createdHistory = await this.historyRepository.create({
         creationData: {
           maintenanceCardId: id,
           doneAtMileage: input.doneAtMileage ?? null,
@@ -203,9 +203,9 @@ export class MaintenanceCardService {
         },
         entityManager: em,
       });
+      await this.backgroundJobRepository.cancelJobsForCard(id, em);
+      return createdHistory;
     });
-
-    await this.backgroundJobRepository.cancelJobsForCard(id);
 
     // Known limitation: updateVehicle runs after the transaction commits.
     // A failure here leaves the vehicle mileage stale while the history record persists.

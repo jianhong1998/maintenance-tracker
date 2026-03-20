@@ -38,17 +38,6 @@ describe('BackgroundJobRepository', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockTypeOrmRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.insert.mockReturnThis();
-    mockQueryBuilder.into.mockReturnThis();
-    mockQueryBuilder.values.mockReturnThis();
-    mockQueryBuilder.orIgnore.mockReturnThis();
-    mockQueryBuilder.returning.mockReturnThis();
-    mockQueryBuilder.select.mockReturnThis();
-    mockQueryBuilder.from.mockReturnThis();
-    mockQueryBuilder.where.mockReturnThis();
-    mockQueryBuilder.andWhere.mockReturnThis();
-    mockQueryBuilder.update.mockReturnThis();
-    mockQueryBuilder.set.mockReturnThis();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -171,6 +160,33 @@ describe('BackgroundJobRepository', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({
         status: BackgroundJobStatus.CANCELLED,
       });
+    });
+
+    it('uses entityManager repo when provided', async () => {
+      const emQueryBuilder = {
+        update: vi.fn().mockReturnThis(),
+        set: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        andWhere: vi.fn().mockReturnThis(),
+        execute: vi.fn().mockResolvedValue(undefined),
+      };
+      const emRepo = {
+        createQueryBuilder: vi.fn().mockReturnValue(emQueryBuilder),
+      };
+      const entityManager = {
+        getRepository: vi.fn().mockReturnValue(emRepo),
+      };
+
+      await repository.cancelJobsForCard(
+        'card-1',
+        entityManager as unknown as import('typeorm').EntityManager,
+      );
+
+      expect(entityManager.getRepository).toHaveBeenCalledWith(
+        BackgroundJobEntity,
+      );
+      expect(emRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(mockTypeOrmRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 });
