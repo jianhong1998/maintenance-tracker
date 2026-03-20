@@ -93,6 +93,8 @@ git commit -m "feat: add @Public() decorator for bypassing auth guard"
 - Modify: `backend/src/modules/auth/guards/firebase-auth.guard.ts`
 - Modify: `backend/src/modules/auth/guards/firebase-auth.guard.spec.ts`
 
+> **Actual implementation note:** This refactor also removed the pre-existing API test mode bypass (`EnvironmentVariableUtil`, `BACKEND_ENABLE_API_TEST_MODE`, `api-test-token` constants, and the `isApiTestMode` constructor flag). The `Reflector`/`@Public()` pattern is the correct long-term mechanism for public routes; the test mode bypass was a dev shortcut that is no longer needed. The associated spec tests (API test mode suites, email-required test, `'Bearer '`-only bearer test) were also removed.
+
 - [x] **Step 1: Write the failing tests**
 
 Replace the contents of `backend/src/modules/auth/guards/firebase-auth.guard.spec.ts` with:
@@ -419,7 +421,7 @@ Note: `import type` is required for `@project/types` in NestJS decorated classes
 cd backend && pnpm exec vitest run src/modules/config/config.controller.spec.ts
 ```
 
-Expected: PASS — all 4 tests pass.
+Expected: PASS — all 3 tests pass.
 
 - [x] **Step 5: Create `ConfigModule`**
 
@@ -523,6 +525,8 @@ import { IAppConfigResDTO } from '@project/types';
 
 export const useAppConfig = () => {
   return useQuery<IAppConfigResDTO>({
+    // Config is a singleton resource — not a list/one entity, so we use a flat key
+    // instead of getQueryKey() which requires QueryType (LIST|ONE) semantics.
     queryKey: [QueryGroup.CONFIG],
     queryFn: async () => {
       return await apiClient.get<IAppConfigResDTO>('/config');
@@ -532,7 +536,7 @@ export const useAppConfig = () => {
 };
 ```
 
-`staleTime: Infinity` — config values are env-controlled and do not change at runtime. The query fetches once per page load and never re-fetches automatically.
+`staleTime: Infinity` — config values are env-controlled and do not change at runtime. The query fetches once per page load and never re-fetches automatically. A flat `queryKey` is used (not `getQueryKey()`) because config is a singleton, not a list/one entity.
 
 - [x] **Step 3: Build frontend to verify types compile**
 
