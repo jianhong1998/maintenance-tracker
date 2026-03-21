@@ -58,7 +58,8 @@ export class BackgroundJobRepository extends BaseDBUtil<
       .createQueryBuilder()
       .insert()
       .into(BackgroundJobEntity)
-      .values(data)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      .values(data as any)
       .orIgnore()
       .returning('*')
       .execute();

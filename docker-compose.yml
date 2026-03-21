@@ -88,8 +88,8 @@ services:
   worker:
     build:
       context: .
-      dockerfile: backend/Dockerfile
-    command: node dist/main-worker.js
+      dockerfile: ./docker/local/Dockerfile.background-job
+    network_mode: host
     env_file:
       - .env
     depends_on:
@@ -99,4 +99,11 @@ services:
       redis:
         condition: service_healthy
         restart: true
-    restart: unless-stopped
+    develop:
+      watch:
+        - path: ./backend/src
+          target: /app/backend/src
+          action: sync
+        - path: ./packages
+          target: /app/packages
+          action: sync

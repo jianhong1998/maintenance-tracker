@@ -6,10 +6,8 @@ import {
   BackgroundJobStatus,
 } from 'src/db/entities/background-job.entity';
 import { BackgroundJobRepository } from 'src/modules/background-job/repositories/background-job.repository';
-import {
-  INotificationService,
-  NOTIFICATION_SERVICE_TOKEN,
-} from './notification-service.interface';
+import type { INotificationService } from './notification-service.interface';
+import { NOTIFICATION_SERVICE_TOKEN } from './notification-service.interface';
 
 @Processor('maintenance')
 export class WorkerProcessor extends WorkerHost {
