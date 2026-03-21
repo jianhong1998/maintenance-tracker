@@ -6,13 +6,14 @@ import {
   BackgroundJobStatus,
 } from 'src/db/entities/background-job.entity';
 import { BaseDBUtil } from 'src/modules/common/base-classes/base-db-util';
+import { JobType } from '../enums/job-type.enum';
 
 export const BACKGROUND_JOB_REFERENCE_TYPES = {
   maintenanceCard: 'maintenance_card',
 } as const;
 
 export type CreateBackgroundJobData = {
-  jobType: string;
+  jobType: JobType;
   referenceId: string | null;
   referenceType: string | null;
   idempotencyKey: string;

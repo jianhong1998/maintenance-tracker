@@ -8,6 +8,7 @@ import {
 import { BackgroundJobRepository } from 'src/modules/background-job/repositories/background-job.repository';
 import type { INotificationService } from './notification-service.interface';
 import { NOTIFICATION_SERVICE_TOKEN } from './notification-service.interface';
+import { JOB_TYPES } from '../background-job/enums/job-type.enum';
 
 @Processor('maintenance')
 export class WorkerProcessor extends WorkerHost {
@@ -77,10 +78,10 @@ export class WorkerProcessor extends WorkerHost {
 
   private async dispatch(backgroundJob: BackgroundJobEntity): Promise<void> {
     switch (backgroundJob.jobType) {
-      case 'notification.upcoming':
+      case JOB_TYPES.notificationUpcoming:
         await this.notificationService.sendUpcomingNotification(backgroundJob);
         break;
-      case 'notification.overdue':
+      case JOB_TYPES.notificationOverdue:
         await this.notificationService.sendOverdueNotification(backgroundJob);
         break;
       default:
