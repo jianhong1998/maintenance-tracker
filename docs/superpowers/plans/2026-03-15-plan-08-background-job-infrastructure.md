@@ -22,7 +22,7 @@
 - Create: `backend/src/modules/background-job/repositories/background-job.repository.ts`
 - Create: `backend/src/modules/background-job/repositories/background-job.repository.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/background-job/repositories/background-job.repository.spec.ts`:
 
@@ -219,7 +219,7 @@ describe('BackgroundJobRepository', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/background-job/repositories/background-job.repository.spec.ts
@@ -227,7 +227,7 @@ cd backend && pnpm exec vitest run src/modules/background-job/repositories/backg
 
 Expected: FAIL — `BackgroundJobRepository` not found.
 
-- [ ] **Step 3: Create `BackgroundJobRepository`**
+- [x] **Step 3: Create `BackgroundJobRepository`**
 
 Create `backend/src/modules/background-job/repositories/background-job.repository.ts`:
 
@@ -360,7 +360,7 @@ export class BackgroundJobRepository extends BaseDBUtil<
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/background-job/repositories/background-job.repository.spec.ts
@@ -368,7 +368,7 @@ cd backend && pnpm exec vitest run src/modules/background-job/repositories/backg
 
 Expected: PASS — all 6 tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -376,7 +376,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/background-job/repositories/background-job.repository.ts \
@@ -391,7 +391,7 @@ git commit -m "feat: add BackgroundJobRepository with idempotent insert and reco
 **Files:**
 - Create: `backend/src/modules/background-job/background-job.module.ts`
 
-- [ ] **Step 1: Create `BackgroundJobModule`**
+- [x] **Step 1: Create `BackgroundJobModule`**
 
 Create `backend/src/modules/background-job/background-job.module.ts`:
 
@@ -409,7 +409,7 @@ import { BackgroundJobRepository } from './repositories/background-job.repositor
 export class BackgroundJobModule {}
 ```
 
-- [ ] **Step 2: Format and lint**
+- [x] **Step 2: Format and lint**
 
 ```bash
 just format && just lint
@@ -417,7 +417,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/src/modules/background-job/background-job.module.ts
@@ -435,7 +435,7 @@ git commit -m "feat: add BackgroundJobModule"
 
 `QueueModule` registers the `'maintenance'` BullMQ queue using `REDIS_URL` from `ConfigService`. It is imported by any module that needs to enqueue jobs (the Scheduler in Plan 09) and by `WorkerModule`. `BullModule.forRootAsync` is called in the consuming root module (WorkerModule or AppModule) — `QueueModule` uses `registerQueueAsync` and relies on the root connection being registered upstream.
 
-- [ ] **Step 1: Create `QueueModule`**
+- [x] **Step 1: Create `QueueModule`**
 
 Create `backend/src/modules/queue/queue.module.ts`:
 
@@ -458,7 +458,7 @@ import { BullModule } from '@nestjs/bullmq';
 export class QueueModule {}
 ```
 
-- [ ] **Step 2: Format and lint**
+- [x] **Step 2: Format and lint**
 
 ```bash
 just format && just lint
@@ -466,7 +466,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/src/modules/queue/queue.module.ts
@@ -484,7 +484,7 @@ git commit -m "feat: add QueueModule with BullMQ maintenance queue registration"
 
 `WorkerProcessor` must not import `NotificationModule` directly — Plan 09 wires the real implementation. An injection token and interface allow the processor to declare its dependency without coupling to the concrete class.
 
-- [ ] **Step 1: Create the interface file**
+- [x] **Step 1: Create the interface file**
 
 Create `backend/src/modules/worker/notification-service.interface.ts`:
 
@@ -499,7 +499,7 @@ export interface INotificationService {
 }
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```bash
 git add backend/src/modules/worker/notification-service.interface.ts
@@ -514,7 +514,7 @@ git commit -m "feat: add INotificationService abstraction token for WorkerProces
 - Create: `backend/src/modules/worker/worker.processor.ts`
 - Create: `backend/src/modules/worker/worker.processor.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/worker/worker.processor.spec.ts`:
 
@@ -709,7 +709,7 @@ describe('WorkerProcessor', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/worker/worker.processor.spec.ts
@@ -717,7 +717,7 @@ cd backend && pnpm exec vitest run src/modules/worker/worker.processor.spec.ts
 
 Expected: FAIL — `WorkerProcessor` not found.
 
-- [ ] **Step 3: Create `WorkerProcessor`**
+- [x] **Step 3: Create `WorkerProcessor`**
 
 Create `backend/src/modules/worker/worker.processor.ts`:
 
@@ -804,7 +804,7 @@ export class WorkerProcessor extends WorkerHost {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/worker/worker.processor.spec.ts
@@ -812,7 +812,7 @@ cd backend && pnpm exec vitest run src/modules/worker/worker.processor.spec.ts
 
 Expected: PASS — all 7 tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -820,7 +820,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/worker/worker.processor.ts \
@@ -838,7 +838,7 @@ git commit -m "feat: add WorkerProcessor with BullMQ job dispatch and TTL stale 
 
 `WorkerModule` is the root module for the worker process. It wires Redis for BullMQ (`BullModule.forRootAsync`), imports `QueueModule` and `BackgroundJobModule`, and provides a stub `NotificationService`. Plan 09 replaces the stub by overriding the `NOTIFICATION_SERVICE_TOKEN` binding.
 
-- [ ] **Step 1: Create `notification-service.stub.ts`**
+- [x] **Step 1: Create `notification-service.stub.ts`**
 
 Create `backend/src/modules/worker/notification-service.stub.ts`:
 
@@ -869,7 +869,7 @@ export class NotificationServiceStub implements INotificationService {
 }
 ```
 
-- [ ] **Step 2: Create `WorkerModule`**
+- [x] **Step 2: Create `WorkerModule`**
 
 Create `backend/src/modules/worker/worker.module.ts`:
 
@@ -911,7 +911,7 @@ import { NOTIFICATION_SERVICE_TOKEN } from './notification-service.interface';
 export class WorkerModule {}
 ```
 
-- [ ] **Step 3: Format and lint**
+- [x] **Step 3: Format and lint**
 
 ```bash
 just format && just lint
@@ -919,7 +919,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/src/modules/worker/notification-service.stub.ts \
@@ -937,7 +937,7 @@ git commit -m "feat: add WorkerModule with stub NotificationService binding"
 - Create: `backend/src/main-worker.ts`
 - Modify: `docker-compose.yml`
 
-- [ ] **Step 1: Create `main-worker.ts`**
+- [x] **Step 1: Create `main-worker.ts`**
 
 Create `backend/src/main-worker.ts`:
 
@@ -960,7 +960,7 @@ bootstrap().catch((err: unknown) => {
 });
 ```
 
-- [ ] **Step 2: Update `docker-compose.yml` with the worker service**
+- [x] **Step 2: Update `docker-compose.yml` with the worker service**
 
 In `docker-compose.yml`, replace the commented-out `worker` placeholder (added in Plan 01) with the real service definition:
 
@@ -982,7 +982,7 @@ In `docker-compose.yml`, replace the commented-out `worker` placeholder (added i
     restart: unless-stopped
 ```
 
-- [ ] **Step 3: Format and lint**
+- [x] **Step 3: Format and lint**
 
 ```bash
 just format && just lint
@@ -990,7 +990,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/src/main-worker.ts docker-compose.yml
@@ -1008,7 +1008,7 @@ git commit -m "feat: add main-worker.ts entry point and worker Docker Compose se
 - Modify: `backend/src/modules/maintenance-card/services/maintenance-card.service.ts`
 - Modify: `backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts`
 
-- [ ] **Step 1: Add failing test for job cancellation in `markDone`**
+- [x] **Step 1: Add failing test for job cancellation in `markDone`**
 
 In `backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts`:
 
@@ -1042,7 +1042,7 @@ it('cancels pending background jobs for the card after creating history', async 
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/services/maintenance-card.service.spec.ts
@@ -1050,7 +1050,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/services/mainten
 
 Expected: FAIL — `BackgroundJobRepository` not provided or `cancelJobsForCard` not called.
 
-- [ ] **Step 3: Import `BackgroundJobModule` into `MaintenanceCardModule`**
+- [x] **Step 3: Import `BackgroundJobModule` into `MaintenanceCardModule`**
 
 In `backend/src/modules/maintenance-card/maintenance-card.module.ts`, add `BackgroundJobModule` to imports:
 
@@ -1060,7 +1060,7 @@ import { BackgroundJobModule } from 'src/modules/background-job/background-job.m
 
 Add `BackgroundJobModule` to the `imports` array alongside existing imports. Do not replace the file — only add the import.
 
-- [ ] **Step 4: Update `MaintenanceCardService` to inject and call `cancelJobsForCard`**
+- [x] **Step 4: Update `MaintenanceCardService` to inject and call `cancelJobsForCard`**
 
 In `backend/src/modules/maintenance-card/services/maintenance-card.service.ts`:
 
@@ -1088,7 +1088,7 @@ In `markDone`, after the `historyRepository.create(...)` call, add:
 await this.backgroundJobRepository.cancelJobsForCard(id);
 ```
 
-- [ ] **Step 5: Run the test to verify it passes**
+- [x] **Step 5: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/services/maintenance-card.service.spec.ts
@@ -1096,7 +1096,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/services/mainten
 
 Expected: PASS — all tests green.
 
-- [ ] **Step 6: Run all unit tests**
+- [x] **Step 6: Run all unit tests**
 
 ```bash
 just test-unit
@@ -1104,7 +1104,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 7: Format and lint**
+- [x] **Step 7: Format and lint**
 
 ```bash
 just format && just lint
@@ -1112,7 +1112,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/maintenance-card.module.ts \
@@ -1127,7 +1127,7 @@ git commit -m "feat: cancel background jobs for card on markDone (deferred from 
 
 ### Task 9: Build and smoke test
 
-- [ ] **Step 1: Build all workspaces**
+- [x] **Step 1: Build all workspaces**
 
 ```bash
 just build
@@ -1135,7 +1135,7 @@ just build
 
 Expected: No TypeScript errors. `backend/dist/main-worker.js` is produced.
 
-- [ ] **Step 2: Run the full unit test suite**
+- [x] **Step 2: Run the full unit test suite**
 
 ```bash
 just test-unit
@@ -1143,7 +1143,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 3: Start all services and verify worker comes online**
+- [x] **Step 3: Start all services and verify worker comes online**
 
 ```bash
 just up-build
