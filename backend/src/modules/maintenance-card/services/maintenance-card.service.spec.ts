@@ -450,6 +450,17 @@ describe('MaintenanceCardService', () => {
       });
     });
 
+    it('cancels background jobs for the card', async () => {
+      mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
+      mockMaintenanceCardRepository.delete.mockResolvedValue([baseCard]);
+
+      await service.deleteCard(cardId, vehicleId, userId);
+
+      expect(
+        mockBackgroundJobRepository.cancelJobsForCard,
+      ).toHaveBeenCalledWith(cardId);
+    });
+
     it('throws NotFoundException when card not found', async () => {
       mockMaintenanceCardRepository.getOne.mockResolvedValue(null);
 

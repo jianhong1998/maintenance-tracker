@@ -26,6 +26,7 @@ const mockTypeOrmRepo = {
   create: vi.fn(),
   save: vi.fn(),
   find: vi.fn(),
+  findOne: vi.fn(),
   update: vi.fn(),
 };
 
@@ -82,43 +83,39 @@ describe('BackgroundJobRepository', () => {
   });
 
   describe('#insertIfNotExists', () => {
-    it('returns inserted row when no conflict', async () => {
-      const now = new Date();
-      const data: CreateBackgroundJobData = {
-        jobType: 'notification.upcoming',
-        referenceId: 'card-1',
-        referenceType: 'maintenance_card',
-        idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
-        payload: { cardId: 'card-1' },
-        scheduledFrom: now,
-        expiresAt: new Date(now.getTime() + 86400000),
-      };
-      const inserted = {
-        id: 'job-1',
-        ...data,
-      } as unknown as BackgroundJobEntity;
-      mockQueryBuilder.execute.mockResolvedValue({ raw: [inserted] });
+    const now = new Date();
+    const data: CreateBackgroundJobData = {
+      jobType: 'notification.upcoming',
+      referenceId: 'card-1',
+      referenceType: 'maintenance_card',
+      idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
+      payload: { cardId: 'card-1' },
+      scheduledFrom: now,
+      expiresAt: new Date(now.getTime() + 86400000),
+    };
+    const hydratedEntity = {
+      id: 'job-1',
+      ...data,
+    } as unknown as BackgroundJobEntity;
+
+    it('returns hydrated entity via findOne when no conflict', async () => {
+      mockQueryBuilder.execute.mockResolvedValue({ raw: [{}] });
+      mockTypeOrmRepo.findOne.mockResolvedValue(hydratedEntity);
 
       const result = await repository.insertIfNotExists(data);
 
-      expect(result).toEqual(inserted);
+      expect(mockTypeOrmRepo.findOne).toHaveBeenCalledWith({
+        where: { idempotencyKey: data.idempotencyKey },
+      });
+      expect(result).toEqual(hydratedEntity);
     });
 
     it('returns null when conflict fires (job already exists)', async () => {
-      const now = new Date();
-      const data: CreateBackgroundJobData = {
-        jobType: 'notification.upcoming',
-        referenceId: 'card-1',
-        referenceType: 'maintenance_card',
-        idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
-        payload: { cardId: 'card-1' },
-        scheduledFrom: now,
-        expiresAt: new Date(now.getTime() + 86400000),
-      };
       mockQueryBuilder.execute.mockResolvedValue({ raw: [] });
 
       const result = await repository.insertIfNotExists(data);
 
+      expect(mockTypeOrmRepo.findOne).not.toHaveBeenCalled();
       expect(result).toBeNull();
     });
   });

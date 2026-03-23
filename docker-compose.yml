@@ -90,6 +90,7 @@ services:
       context: .
       dockerfile: ./docker/local/Dockerfile.background-job
     network_mode: host
+    restart: unless-stopped
     env_file:
       - .env
     depends_on:

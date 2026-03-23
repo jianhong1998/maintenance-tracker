@@ -61,7 +61,12 @@ export class BackgroundJobRepository extends BaseDBUtil<
 
   /**
    * INSERT ... ON CONFLICT (idempotency_key) DO NOTHING RETURNING *
-   * Returns the inserted row, or null if the idempotency_key already existed.
+   * Returns the inserted row (hydrated via findOne), or null if the
+   * idempotency_key already existed.
+   *
+   * Note: TypeORM's raw result from .returning('*') uses snake_case DB column
+   * names, not camelCase entity properties. We re-fetch with findOne so TypeORM
+   * applies its column mapping correctly.
    */
   async insertIfNotExists(
     data: CreateBackgroundJobData,
@@ -75,8 +80,11 @@ export class BackgroundJobRepository extends BaseDBUtil<
       .returning('*')
       .execute();
 
-    const rows = result.raw as BackgroundJobEntity[];
-    return rows.length > 0 ? rows[0] : null;
+    if ((result.raw as unknown[]).length === 0) return null;
+
+    return this.backgroundJobRepo.findOne({
+      where: { idempotencyKey: data.idempotencyKey },
+    });
   }
 
   /**
@@ -84,14 +92,15 @@ export class BackgroundJobRepository extends BaseDBUtil<
    * scheduled_from <= now AND expires_at > now
    */
   async findPendingForRecovery(): Promise<BackgroundJobEntity[]> {
+    const now = new Date();
     return this.repo.find({
       where: {
         status: In([
           BackgroundJobStatus.PENDING,
           BackgroundJobStatus.PROCESSING,
         ]),
-        scheduledFrom: LessThanOrEqual(new Date()),
-        expiresAt: MoreThan(new Date()),
+        scheduledFrom: LessThanOrEqual(now),
+        expiresAt: MoreThan(now),
       },
     });
   }

@@ -53,12 +53,11 @@ export class WorkerProcessor extends WorkerHost {
       return;
     }
 
-    await this.backgroundJobRepository.updateStatus(
-      backgroundJobId,
-      BackgroundJobStatus.PROCESSING,
-    );
-
     try {
+      await this.backgroundJobRepository.updateStatus(
+        backgroundJobId,
+        BackgroundJobStatus.PROCESSING,
+      );
       await this.dispatch(backgroundJob);
       await this.backgroundJobRepository.updateStatus(
         backgroundJobId,

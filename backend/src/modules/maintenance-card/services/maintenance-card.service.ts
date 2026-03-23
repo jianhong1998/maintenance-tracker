@@ -158,6 +158,7 @@ export class MaintenanceCardService {
   ): Promise<void> {
     const card = await this.getCard(id, vehicleId, userId);
     await this.cardRepository.delete({ entities: [card] });
+    await this.backgroundJobRepository.cancelJobsForCard(id);
   }
 
   async markDone(

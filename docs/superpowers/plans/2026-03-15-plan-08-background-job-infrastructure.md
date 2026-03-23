@@ -1150,4 +1150,68 @@ just up-build
 docker compose logs worker --follow
 ```
 
+---
+
+## Code Review Analysis (2026-03-23)
+
+PR #16 was reviewed by Claude bot. Below is the analysis of each issue.
+
+### Valid Issues
+
+#### Bug 1: `insertIfNotExists` raw result cast is unsafe (Issue #1)
+
+**Valid.** TypeORM's `.returning('*')` returns raw DB rows with snake_case column names (`idempotency_key`, `expires_at`) — not the camelCase TypeORM entity properties (`idempotencyKey`, `expiresAt`). The cast `result.raw as BackgroundJobEntity[]` hides this mismatch. Callers accessing camelCase properties would silently get `undefined`.
+
+**Root cause:** QueryBuilder raw results bypass TypeORM's column name mapping. The entity has explicit `@Column({ name: 'snake_case' })` mappings that only apply to the ORM layer, not raw results.
+
+**Fix:** After the insert succeeds (raw.length > 0), re-fetch by `idempotencyKey` using the repo's normal `findOne` so TypeORM applies its column mapping. Return `null` on conflict (raw.length === 0) unchanged.
+
+#### Bug 2: `deleteCard` doesn't cancel background jobs (Issue #2)
+
+**Valid.** `deleteCard` soft-deletes the card but never calls `cancelJobsForCard`. The JSDoc on `cancelJobsForCard` says "Called when a card is marked done or deleted" but only `markDone` currently does it. Deleting a card leaves pending background jobs orphaned in the DB.
+
+**Fix:** Call `this.backgroundJobRepository.cancelJobsForCard(id)` after the card is deleted in `deleteCard`. Add test coverage.
+
+#### Medium: `updateStatus(PROCESSING)` outside try block (Issue #3)
+
+**Partially valid** (code improvement reasonable; reviewer's described impact is wrong).
+
+Reviewer claims: "The non-PENDING guard on line 37 will then skip it on any retry." This is **incorrect** — if `updateStatus(PROCESSING)` throws, the DB job stays PENDING, so the guard would NOT skip it on retry. The retry would actually work correctly.
+
+However, the improvement is still reasonable as defensive code: if BullMQ exhausts retries while the job is stuck PENDING from a transient DB failure, the job would strand. Moving the PROCESSING update inside the try block ensures the FAILED path is always reachable regardless of retry configuration.
+
+**Fix:** Move `updateStatus(PROCESSING)` call inside the try block.
+
+#### Minor: `QueueModule` undocumented dependency on `BullModule.forRoot` (Issue #4)
+
+**Valid as documentation concern.** `QueueModule` calls `BullModule.registerQueue()` without configuring the Redis connection. This is the standard NestJS BullMQ pattern, but future module authors may not know they need `BullModule.forRoot` configured in the importing context.
+
+**Fix:** Add a clarifying comment to `QueueModule` documenting the constraint.
+
+#### Minor: Worker service missing restart policy (Issue #6)
+
+**Valid.** The `worker` service in `docker-compose.yml` has no service-level `restart:` key. If the worker crashes on startup (e.g., unhandled rejection), Docker won't restart it.
+
+Note: The reviewer claims "server uses `restart: true` via `depends_on`" which is misleading — `depends_on.restart: true` means "restart *this* container if the dependency restarts", not a service restart policy. The `server` service also lacks a service-level restart policy, but worker should have one since it's a background processing service.
+
+**Fix:** Add `restart: unless-stopped` to the `worker` service.
+
+#### Minor: `findPendingForRecovery` calls `new Date()` twice (Issue #7)
+
+**Valid.** Two separate `new Date()` calls create a tiny timing window where `scheduledFrom <= now` and `expiresAt > now` are evaluated against slightly different timestamps.
+
+**Fix:** Extract to `const now = new Date()` before the query.
+
+#### Noted for future: Inconsistent parameter style (Issue #8)
+
+**Valid but deferred.** `create` takes `{ creationData, entityManager? }` (options object); `insertIfNotExists` takes `data` directly. The reviewer acknowledges this may be intentional since `insertIfNotExists` doesn't support `entityManager` yet. Align when support is added.
+
+**No immediate action.**
+
+### Invalid Issues
+
+#### Issue #5: Non-deterministic `pnpm@latest` in Dockerfile
+
+**Invalid.** The reviewer claims "The other Dockerfiles in this repo likely pin a version." This is factually incorrect — `Dockerfile.backend` (line 11) also uses `npm install -g pnpm@latest`. Using `@latest` is the established convention across all Dockerfiles in this repo. Changing `Dockerfile.background-job` alone would create inconsistency. This should be addressed as a repo-wide change if desired.
+
 Expected: NestJS bootstrap logs appear from the worker container. No Redis or Postgres `ECONNREFUSED` errors. Worker sits idle waiting for queue messages.
