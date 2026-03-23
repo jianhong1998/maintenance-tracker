@@ -9,6 +9,7 @@ import type { IMarkDoneReqDTO } from '@project/types';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
+import { BackgroundJobRepository } from 'src/modules/background-job/repositories/background-job.repository';
 import {
   MaintenanceCardRepository,
   type CreateMaintenanceCardData,
@@ -87,6 +88,7 @@ export class MaintenanceCardService {
     private readonly historyRepository: MaintenanceHistoryRepository,
     private readonly vehicleService: VehicleService,
     @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly backgroundJobRepository: BackgroundJobRepository,
   ) {}
 
   async listCards(
@@ -155,7 +157,10 @@ export class MaintenanceCardService {
     userId: string,
   ): Promise<void> {
     const card = await this.getCard(id, vehicleId, userId);
-    await this.cardRepository.delete({ entities: [card] });
+    await this.dataSource.transaction(async (em) => {
+      await this.cardRepository.delete({ entities: [card], entityManager: em });
+      await this.backgroundJobRepository.cancelJobsForCard(id, em);
+    });
   }
 
   async markDone(
@@ -187,14 +192,12 @@ export class MaintenanceCardService {
       card.nextDueDate = nextDue;
     }
 
-    // TODO: BackgroundJob cancellation deferred to Plan 08
-
     const history = await this.dataSource.transaction(async (em) => {
       await this.cardRepository.updateWithSave({
         dataArray: [card],
         entityManager: em,
       });
-      return this.historyRepository.create({
+      const createdHistory = await this.historyRepository.create({
         creationData: {
           maintenanceCardId: id,
           doneAtMileage: input.doneAtMileage ?? null,
@@ -203,6 +206,8 @@ export class MaintenanceCardService {
         },
         entityManager: em,
       });
+      await this.backgroundJobRepository.cancelJobsForCard(id, em);
+      return createdHistory;
     });
 
     // Known limitation: updateVehicle runs after the transaction commits.

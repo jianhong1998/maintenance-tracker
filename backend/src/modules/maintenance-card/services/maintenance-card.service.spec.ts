@@ -7,6 +7,7 @@ import { MaintenanceCardRepository } from '../repositories/maintenance-card.repo
 import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
+import { BackgroundJobRepository } from 'src/modules/background-job/repositories/background-job.repository';
 import { MILEAGE_UNITS, MAINTENANCE_CARD_TYPES } from '@project/types';
 
 const mockMaintenanceCardRepository = {
@@ -25,6 +26,10 @@ const mockVehicleService = {
 const mockHistoryRepository = {
   create: vi.fn(),
   findByCardId: vi.fn(),
+};
+
+const mockBackgroundJobRepository = {
+  cancelJobsForCard: vi.fn(),
 };
 
 const mockEntityManager = {};
@@ -91,6 +96,10 @@ describe('MaintenanceCardService', () => {
           useValue: mockHistoryRepository,
         },
         { provide: getDataSourceToken(), useValue: mockDataSource },
+        {
+          provide: BackgroundJobRepository,
+          useValue: mockBackgroundJobRepository,
+        },
       ],
     }).compile();
 
@@ -430,7 +439,7 @@ describe('MaintenanceCardService', () => {
   });
 
   describe('#deleteCard', () => {
-    it('soft deletes the card', async () => {
+    it('soft deletes the card inside a transaction', async () => {
       mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
       mockMaintenanceCardRepository.delete.mockResolvedValue([baseCard]);
 
@@ -438,7 +447,34 @@ describe('MaintenanceCardService', () => {
 
       expect(mockMaintenanceCardRepository.delete).toHaveBeenCalledWith({
         entities: [baseCard],
+        entityManager: mockEntityManager,
       });
+    });
+
+    it('cancels background jobs inside the delete transaction', async () => {
+      mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
+      mockMaintenanceCardRepository.delete.mockResolvedValue([baseCard]);
+
+      await service.deleteCard(cardId, vehicleId, userId);
+
+      expect(
+        mockBackgroundJobRepository.cancelJobsForCard,
+      ).toHaveBeenCalledWith(cardId, mockEntityManager);
+    });
+
+    it('does NOT cancel background jobs when the delete transaction fails', async () => {
+      mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
+      mockMaintenanceCardRepository.delete.mockRejectedValue(
+        new Error('DB delete failed'),
+      );
+
+      await expect(
+        service.deleteCard(cardId, vehicleId, userId),
+      ).rejects.toThrow('DB delete failed');
+
+      expect(
+        mockBackgroundJobRepository.cancelJobsForCard,
+      ).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException when card not found', async () => {
@@ -586,6 +622,30 @@ describe('MaintenanceCardService', () => {
         doneAtMileage: 12500,
       });
       expect(result).toEqual(baseHistory);
+    });
+
+    it('cancels pending background jobs inside the markDone transaction', async () => {
+      await service.markDone(cardId, vehicleId, userId, {
+        doneAtMileage: 12500,
+      });
+
+      expect(
+        mockBackgroundJobRepository.cancelJobsForCard,
+      ).toHaveBeenCalledWith(cardId, mockEntityManager);
+    });
+
+    it('does NOT cancel background jobs when the transaction fails', async () => {
+      mockHistoryRepository.create.mockRejectedValue(
+        new Error('DB insert failed'),
+      );
+
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
+      ).rejects.toThrow('DB insert failed');
+
+      expect(
+        mockBackgroundJobRepository.cancelJobsForCard,
+      ).not.toHaveBeenCalled();
     });
 
     it('runs card update and history creation within the same transaction', async () => {

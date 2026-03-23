@@ -85,5 +85,26 @@ services:
           target: /app/packages
           action: sync+restart
 
-  # worker:
-  #   (added in Plan 08 - Background Job Infrastructure)
+  worker:
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile.background-job
+    network_mode: host
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+    develop:
+      watch:
+        - path: ./backend/src
+          target: /app/backend/src
+          action: sync
+        - path: ./packages
+          target: /app/packages
+          action: sync

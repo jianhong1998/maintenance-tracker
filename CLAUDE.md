@@ -64,9 +64,13 @@ For a branch named `feat/000/create-something`, the hook rewrites `update db sch
 **Before writing a commit message, always check whether Husky is active:**
 
 ```bash
-cat .husky/prepare-commit-msg   # confirms the hook file exists
-ls .git/hooks/prepare-commit-msg  # confirms it is installed in the repo
+git config core.hooksPath        # should output: .husky
+ls -la .husky/prepare-commit-msg # should be executable (-rwxr-xr-x)
 ```
+
+Husky works by setting `core.hooksPath = .husky` in git config. Git resolves hooks from that directory — not `.git/hooks/`. If `core.hooksPath` returns `.husky` and the hook file is executable, the hook will fire.
+
+> **Note:** Do NOT use `ls .git/hooks/prepare-commit-msg` — with Husky active, that file will not exist even though the hook runs on every commit.
 
 If the hook is installed and active, provide **only the bare description** as the commit message — no type prefix, no ticket ID. Let the hook add them.
 

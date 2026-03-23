@@ -29,9 +29,11 @@ Create `backend/src/modules/background-job/repositories/background-job.repositor
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { In } from 'typeorm';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import {
   BackgroundJobRepository,
+  BACKGROUND_JOB_REFERENCE_TYPES,
   CreateBackgroundJobData,
 } from './background-job.repository';
 import {
@@ -39,6 +41,8 @@ import {
   BackgroundJobStatus,
 } from 'src/db/entities/background-job.entity';
 
+// Only insertIfNotExists uses the query builder (ON CONFLICT DO NOTHING has
+// no Repository API equivalent). All other methods use Repository.find/update.
 const mockQueryBuilder = {
   insert: vi.fn().mockReturnThis(),
   into: vi.fn().mockReturnThis(),
@@ -46,19 +50,14 @@ const mockQueryBuilder = {
   orIgnore: vi.fn().mockReturnThis(),
   returning: vi.fn().mockReturnThis(),
   execute: vi.fn(),
-  select: vi.fn().mockReturnThis(),
-  from: vi.fn().mockReturnThis(),
-  where: vi.fn().mockReturnThis(),
-  andWhere: vi.fn().mockReturnThis(),
-  getMany: vi.fn(),
-  update: vi.fn().mockReturnThis(),
-  set: vi.fn().mockReturnThis(),
 };
 
 const mockTypeOrmRepo = {
   createQueryBuilder: vi.fn().mockReturnValue(mockQueryBuilder),
   create: vi.fn(),
   save: vi.fn(),
+  find: vi.fn(),
+  update: vi.fn(),
 };
 
 describe('BackgroundJobRepository', () => {
@@ -67,17 +66,6 @@ describe('BackgroundJobRepository', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockTypeOrmRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.insert.mockReturnThis();
-    mockQueryBuilder.into.mockReturnThis();
-    mockQueryBuilder.values.mockReturnThis();
-    mockQueryBuilder.orIgnore.mockReturnThis();
-    mockQueryBuilder.returning.mockReturnThis();
-    mockQueryBuilder.select.mockReturnThis();
-    mockQueryBuilder.from.mockReturnThis();
-    mockQueryBuilder.where.mockReturnThis();
-    mockQueryBuilder.andWhere.mockReturnThis();
-    mockQueryBuilder.update.mockReturnThis();
-    mockQueryBuilder.set.mockReturnThis();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -106,9 +94,12 @@ describe('BackgroundJobRepository', () => {
         idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
         payload: { cardId: 'card-1' },
         scheduledFrom: now,
-        ttl: new Date(now.getTime() + 86400000),
+        expiresAt: new Date(now.getTime() + 86400000),
       };
-      const job = { id: 'job-1', ...creationData } as unknown as BackgroundJobEntity;
+      const job = {
+        id: 'job-1',
+        ...creationData,
+      } as unknown as BackgroundJobEntity;
 
       mockTypeOrmRepo.create.mockReturnValue(job);
       mockTypeOrmRepo.save.mockResolvedValue(job);
@@ -131,9 +122,12 @@ describe('BackgroundJobRepository', () => {
         idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
         payload: { cardId: 'card-1' },
         scheduledFrom: now,
-        ttl: new Date(now.getTime() + 86400000),
+        expiresAt: new Date(now.getTime() + 86400000),
       };
-      const inserted = { id: 'job-1', ...data } as unknown as BackgroundJobEntity;
+      const inserted = {
+        id: 'job-1',
+        ...data,
+      } as unknown as BackgroundJobEntity;
       mockQueryBuilder.execute.mockResolvedValue({ raw: [inserted] });
 
       const result = await repository.insertIfNotExists(data);
@@ -150,7 +144,7 @@ describe('BackgroundJobRepository', () => {
         idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
         payload: { cardId: 'card-1' },
         scheduledFrom: now,
-        ttl: new Date(now.getTime() + 86400000),
+        expiresAt: new Date(now.getTime() + 86400000),
       };
       mockQueryBuilder.execute.mockResolvedValue({ raw: [] });
 
@@ -163,37 +157,63 @@ describe('BackgroundJobRepository', () => {
   describe('#findPendingForRecovery', () => {
     it('returns jobs eligible for recovery', async () => {
       const jobs = [{ id: 'job-1' }] as BackgroundJobEntity[];
-      mockQueryBuilder.getMany.mockResolvedValue(jobs);
+      mockTypeOrmRepo.find.mockResolvedValue(jobs);
 
       const result = await repository.findPendingForRecovery();
 
       expect(result).toEqual(jobs);
+      expect(mockTypeOrmRepo.find).toHaveBeenCalledOnce();
     });
   });
 
   describe('#updateStatus', () => {
     it('updates job status by id', async () => {
-      mockQueryBuilder.execute.mockResolvedValue(undefined);
+      mockTypeOrmRepo.update.mockResolvedValue(undefined);
 
       await repository.updateStatus('job-1', BackgroundJobStatus.PROCESSING);
 
-      expect(mockQueryBuilder.update).toHaveBeenCalled();
-      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
-        status: BackgroundJobStatus.PROCESSING,
-      });
+      expect(mockTypeOrmRepo.update).toHaveBeenCalledWith(
+        { id: 'job-1' },
+        { status: BackgroundJobStatus.PROCESSING },
+      );
     });
   });
 
   describe('#cancelJobsForCard', () => {
     it('sets pending/processing jobs for a card to cancelled', async () => {
-      mockQueryBuilder.execute.mockResolvedValue(undefined);
+      mockTypeOrmRepo.update.mockResolvedValue(undefined);
 
       await repository.cancelJobsForCard('card-1');
 
-      expect(mockQueryBuilder.update).toHaveBeenCalled();
-      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
-        status: BackgroundJobStatus.CANCELLED,
-      });
+      expect(mockTypeOrmRepo.update).toHaveBeenCalledWith(
+        {
+          referenceType: BACKGROUND_JOB_REFERENCE_TYPES.maintenanceCard,
+          referenceId: 'card-1',
+          status: In([
+            BackgroundJobStatus.PENDING,
+            BackgroundJobStatus.PROCESSING,
+          ]),
+        },
+        { status: BackgroundJobStatus.CANCELLED },
+      );
+    });
+
+    it('uses entityManager repo when provided', async () => {
+      const emRepo = { update: vi.fn().mockResolvedValue(undefined) };
+      const entityManager = {
+        getRepository: vi.fn().mockReturnValue(emRepo),
+      };
+
+      await repository.cancelJobsForCard(
+        'card-1',
+        entityManager as unknown as import('typeorm').EntityManager,
+      );
+
+      expect(entityManager.getRepository).toHaveBeenCalledWith(
+        BackgroundJobEntity,
+      );
+      expect(emRepo.update).toHaveBeenCalled();
+      expect(mockTypeOrmRepo.update).not.toHaveBeenCalled();
     });
   });
 });
@@ -214,21 +234,33 @@ Create `backend/src/modules/background-job/repositories/background-job.repositor
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import {
+  EntityManager,
+  In,
+  LessThanOrEqual,
+  MoreThan,
+  Repository,
+} from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import {
   BackgroundJobEntity,
   BackgroundJobStatus,
 } from 'src/db/entities/background-job.entity';
 import { BaseDBUtil } from 'src/modules/common/base-classes/base-db-util';
+import { JobType } from '../enums/job-type.enum';
+
+export const BACKGROUND_JOB_REFERENCE_TYPES = {
+  maintenanceCard: 'maintenance_card',
+} as const;
 
 export type CreateBackgroundJobData = {
-  jobType: string;
+  jobType: JobType;
   referenceId: string | null;
   referenceType: string | null;
   idempotencyKey: string;
   payload: Record<string, unknown>;
   scheduledFrom: Date;
-  ttl: Date;
+  expiresAt: Date;
 };
 
 @Injectable()
@@ -243,16 +275,19 @@ export class BackgroundJobRepository extends BaseDBUtil<
     super(BackgroundJobEntity, backgroundJobRepo);
   }
 
+  private repoFor(em?: EntityManager): Repository<BackgroundJobEntity> {
+    return (
+      (em?.getRepository(BackgroundJobEntity) as Repository<BackgroundJobEntity>) ??
+      this.repo
+    );
+  }
+
   async create(params: {
     creationData: CreateBackgroundJobData;
     entityManager?: EntityManager;
   }): Promise<BackgroundJobEntity> {
     const { creationData, entityManager } = params;
-    const repo =
-      (entityManager?.getRepository(
-        BackgroundJobEntity,
-      ) as Repository<BackgroundJobEntity>) ?? this.backgroundJobRepo;
-
+    const repo = this.repoFor(entityManager);
     const job = repo.create(creationData);
     return await repo.save(job);
   }
@@ -268,60 +303,59 @@ export class BackgroundJobRepository extends BaseDBUtil<
       .createQueryBuilder()
       .insert()
       .into(BackgroundJobEntity)
-      .values(data)
+      .values(data as QueryDeepPartialEntity<BackgroundJobEntity>)
       .orIgnore()
       .returning('*')
       .execute();
 
-    return result.raw.length > 0
-      ? (result.raw[0] as BackgroundJobEntity)
-      : null;
+    const rows = result.raw as BackgroundJobEntity[];
+    return rows.length > 0 ? rows[0] : null;
   }
 
   /**
    * Finds jobs in pending/processing state eligible for recovery:
-   * scheduled_from <= now AND ttl > now
+   * scheduled_from <= now AND expires_at > now
+   *
+   * Uses Repository.find() with TypeORM find operators — no query builder needed.
    */
   async findPendingForRecovery(): Promise<BackgroundJobEntity[]> {
-    return this.backgroundJobRepo
-      .createQueryBuilder('job')
-      .where('job.status IN (:...statuses)', {
-        statuses: [BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING],
-      })
-      .andWhere('job.scheduledFrom <= NOW()')
-      .andWhere('job.ttl > NOW()')
-      .getMany();
+    return this.repo.find({
+      where: {
+        status: In([BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING]),
+        scheduledFrom: LessThanOrEqual(new Date()),
+        expiresAt: MoreThan(new Date()),
+      },
+    });
   }
 
   /**
    * Updates a single job's status by id.
    */
   async updateStatus(id: string, status: BackgroundJobStatus): Promise<void> {
-    await this.backgroundJobRepo
-      .createQueryBuilder('job')
-      .update(BackgroundJobEntity)
-      .set({ status })
-      .where('job.id = :id', { id })
-      .execute();
+    await this.backgroundJobRepo.update({ id }, { status });
   }
 
   /**
    * Cancels all pending/processing jobs for a maintenance card.
    * Called when a card is marked done or deleted.
+   * Pass entityManager to run within an existing transaction.
+   *
+   * Uses Repository.update() with In() — query builder not needed here.
+   * insertIfNotExists is the only method that still requires the query builder
+   * because ON CONFLICT DO NOTHING has no Repository API equivalent.
    */
-  async cancelJobsForCard(cardId: string): Promise<void> {
-    await this.backgroundJobRepo
-      .createQueryBuilder('job')
-      .update(BackgroundJobEntity)
-      .set({ status: BackgroundJobStatus.CANCELLED })
-      .where('job.referenceType = :referenceType', {
-        referenceType: 'maintenance_card',
-      })
-      .andWhere('job.referenceId = :cardId', { cardId })
-      .andWhere('job.status IN (:...statuses)', {
-        statuses: [BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING],
-      })
-      .execute();
+  async cancelJobsForCard(
+    cardId: string,
+    entityManager?: EntityManager,
+  ): Promise<void> {
+    await this.repoFor(entityManager).update(
+      {
+        referenceType: BACKGROUND_JOB_REFERENCE_TYPES.maintenanceCard,
+        referenceId: cardId,
+        status: In([BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING]),
+      },
+      { status: BackgroundJobStatus.CANCELLED },
+    );
   }
 }
 ```
@@ -1116,4 +1150,130 @@ just up-build
 docker compose logs worker --follow
 ```
 
+---
+
+## Code Review Analysis (2026-03-23)
+
+PR #16 was reviewed by Claude bot. Below is the analysis of each issue.
+
+### Valid Issues
+
+#### Bug 1: `insertIfNotExists` raw result cast is unsafe (Issue #1)
+
+**Valid.** TypeORM's `.returning('*')` returns raw DB rows with snake_case column names (`idempotency_key`, `expires_at`) — not the camelCase TypeORM entity properties (`idempotencyKey`, `expiresAt`). The cast `result.raw as BackgroundJobEntity[]` hides this mismatch. Callers accessing camelCase properties would silently get `undefined`.
+
+**Root cause:** QueryBuilder raw results bypass TypeORM's column name mapping. The entity has explicit `@Column({ name: 'snake_case' })` mappings that only apply to the ORM layer, not raw results.
+
+**Fix:** After the insert succeeds (raw.length > 0), re-fetch by `idempotencyKey` using the repo's normal `findOne` so TypeORM applies its column mapping. Return `null` on conflict (raw.length === 0) unchanged.
+
+#### Bug 2: `deleteCard` doesn't cancel background jobs (Issue #2)
+
+**Valid.** `deleteCard` soft-deletes the card but never calls `cancelJobsForCard`. The JSDoc on `cancelJobsForCard` says "Called when a card is marked done or deleted" but only `markDone` currently does it. Deleting a card leaves pending background jobs orphaned in the DB.
+
+**Fix:** Call `this.backgroundJobRepository.cancelJobsForCard(id)` after the card is deleted in `deleteCard`. Add test coverage.
+
+#### Medium: `updateStatus(PROCESSING)` outside try block (Issue #3)
+
+**Partially valid** (code improvement reasonable; reviewer's described impact is wrong).
+
+Reviewer claims: "The non-PENDING guard on line 37 will then skip it on any retry." This is **incorrect** — if `updateStatus(PROCESSING)` throws, the DB job stays PENDING, so the guard would NOT skip it on retry. The retry would actually work correctly.
+
+However, the improvement is still reasonable as defensive code: if BullMQ exhausts retries while the job is stuck PENDING from a transient DB failure, the job would strand. Moving the PROCESSING update inside the try block ensures the FAILED path is always reachable regardless of retry configuration.
+
+**Fix:** Move `updateStatus(PROCESSING)` call inside the try block.
+
+#### Minor: `QueueModule` undocumented dependency on `BullModule.forRoot` (Issue #4)
+
+**Valid as documentation concern.** `QueueModule` calls `BullModule.registerQueue()` without configuring the Redis connection. This is the standard NestJS BullMQ pattern, but future module authors may not know they need `BullModule.forRoot` configured in the importing context.
+
+**Fix:** Add a clarifying comment to `QueueModule` documenting the constraint.
+
+#### Minor: Worker service missing restart policy (Issue #6)
+
+**Valid.** The `worker` service in `docker-compose.yml` has no service-level `restart:` key. If the worker crashes on startup (e.g., unhandled rejection), Docker won't restart it.
+
+Note: The reviewer claims "server uses `restart: true` via `depends_on`" which is misleading — `depends_on.restart: true` means "restart *this* container if the dependency restarts", not a service restart policy. The `server` service also lacks a service-level restart policy, but worker should have one since it's a background processing service.
+
+**Fix:** Add `restart: unless-stopped` to the `worker` service.
+
+#### Minor: `findPendingForRecovery` calls `new Date()` twice (Issue #7)
+
+**Valid.** Two separate `new Date()` calls create a tiny timing window where `scheduledFrom <= now` and `expiresAt > now` are evaluated against slightly different timestamps.
+
+**Fix:** Extract to `const now = new Date()` before the query.
+
+#### Noted for future: Inconsistent parameter style (Issue #8)
+
+**Valid but deferred.** `create` takes `{ creationData, entityManager? }` (options object); `insertIfNotExists` takes `data` directly. The reviewer acknowledges this may be intentional since `insertIfNotExists` doesn't support `entityManager` yet. Align when support is added.
+
+**No immediate action.**
+
+### Invalid Issues
+
+#### Issue #5: Non-deterministic `pnpm@latest` in Dockerfile
+
+**Invalid.** The reviewer claims "The other Dockerfiles in this repo likely pin a version." This is factually incorrect — `Dockerfile.backend` (line 11) also uses `npm install -g pnpm@latest`. Using `@latest` is the established convention across all Dockerfiles in this repo. Changing `Dockerfile.background-job` alone would create inconsistency. This should be addressed as a repo-wide change if desired.
+
 Expected: NestJS bootstrap logs appear from the worker container. No Redis or Postgres `ECONNREFUSED` errors. Worker sits idle waiting for queue messages.
+
+---
+
+## Code Review Analysis (2026-03-23) — Second Pass
+
+Performed after addressing PR #16 feedback. Three issues were found; all three were valid and resolved.
+
+### Issue 1: `deleteCard` cancels jobs outside a transaction — **Bug, Fixed**
+
+**Finding:** `deleteCard` called `cardRepository.delete` followed by `cancelJobsForCard(id)` with no transaction wrapping. If `cancelJobsForCard` throws after the card is already deleted, background jobs remain in `PENDING` state for a card that no longer exists. The worker then fires notifications for a deleted card.
+
+**Contrast:** `markDone` correctly wraps `cancelJobsForCard(id, em)` inside `dataSource.transaction`. The same pattern was not applied to `deleteCard` when the cancellation call was added.
+
+**Decision:** Wrap both `cardRepository.delete` and `cancelJobsForCard` in `dataSource.transaction`. Pass `entityManager` to both so they execute atomically. Three tests added/updated: delete passes `entityManager` to repository, cancellation is called with `entityManager`, and cancellation does not happen when delete fails.
+
+**Files changed:**
+- `backend/src/modules/maintenance-card/services/maintenance-card.service.ts` — wrapped in transaction
+- `backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts` — updated 2 tests, added 1 new test
+
+### Issue 2: `repoFor` cast is unnecessary — **Code Smell, Fixed**
+
+**Finding:** `repoFor` in `BackgroundJobRepository` cast the result of `em.getRepository(BackgroundJobEntity)` to `Repository<BackgroundJobEntity>`. TypeORM's `EntityManager.getRepository<T>(entity)` signature is `getRepository<Entity>(target: EntityTarget<Entity>): Repository<Entity>` — the return type is already `Repository<BackgroundJobEntity>`. The cast was noise that obscured the real type.
+
+**Decision:** Remove the cast. No behavior change; purely a type-level cleanup. No new tests required.
+
+**Files changed:**
+- `backend/src/modules/background-job/repositories/background-job.repository.ts` — removed `as Repository<BackgroundJobEntity>` cast in `repoFor`
+
+### Issue 3: `QueueModule` depended on caller to configure `BullModule.forRoot` — **Design Footgun, Fixed**
+
+**Finding:** `QueueModule` called `BullModule.registerQueue()` but expected the importing context to have called `BullModule.forRootAsync()` separately. Only `WorkerModule` did this. A comment warned future authors of the constraint, but this is a maintenance trap: when Plan 09 adds job enqueueing from the main `AppModule`, importing `QueueModule` without knowing to also configure `BullModule.forRoot` would cause a runtime failure.
+
+**Decision:** Move `BullModule.forRootAsync` into `QueueModule` itself so it is self-contained. Any module that imports `QueueModule` automatically gets a working Redis connection. Removed the duplicate `BullModule.forRootAsync` and the now-unused `BullModule`, `ConfigModule`, `ConfigService` imports from `WorkerModule`. `ConfigModule` is registered globally by `AppConfig.configModule` (`isGlobal: true`), so `QueueModule`'s `forRootAsync` can inject `ConfigService` without issues.
+
+**Files changed:**
+- `backend/src/modules/queue/queue.module.ts` — added `BullModule.forRootAsync`, removed warning comment
+- `backend/src/modules/worker/worker.module.ts` — removed `BullModule.forRootAsync`, removed `BullModule`/`ConfigModule`/`ConfigService` imports
+
+---
+
+## Post-Merge Code Review Notes
+
+### Issue: `removeOnFail: true` — **Valid, Fixed**
+
+**Finding:** `removeOnFail: true` in `QueueModule.defaultJobOptions` causes BullMQ to immediately delete every failed job from Redis, taking the payload, stack trace, and retry history with it. No evidence for debugging when the notification processor fails.
+
+**Decision:** Changed to `removeOnFail: { count: 100 }` to retain the last 100 failures for inspection.
+
+**Files changed:**
+- `backend/src/modules/queue/queue.module.ts` — `removeOnFail: true` → `removeOnFail: { count: 100 }`
+
+### Issue: `pnpm@latest` non-deterministic in `Dockerfile.background-job` — **Invalid, Not Fixed**
+
+**Reviewer claim:** "The other Dockerfiles in this repo likely pin a version. Pin this to match."
+
+**Finding:** This premise is false. `docker/local/Dockerfile.backend:11` also uses `RUN npm install -g pnpm@latest`. Every local Dockerfile in the repo uses `pnpm@latest` — the new background-job Dockerfile is consistent with the existing pattern. Fixing only `Dockerfile.background-job` would introduce inconsistency across Dockerfiles. This would require a coordinated change across all Dockerfiles, which is out of scope for this PR and not caused by it.
+
+### Issue: Worker watch `action: sync` should be `sync+restart` — **Invalid, Not Fixed**
+
+**Reviewer claim:** "The `server` service uses `action: sync+restart` for `./backend/src`. The worker uses plain `sync`, so code changes won't trigger a process restart."
+
+**Finding:** This is factually wrong. The `server` service in `docker-compose.yml` also uses `action: sync` for `./backend/src` — not `sync+restart`. Only `./packages` in the `client` service uses `sync+restart` (because Next.js needs a restart to pick up shared type changes). The worker service is consistent with the server service. Both rely on NestJS `nest start --watch` (via `pnpm run dev:worker`) to detect file changes inside the container — `sync` copies files in, the internal watcher handles the restart.

@@ -9,6 +9,7 @@
     "build": "nest build",
     "format": "prettier --write .",
     "dev": "nodemon --watch src --watch ../packages/types --ext ts --exec ts-node -r dotenv/config -r tsconfig-paths/register src/main.ts",
+    "dev:worker": "nodemon --watch src --watch ../packages/types --ext ts --exec ts-node -r dotenv/config -r tsconfig-paths/register src/main-worker.ts",
     "start": "node dist/backend/src/main",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
