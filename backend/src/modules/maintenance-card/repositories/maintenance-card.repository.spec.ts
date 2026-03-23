@@ -5,10 +5,17 @@ import { MaintenanceCardRepository } from './maintenance-card.repository';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
 import { MAINTENANCE_CARD_TYPES } from '@project/types';
 
+const mockQueryBuilder = {
+  where: vi.fn().mockReturnThis(),
+  andWhere: vi.fn().mockReturnThis(),
+  getMany: vi.fn(),
+};
+
 const mockTypeOrmRepo = {
   create: vi.fn(),
   save: vi.fn(),
   findOne: vi.fn(),
+  createQueryBuilder: vi.fn().mockReturnValue(mockQueryBuilder),
 };
 
 describe('MaintenanceCardRepository', () => {
@@ -88,6 +95,36 @@ describe('MaintenanceCardRepository', () => {
       const result = await repository.getOneWithDeleted('card-1', 'vehicle-1');
 
       expect(result).toBeNull();
+    });
+  });
+
+  describe('#findCardsForNotification', () => {
+    it('returns cards with nextDueDate on or before the cutoff date', async () => {
+      const cards = [
+        { id: 'card-1', nextDueDate: '2026-03-20' },
+      ] as MaintenanceCardEntity[];
+      mockQueryBuilder.getMany.mockResolvedValue(cards);
+
+      const result = await repository.findCardsForNotification(7);
+
+      expect(result).toEqual(cards);
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith(
+        'card.nextDueDate IS NOT NULL',
+      );
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+        'card.nextDueDate <= :cutoffDate',
+        expect.objectContaining({
+          cutoffDate: expect.any(String) as unknown,
+        }),
+      );
+    });
+
+    it('returns empty array when no cards match', async () => {
+      mockQueryBuilder.getMany.mockResolvedValue([]);
+
+      const result = await repository.findCardsForNotification(7);
+
+      expect(result).toEqual([]);
     });
   });
 });

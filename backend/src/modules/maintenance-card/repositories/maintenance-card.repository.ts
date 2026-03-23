@@ -49,4 +49,26 @@ export class MaintenanceCardRepository extends BaseDBUtil<
       withDeleted: true,
     });
   }
+
+  /**
+   * Returns non-deleted cards whose nextDueDate is not null and falls on or
+   * before today + notificationDaysBefore. This captures both overdue cards
+   * (nextDueDate < today) and upcoming cards (nextDueDate within the window).
+   * The caller decides which job type to create based on the date comparison.
+   */
+  async findCardsForNotification(
+    notificationDaysBefore: number,
+  ): Promise<MaintenanceCardEntity[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() + notificationDaysBefore);
+    const cutoffDateStr = cutoffDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+    return this.cardRepo
+      .createQueryBuilder('card')
+      .where('card.nextDueDate IS NOT NULL')
+      .andWhere('card.nextDueDate <= :cutoffDate', {
+        cutoffDate: cutoffDateStr,
+      })
+      .getMany();
+  }
 }
