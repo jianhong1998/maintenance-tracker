@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { In } from 'typeorm';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import {
   BackgroundJobRepository,
+  BACKGROUND_JOB_REFERENCE_TYPES,
   CreateBackgroundJobData,
 } from './background-job.repository';
 import {
@@ -17,19 +19,14 @@ const mockQueryBuilder = {
   orIgnore: vi.fn().mockReturnThis(),
   returning: vi.fn().mockReturnThis(),
   execute: vi.fn(),
-  select: vi.fn().mockReturnThis(),
-  from: vi.fn().mockReturnThis(),
-  where: vi.fn().mockReturnThis(),
-  andWhere: vi.fn().mockReturnThis(),
-  getMany: vi.fn(),
-  update: vi.fn().mockReturnThis(),
-  set: vi.fn().mockReturnThis(),
 };
 
 const mockTypeOrmRepo = {
   createQueryBuilder: vi.fn().mockReturnValue(mockQueryBuilder),
   create: vi.fn(),
   save: vi.fn(),
+  find: vi.fn(),
+  update: vi.fn(),
 };
 
 describe('BackgroundJobRepository', () => {
@@ -129,50 +126,49 @@ describe('BackgroundJobRepository', () => {
   describe('#findPendingForRecovery', () => {
     it('returns jobs eligible for recovery', async () => {
       const jobs = [{ id: 'job-1' }] as BackgroundJobEntity[];
-      mockQueryBuilder.getMany.mockResolvedValue(jobs);
+      mockTypeOrmRepo.find.mockResolvedValue(jobs);
 
       const result = await repository.findPendingForRecovery();
 
       expect(result).toEqual(jobs);
+      expect(mockTypeOrmRepo.find).toHaveBeenCalledOnce();
     });
   });
 
   describe('#updateStatus', () => {
     it('updates job status by id', async () => {
-      mockQueryBuilder.execute.mockResolvedValue(undefined);
+      mockTypeOrmRepo.update.mockResolvedValue(undefined);
 
       await repository.updateStatus('job-1', BackgroundJobStatus.PROCESSING);
 
-      expect(mockQueryBuilder.update).toHaveBeenCalled();
-      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
-        status: BackgroundJobStatus.PROCESSING,
-      });
+      expect(mockTypeOrmRepo.update).toHaveBeenCalledWith(
+        { id: 'job-1' },
+        { status: BackgroundJobStatus.PROCESSING },
+      );
     });
   });
 
   describe('#cancelJobsForCard', () => {
     it('sets pending/processing jobs for a card to cancelled', async () => {
-      mockQueryBuilder.execute.mockResolvedValue(undefined);
+      mockTypeOrmRepo.update.mockResolvedValue(undefined);
 
       await repository.cancelJobsForCard('card-1');
 
-      expect(mockQueryBuilder.update).toHaveBeenCalled();
-      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
-        status: BackgroundJobStatus.CANCELLED,
-      });
+      expect(mockTypeOrmRepo.update).toHaveBeenCalledWith(
+        {
+          referenceType: BACKGROUND_JOB_REFERENCE_TYPES.maintenanceCard,
+          referenceId: 'card-1',
+          status: In([
+            BackgroundJobStatus.PENDING,
+            BackgroundJobStatus.PROCESSING,
+          ]),
+        },
+        { status: BackgroundJobStatus.CANCELLED },
+      );
     });
 
     it('uses entityManager repo when provided', async () => {
-      const emQueryBuilder = {
-        update: vi.fn().mockReturnThis(),
-        set: vi.fn().mockReturnThis(),
-        where: vi.fn().mockReturnThis(),
-        andWhere: vi.fn().mockReturnThis(),
-        execute: vi.fn().mockResolvedValue(undefined),
-      };
-      const emRepo = {
-        createQueryBuilder: vi.fn().mockReturnValue(emQueryBuilder),
-      };
+      const emRepo = { update: vi.fn().mockResolvedValue(undefined) };
       const entityManager = {
         getRepository: vi.fn().mockReturnValue(emRepo),
       };
@@ -185,8 +181,8 @@ describe('BackgroundJobRepository', () => {
       expect(entityManager.getRepository).toHaveBeenCalledWith(
         BackgroundJobEntity,
       );
-      expect(emRepo.createQueryBuilder).toHaveBeenCalled();
-      expect(mockTypeOrmRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(emRepo.update).toHaveBeenCalled();
+      expect(mockTypeOrmRepo.update).not.toHaveBeenCalled();
     });
   });
 });

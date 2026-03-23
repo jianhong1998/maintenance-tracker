@@ -29,9 +29,11 @@ Create `backend/src/modules/background-job/repositories/background-job.repositor
 ```typescript
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
+import { In } from 'typeorm';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import {
   BackgroundJobRepository,
+  BACKGROUND_JOB_REFERENCE_TYPES,
   CreateBackgroundJobData,
 } from './background-job.repository';
 import {
@@ -39,6 +41,8 @@ import {
   BackgroundJobStatus,
 } from 'src/db/entities/background-job.entity';
 
+// Only insertIfNotExists uses the query builder (ON CONFLICT DO NOTHING has
+// no Repository API equivalent). All other methods use Repository.find/update.
 const mockQueryBuilder = {
   insert: vi.fn().mockReturnThis(),
   into: vi.fn().mockReturnThis(),
@@ -46,19 +50,14 @@ const mockQueryBuilder = {
   orIgnore: vi.fn().mockReturnThis(),
   returning: vi.fn().mockReturnThis(),
   execute: vi.fn(),
-  select: vi.fn().mockReturnThis(),
-  from: vi.fn().mockReturnThis(),
-  where: vi.fn().mockReturnThis(),
-  andWhere: vi.fn().mockReturnThis(),
-  getMany: vi.fn(),
-  update: vi.fn().mockReturnThis(),
-  set: vi.fn().mockReturnThis(),
 };
 
 const mockTypeOrmRepo = {
   createQueryBuilder: vi.fn().mockReturnValue(mockQueryBuilder),
   create: vi.fn(),
   save: vi.fn(),
+  find: vi.fn(),
+  update: vi.fn(),
 };
 
 describe('BackgroundJobRepository', () => {
@@ -67,17 +66,6 @@ describe('BackgroundJobRepository', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockTypeOrmRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-    mockQueryBuilder.insert.mockReturnThis();
-    mockQueryBuilder.into.mockReturnThis();
-    mockQueryBuilder.values.mockReturnThis();
-    mockQueryBuilder.orIgnore.mockReturnThis();
-    mockQueryBuilder.returning.mockReturnThis();
-    mockQueryBuilder.select.mockReturnThis();
-    mockQueryBuilder.from.mockReturnThis();
-    mockQueryBuilder.where.mockReturnThis();
-    mockQueryBuilder.andWhere.mockReturnThis();
-    mockQueryBuilder.update.mockReturnThis();
-    mockQueryBuilder.set.mockReturnThis();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -106,9 +94,12 @@ describe('BackgroundJobRepository', () => {
         idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
         payload: { cardId: 'card-1' },
         scheduledFrom: now,
-        ttl: new Date(now.getTime() + 86400000),
+        expiresAt: new Date(now.getTime() + 86400000),
       };
-      const job = { id: 'job-1', ...creationData } as unknown as BackgroundJobEntity;
+      const job = {
+        id: 'job-1',
+        ...creationData,
+      } as unknown as BackgroundJobEntity;
 
       mockTypeOrmRepo.create.mockReturnValue(job);
       mockTypeOrmRepo.save.mockResolvedValue(job);
@@ -131,9 +122,12 @@ describe('BackgroundJobRepository', () => {
         idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
         payload: { cardId: 'card-1' },
         scheduledFrom: now,
-        ttl: new Date(now.getTime() + 86400000),
+        expiresAt: new Date(now.getTime() + 86400000),
       };
-      const inserted = { id: 'job-1', ...data } as unknown as BackgroundJobEntity;
+      const inserted = {
+        id: 'job-1',
+        ...data,
+      } as unknown as BackgroundJobEntity;
       mockQueryBuilder.execute.mockResolvedValue({ raw: [inserted] });
 
       const result = await repository.insertIfNotExists(data);
@@ -150,7 +144,7 @@ describe('BackgroundJobRepository', () => {
         idempotencyKey: 'notification.upcoming:card-1:2026-04-01',
         payload: { cardId: 'card-1' },
         scheduledFrom: now,
-        ttl: new Date(now.getTime() + 86400000),
+        expiresAt: new Date(now.getTime() + 86400000),
       };
       mockQueryBuilder.execute.mockResolvedValue({ raw: [] });
 
@@ -163,37 +157,63 @@ describe('BackgroundJobRepository', () => {
   describe('#findPendingForRecovery', () => {
     it('returns jobs eligible for recovery', async () => {
       const jobs = [{ id: 'job-1' }] as BackgroundJobEntity[];
-      mockQueryBuilder.getMany.mockResolvedValue(jobs);
+      mockTypeOrmRepo.find.mockResolvedValue(jobs);
 
       const result = await repository.findPendingForRecovery();
 
       expect(result).toEqual(jobs);
+      expect(mockTypeOrmRepo.find).toHaveBeenCalledOnce();
     });
   });
 
   describe('#updateStatus', () => {
     it('updates job status by id', async () => {
-      mockQueryBuilder.execute.mockResolvedValue(undefined);
+      mockTypeOrmRepo.update.mockResolvedValue(undefined);
 
       await repository.updateStatus('job-1', BackgroundJobStatus.PROCESSING);
 
-      expect(mockQueryBuilder.update).toHaveBeenCalled();
-      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
-        status: BackgroundJobStatus.PROCESSING,
-      });
+      expect(mockTypeOrmRepo.update).toHaveBeenCalledWith(
+        { id: 'job-1' },
+        { status: BackgroundJobStatus.PROCESSING },
+      );
     });
   });
 
   describe('#cancelJobsForCard', () => {
     it('sets pending/processing jobs for a card to cancelled', async () => {
-      mockQueryBuilder.execute.mockResolvedValue(undefined);
+      mockTypeOrmRepo.update.mockResolvedValue(undefined);
 
       await repository.cancelJobsForCard('card-1');
 
-      expect(mockQueryBuilder.update).toHaveBeenCalled();
-      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
-        status: BackgroundJobStatus.CANCELLED,
-      });
+      expect(mockTypeOrmRepo.update).toHaveBeenCalledWith(
+        {
+          referenceType: BACKGROUND_JOB_REFERENCE_TYPES.maintenanceCard,
+          referenceId: 'card-1',
+          status: In([
+            BackgroundJobStatus.PENDING,
+            BackgroundJobStatus.PROCESSING,
+          ]),
+        },
+        { status: BackgroundJobStatus.CANCELLED },
+      );
+    });
+
+    it('uses entityManager repo when provided', async () => {
+      const emRepo = { update: vi.fn().mockResolvedValue(undefined) };
+      const entityManager = {
+        getRepository: vi.fn().mockReturnValue(emRepo),
+      };
+
+      await repository.cancelJobsForCard(
+        'card-1',
+        entityManager as unknown as import('typeorm').EntityManager,
+      );
+
+      expect(entityManager.getRepository).toHaveBeenCalledWith(
+        BackgroundJobEntity,
+      );
+      expect(emRepo.update).toHaveBeenCalled();
+      expect(mockTypeOrmRepo.update).not.toHaveBeenCalled();
     });
   });
 });
@@ -214,21 +234,33 @@ Create `backend/src/modules/background-job/repositories/background-job.repositor
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import {
+  EntityManager,
+  In,
+  LessThanOrEqual,
+  MoreThan,
+  Repository,
+} from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import {
   BackgroundJobEntity,
   BackgroundJobStatus,
 } from 'src/db/entities/background-job.entity';
 import { BaseDBUtil } from 'src/modules/common/base-classes/base-db-util';
+import { JobType } from '../enums/job-type.enum';
+
+export const BACKGROUND_JOB_REFERENCE_TYPES = {
+  maintenanceCard: 'maintenance_card',
+} as const;
 
 export type CreateBackgroundJobData = {
-  jobType: string;
+  jobType: JobType;
   referenceId: string | null;
   referenceType: string | null;
   idempotencyKey: string;
   payload: Record<string, unknown>;
   scheduledFrom: Date;
-  ttl: Date;
+  expiresAt: Date;
 };
 
 @Injectable()
@@ -243,16 +275,19 @@ export class BackgroundJobRepository extends BaseDBUtil<
     super(BackgroundJobEntity, backgroundJobRepo);
   }
 
+  private repoFor(em?: EntityManager): Repository<BackgroundJobEntity> {
+    return (
+      (em?.getRepository(BackgroundJobEntity) as Repository<BackgroundJobEntity>) ??
+      this.repo
+    );
+  }
+
   async create(params: {
     creationData: CreateBackgroundJobData;
     entityManager?: EntityManager;
   }): Promise<BackgroundJobEntity> {
     const { creationData, entityManager } = params;
-    const repo =
-      (entityManager?.getRepository(
-        BackgroundJobEntity,
-      ) as Repository<BackgroundJobEntity>) ?? this.backgroundJobRepo;
-
+    const repo = this.repoFor(entityManager);
     const job = repo.create(creationData);
     return await repo.save(job);
   }
@@ -268,60 +303,59 @@ export class BackgroundJobRepository extends BaseDBUtil<
       .createQueryBuilder()
       .insert()
       .into(BackgroundJobEntity)
-      .values(data)
+      .values(data as QueryDeepPartialEntity<BackgroundJobEntity>)
       .orIgnore()
       .returning('*')
       .execute();
 
-    return result.raw.length > 0
-      ? (result.raw[0] as BackgroundJobEntity)
-      : null;
+    const rows = result.raw as BackgroundJobEntity[];
+    return rows.length > 0 ? rows[0] : null;
   }
 
   /**
    * Finds jobs in pending/processing state eligible for recovery:
-   * scheduled_from <= now AND ttl > now
+   * scheduled_from <= now AND expires_at > now
+   *
+   * Uses Repository.find() with TypeORM find operators — no query builder needed.
    */
   async findPendingForRecovery(): Promise<BackgroundJobEntity[]> {
-    return this.backgroundJobRepo
-      .createQueryBuilder('job')
-      .where('job.status IN (:...statuses)', {
-        statuses: [BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING],
-      })
-      .andWhere('job.scheduledFrom <= NOW()')
-      .andWhere('job.ttl > NOW()')
-      .getMany();
+    return this.repo.find({
+      where: {
+        status: In([BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING]),
+        scheduledFrom: LessThanOrEqual(new Date()),
+        expiresAt: MoreThan(new Date()),
+      },
+    });
   }
 
   /**
    * Updates a single job's status by id.
    */
   async updateStatus(id: string, status: BackgroundJobStatus): Promise<void> {
-    await this.backgroundJobRepo
-      .createQueryBuilder('job')
-      .update(BackgroundJobEntity)
-      .set({ status })
-      .where('job.id = :id', { id })
-      .execute();
+    await this.backgroundJobRepo.update({ id }, { status });
   }
 
   /**
    * Cancels all pending/processing jobs for a maintenance card.
    * Called when a card is marked done or deleted.
+   * Pass entityManager to run within an existing transaction.
+   *
+   * Uses Repository.update() with In() — query builder not needed here.
+   * insertIfNotExists is the only method that still requires the query builder
+   * because ON CONFLICT DO NOTHING has no Repository API equivalent.
    */
-  async cancelJobsForCard(cardId: string): Promise<void> {
-    await this.backgroundJobRepo
-      .createQueryBuilder('job')
-      .update(BackgroundJobEntity)
-      .set({ status: BackgroundJobStatus.CANCELLED })
-      .where('job.referenceType = :referenceType', {
-        referenceType: 'maintenance_card',
-      })
-      .andWhere('job.referenceId = :cardId', { cardId })
-      .andWhere('job.status IN (:...statuses)', {
-        statuses: [BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING],
-      })
-      .execute();
+  async cancelJobsForCard(
+    cardId: string,
+    entityManager?: EntityManager,
+  ): Promise<void> {
+    await this.repoFor(entityManager).update(
+      {
+        referenceType: BACKGROUND_JOB_REFERENCE_TYPES.maintenanceCard,
+        referenceId: cardId,
+        status: In([BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING]),
+      },
+      { status: BackgroundJobStatus.CANCELLED },
+    );
   }
 }
 ```

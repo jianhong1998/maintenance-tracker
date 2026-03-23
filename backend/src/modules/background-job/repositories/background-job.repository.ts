@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { EntityManager, Repository } from 'typeorm';
+import {
+  EntityManager,
+  In,
+  LessThanOrEqual,
+  MoreThan,
+  Repository,
+} from 'typeorm';
+import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 import {
   BackgroundJobEntity,
   BackgroundJobStatus,
@@ -34,16 +41,20 @@ export class BackgroundJobRepository extends BaseDBUtil<
     super(BackgroundJobEntity, backgroundJobRepo);
   }
 
+  private repoFor(em?: EntityManager): Repository<BackgroundJobEntity> {
+    return (
+      (em?.getRepository(
+        BackgroundJobEntity,
+      ) as Repository<BackgroundJobEntity>) ?? this.repo
+    );
+  }
+
   async create(params: {
     creationData: CreateBackgroundJobData;
     entityManager?: EntityManager;
   }): Promise<BackgroundJobEntity> {
     const { creationData, entityManager } = params;
-    const repo =
-      (entityManager?.getRepository(
-        BackgroundJobEntity,
-      ) as Repository<BackgroundJobEntity>) ?? this.backgroundJobRepo;
-
+    const repo = this.repoFor(entityManager);
     const job = repo.create(creationData);
     return await repo.save(job);
   }
@@ -59,8 +70,7 @@ export class BackgroundJobRepository extends BaseDBUtil<
       .createQueryBuilder()
       .insert()
       .into(BackgroundJobEntity)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-      .values(data as any)
+      .values(data as QueryDeepPartialEntity<BackgroundJobEntity>)
       .orIgnore()
       .returning('*')
       .execute();
@@ -74,26 +84,23 @@ export class BackgroundJobRepository extends BaseDBUtil<
    * scheduled_from <= now AND expires_at > now
    */
   async findPendingForRecovery(): Promise<BackgroundJobEntity[]> {
-    return this.backgroundJobRepo
-      .createQueryBuilder('job')
-      .where('job.status IN (:...statuses)', {
-        statuses: [BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING],
-      })
-      .andWhere('job.scheduledFrom <= NOW()')
-      .andWhere('job.expiresAt > NOW()')
-      .getMany();
+    return this.repo.find({
+      where: {
+        status: In([
+          BackgroundJobStatus.PENDING,
+          BackgroundJobStatus.PROCESSING,
+        ]),
+        scheduledFrom: LessThanOrEqual(new Date()),
+        expiresAt: MoreThan(new Date()),
+      },
+    });
   }
 
   /**
    * Updates a single job's status by id.
    */
   async updateStatus(id: string, status: BackgroundJobStatus): Promise<void> {
-    await this.backgroundJobRepo
-      .createQueryBuilder('job')
-      .update(BackgroundJobEntity)
-      .set({ status })
-      .where('job.id = :id', { id })
-      .execute();
+    await this.backgroundJobRepo.update({ id }, { status });
   }
 
   /**
@@ -105,22 +112,16 @@ export class BackgroundJobRepository extends BaseDBUtil<
     cardId: string,
     entityManager?: EntityManager,
   ): Promise<void> {
-    const repo =
-      (entityManager?.getRepository(
-        BackgroundJobEntity,
-      ) as Repository<BackgroundJobEntity>) ?? this.backgroundJobRepo;
-
-    await repo
-      .createQueryBuilder('job')
-      .update(BackgroundJobEntity)
-      .set({ status: BackgroundJobStatus.CANCELLED })
-      .where('job.referenceType = :referenceType', {
+    await this.repoFor(entityManager).update(
+      {
         referenceType: BACKGROUND_JOB_REFERENCE_TYPES.maintenanceCard,
-      })
-      .andWhere('job.referenceId = :cardId', { cardId })
-      .andWhere('job.status IN (:...statuses)', {
-        statuses: [BackgroundJobStatus.PENDING, BackgroundJobStatus.PROCESSING],
-      })
-      .execute();
+        referenceId: cardId,
+        status: In([
+          BackgroundJobStatus.PENDING,
+          BackgroundJobStatus.PROCESSING,
+        ]),
+      },
+      { status: BackgroundJobStatus.CANCELLED },
+    );
   }
 }
