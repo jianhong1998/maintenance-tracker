@@ -42,11 +42,7 @@ export class BackgroundJobRepository extends BaseDBUtil<
   }
 
   private repoFor(em?: EntityManager): Repository<BackgroundJobEntity> {
-    return (
-      (em?.getRepository(
-        BackgroundJobEntity,
-      ) as Repository<BackgroundJobEntity>) ?? this.repo
-    );
+    return em?.getRepository(BackgroundJobEntity) ?? this.repo;
   }
 
   async create(params: {

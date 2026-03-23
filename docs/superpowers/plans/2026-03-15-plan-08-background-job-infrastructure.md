@@ -1215,3 +1215,40 @@ Note: The reviewer claims "server uses `restart: true` via `depends_on`" which i
 **Invalid.** The reviewer claims "The other Dockerfiles in this repo likely pin a version." This is factually incorrect — `Dockerfile.backend` (line 11) also uses `npm install -g pnpm@latest`. Using `@latest` is the established convention across all Dockerfiles in this repo. Changing `Dockerfile.background-job` alone would create inconsistency. This should be addressed as a repo-wide change if desired.
 
 Expected: NestJS bootstrap logs appear from the worker container. No Redis or Postgres `ECONNREFUSED` errors. Worker sits idle waiting for queue messages.
+
+---
+
+## Code Review Analysis (2026-03-23) — Second Pass
+
+Performed after addressing PR #16 feedback. Three issues were found; all three were valid and resolved.
+
+### Issue 1: `deleteCard` cancels jobs outside a transaction — **Bug, Fixed**
+
+**Finding:** `deleteCard` called `cardRepository.delete` followed by `cancelJobsForCard(id)` with no transaction wrapping. If `cancelJobsForCard` throws after the card is already deleted, background jobs remain in `PENDING` state for a card that no longer exists. The worker then fires notifications for a deleted card.
+
+**Contrast:** `markDone` correctly wraps `cancelJobsForCard(id, em)` inside `dataSource.transaction`. The same pattern was not applied to `deleteCard` when the cancellation call was added.
+
+**Decision:** Wrap both `cardRepository.delete` and `cancelJobsForCard` in `dataSource.transaction`. Pass `entityManager` to both so they execute atomically. Three tests added/updated: delete passes `entityManager` to repository, cancellation is called with `entityManager`, and cancellation does not happen when delete fails.
+
+**Files changed:**
+- `backend/src/modules/maintenance-card/services/maintenance-card.service.ts` — wrapped in transaction
+- `backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts` — updated 2 tests, added 1 new test
+
+### Issue 2: `repoFor` cast is unnecessary — **Code Smell, Fixed**
+
+**Finding:** `repoFor` in `BackgroundJobRepository` cast the result of `em.getRepository(BackgroundJobEntity)` to `Repository<BackgroundJobEntity>`. TypeORM's `EntityManager.getRepository<T>(entity)` signature is `getRepository<Entity>(target: EntityTarget<Entity>): Repository<Entity>` — the return type is already `Repository<BackgroundJobEntity>`. The cast was noise that obscured the real type.
+
+**Decision:** Remove the cast. No behavior change; purely a type-level cleanup. No new tests required.
+
+**Files changed:**
+- `backend/src/modules/background-job/repositories/background-job.repository.ts` — removed `as Repository<BackgroundJobEntity>` cast in `repoFor`
+
+### Issue 3: `QueueModule` depended on caller to configure `BullModule.forRoot` — **Design Footgun, Fixed**
+
+**Finding:** `QueueModule` called `BullModule.registerQueue()` but expected the importing context to have called `BullModule.forRootAsync()` separately. Only `WorkerModule` did this. A comment warned future authors of the constraint, but this is a maintenance trap: when Plan 09 adds job enqueueing from the main `AppModule`, importing `QueueModule` without knowing to also configure `BullModule.forRoot` would cause a runtime failure.
+
+**Decision:** Move `BullModule.forRootAsync` into `QueueModule` itself so it is self-contained. Any module that imports `QueueModule` automatically gets a working Redis connection. Removed the duplicate `BullModule.forRootAsync` and the now-unused `BullModule`, `ConfigModule`, `ConfigService` imports from `WorkerModule`. `ConfigModule` is registered globally by `AppConfig.configModule` (`isGlobal: true`), so `QueueModule`'s `forRootAsync` can inject `ConfigService` without issues.
+
+**Files changed:**
+- `backend/src/modules/queue/queue.module.ts` — added `BullModule.forRootAsync`, removed warning comment
+- `backend/src/modules/worker/worker.module.ts` — removed `BullModule.forRootAsync`, removed `BullModule`/`ConfigModule`/`ConfigService` imports

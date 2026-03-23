@@ -439,7 +439,7 @@ describe('MaintenanceCardService', () => {
   });
 
   describe('#deleteCard', () => {
-    it('soft deletes the card', async () => {
+    it('soft deletes the card inside a transaction', async () => {
       mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
       mockMaintenanceCardRepository.delete.mockResolvedValue([baseCard]);
 
@@ -447,10 +447,11 @@ describe('MaintenanceCardService', () => {
 
       expect(mockMaintenanceCardRepository.delete).toHaveBeenCalledWith({
         entities: [baseCard],
+        entityManager: mockEntityManager,
       });
     });
 
-    it('cancels background jobs for the card', async () => {
+    it('cancels background jobs inside the delete transaction', async () => {
       mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
       mockMaintenanceCardRepository.delete.mockResolvedValue([baseCard]);
 
@@ -458,7 +459,22 @@ describe('MaintenanceCardService', () => {
 
       expect(
         mockBackgroundJobRepository.cancelJobsForCard,
-      ).toHaveBeenCalledWith(cardId);
+      ).toHaveBeenCalledWith(cardId, mockEntityManager);
+    });
+
+    it('does NOT cancel background jobs when the delete transaction fails', async () => {
+      mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
+      mockMaintenanceCardRepository.delete.mockRejectedValue(
+        new Error('DB delete failed'),
+      );
+
+      await expect(
+        service.deleteCard(cardId, vehicleId, userId),
+      ).rejects.toThrow('DB delete failed');
+
+      expect(
+        mockBackgroundJobRepository.cancelJobsForCard,
+      ).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException when card not found', async () => {
