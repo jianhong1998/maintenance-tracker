@@ -1252,3 +1252,28 @@ Performed after addressing PR #16 feedback. Three issues were found; all three w
 **Files changed:**
 - `backend/src/modules/queue/queue.module.ts` — added `BullModule.forRootAsync`, removed warning comment
 - `backend/src/modules/worker/worker.module.ts` — removed `BullModule.forRootAsync`, removed `BullModule`/`ConfigModule`/`ConfigService` imports
+
+---
+
+## Post-Merge Code Review Notes
+
+### Issue: `removeOnFail: true` — **Valid, Fixed**
+
+**Finding:** `removeOnFail: true` in `QueueModule.defaultJobOptions` causes BullMQ to immediately delete every failed job from Redis, taking the payload, stack trace, and retry history with it. No evidence for debugging when the notification processor fails.
+
+**Decision:** Changed to `removeOnFail: { count: 100 }` to retain the last 100 failures for inspection.
+
+**Files changed:**
+- `backend/src/modules/queue/queue.module.ts` — `removeOnFail: true` → `removeOnFail: { count: 100 }`
+
+### Issue: `pnpm@latest` non-deterministic in `Dockerfile.background-job` — **Invalid, Not Fixed**
+
+**Reviewer claim:** "The other Dockerfiles in this repo likely pin a version. Pin this to match."
+
+**Finding:** This premise is false. `docker/local/Dockerfile.backend:11` also uses `RUN npm install -g pnpm@latest`. Every local Dockerfile in the repo uses `pnpm@latest` — the new background-job Dockerfile is consistent with the existing pattern. Fixing only `Dockerfile.background-job` would introduce inconsistency across Dockerfiles. This would require a coordinated change across all Dockerfiles, which is out of scope for this PR and not caused by it.
+
+### Issue: Worker watch `action: sync` should be `sync+restart` — **Invalid, Not Fixed**
+
+**Reviewer claim:** "The `server` service uses `action: sync+restart` for `./backend/src`. The worker uses plain `sync`, so code changes won't trigger a process restart."
+
+**Finding:** This is factually wrong. The `server` service in `docker-compose.yml` also uses `action: sync` for `./backend/src` — not `sync+restart`. Only `./packages` in the `client` service uses `sync+restart` (because Next.js needs a restart to pick up shared type changes). The worker service is consistent with the server service. Both rely on NestJS `nest start --watch` (via `pnpm run dev:worker`) to detect file changes inside the container — `sync` copies files in, the internal watcher handles the restart.

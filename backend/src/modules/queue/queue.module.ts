@@ -17,7 +17,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       name: 'maintenance',
       defaultJobOptions: {
         removeOnComplete: true,
-        removeOnFail: true,
+        removeOnFail: { count: 100 },
       },
     }),
   ],
