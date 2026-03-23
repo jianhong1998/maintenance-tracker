@@ -43,7 +43,7 @@ export class SchedulerService {
       // TTL: upcoming → stale at due date (overdue job takes over)
       // TTL: overdue → 30-day grace window from due date
       const nextDueDateObj = new Date(`${nextDueDateStr}T00:00:00Z`);
-      const ttl = isOverdue
+      const expiresAt = isOverdue
         ? new Date(nextDueDateObj.getTime() + 30 * 24 * 60 * 60 * 1000)
         : nextDueDateObj;
 
@@ -54,7 +54,7 @@ export class SchedulerService {
         idempotencyKey,
         payload: { cardId: card.id },
         scheduledFrom: new Date(),
-        ttl,
+        expiresAt,
       });
 
       if (job) {

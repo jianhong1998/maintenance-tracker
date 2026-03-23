@@ -165,13 +165,13 @@ describe('SchedulerService', () => {
 
       const callArg = mockBackgroundJobRepository.insertIfNotExists.mock
         .calls[0][0] as {
-        ttl: Date;
+        expiresAt: Date;
         jobType: string;
       };
       expect(callArg.jobType).toBe('notification.overdue');
       const expectedTtl = new Date(`${yesterdayStr}T00:00:00Z`);
       expectedTtl.setDate(expectedTtl.getDate() + 30);
-      expect(callArg.ttl.toISOString().slice(0, 10)).toBe(
+      expect(callArg.expiresAt.toISOString().slice(0, 10)).toBe(
         expectedTtl.toISOString().slice(0, 10),
       );
     });
@@ -194,12 +194,12 @@ describe('SchedulerService', () => {
 
       const callArg = mockBackgroundJobRepository.insertIfNotExists.mock
         .calls[0][0] as {
-        ttl: Date;
+        expiresAt: Date;
         jobType: string;
       };
       expect(callArg.jobType).toBe('notification.upcoming');
       // TTL for upcoming = nextDueDate (stale once card becomes overdue)
-      expect(callArg.ttl.toISOString().slice(0, 10)).toBe(tomorrowStr);
+      expect(callArg.expiresAt.toISOString().slice(0, 10)).toBe(tomorrowStr);
     });
   });
 
