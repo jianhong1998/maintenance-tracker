@@ -614,6 +614,46 @@ Reviewed after implementation on 2026-03-24. Summary of findings and resolutions
 
 ---
 
+---
+
+### ✅ Fixed: Missing `'use client'` directive in `auth-context.tsx`
+
+**Issue:** `auth-context.tsx` exports `useAuthContext` which calls `useContext`, but had no `'use client'` directive. In Next.js App Router, any module that exports or calls React hooks must declare itself a client module. Without it there is no build-time guard — a server component accidentally importing this file would fail at runtime.
+
+**Fix applied:** Added `'use client';` as the first line of `frontend/src/contexts/auth-context.tsx`. Committed in `feat: 010 - resolve code review: add use client, fix double-click, add tests, add firebase env validation`.
+
+---
+
+### ✅ Fixed: Double-click vulnerability on sign-in button
+
+**Issue:** `login/page.tsx` had `disabled={loading}` where `loading` is the Firebase auth-state initialisation flag. It becomes `false` almost immediately on mount, long before any sign-in attempt. Clicking the button while the Google popup was already open could launch a second concurrent `signInWithPopup` call, causing undefined behaviour.
+
+**Fix applied:** Added `isSigningIn` state (`useState(false)`). Set to `true` before `signInWithGoogle()` and cleared in a `finally` block. Updated `disabled` to `{loading || isSigningIn}`. Committed in `feat: 010 - resolve code review: add use client, fix double-click, add tests, add firebase env validation`.
+
+---
+
+### ✅ Fixed: No tests (TDD mandate violated)
+
+**Issue:** The PR had zero test files and no test infrastructure in the frontend. CLAUDE.md mandates TDD.
+
+**Fix applied:** Set up Vitest + React Testing Library (`vitest.config.ts`, `vitest.setup.ts`, test dependencies in `package.json`). Added 16 tests across 4 files:
+- `auth-guard.spec.tsx` — loading state, redirect when unauthenticated, no flash on redirect, renders children when authenticated
+- `login/page.spec.tsx` — button disabled during auth loading, button disabled during sign-in (exposes the double-click bug), error message on failure, redirect when already authenticated
+- `auth-provider.spec.tsx` — loading initial state, user set on auth change, null on sign-out, token getter wired to API client
+- `firebase.spec.ts` — throws with missing var name for each required env var, passes when all present
+
+Committed in `feat: 010 - resolve code review: add use client, fix double-click, add tests, add firebase env validation`.
+
+---
+
+### ✅ Fixed: Firebase env vars not validated at startup
+
+**Issue:** `firebase.ts` passed `process.env.FRONTEND_FIREBASE_*` directly to `initializeApp` without checking for `undefined`. Missing env vars produce cryptic Firebase SDK errors instead of actionable messages.
+
+**Fix applied:** Exported `validateFirebaseEnv()` that collects the names of any missing required vars and throws `Error: Missing required Firebase environment variables: <names>`. Called at module level so misconfiguration fails fast on app startup. Committed in `feat: 010 - resolve code review: add use client, fix double-click, add tests, add firebase env validation`.
+
+---
+
 ### ❌ Invalid for this plan: `AuthGuard` at component level vs. protected layout
 
 **Raised as:** Per-component `AuthGuard` wrapping is error-prone at scale — a developer can forget to add it.
