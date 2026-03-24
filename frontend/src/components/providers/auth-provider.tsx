@@ -17,7 +17,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Wire up the token getter so apiClient can attach Bearer tokens
     setAuthTokenGetter(async () => {
       const currentUser = auth.currentUser;
       if (!currentUser) return null;
