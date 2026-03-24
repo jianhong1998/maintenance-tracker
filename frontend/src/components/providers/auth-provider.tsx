@@ -29,7 +29,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      setAuthTokenGetter(() => Promise.resolve(null));
+    };
   }, []);
 
   const signInWithGoogle = async () => {

@@ -32,9 +32,14 @@ const axiosInstance = axios.create({
 
 axiosInstance.interceptors.request.use(async (config) => {
   if (getToken) {
-    const token = await getToken();
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
+    try {
+      const token = await getToken();
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+    } catch {
+      // Token fetch failed — send the request without auth.
+      // The server will return 401 and the app can handle it.
     }
   }
   return config;
