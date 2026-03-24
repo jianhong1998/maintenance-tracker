@@ -60,6 +60,15 @@ describe('getCardWarningStatus', () => {
     expect(getCardWarningStatus(card, 50000, 'km', 500)).toBe('ok');
   });
 
+  it('returns "ok" when nextDueMileage is null and date is in the future', () => {
+    const card = makeCard({
+      nextDueMileage: null,
+      intervalMileage: null,
+      nextDueDate: '2099-01-01',
+    });
+    expect(getCardWarningStatus(card, 50000, 'km', 500)).toBe('ok');
+  });
+
   it('returns overdue from date check before mileage check when both conditions exist', () => {
     // Both date overdue and mileage overdue; date check takes precedence (still overdue)
     const card = makeCard({ nextDueDate: '2020-01-01', nextDueMileage: 40000 });

@@ -1,4 +1,4 @@
-import type { IMaintenanceCardResDTO } from '@project/types';
+import type { IMaintenanceCardResDTO, MileageUnit } from '@project/types';
 
 const MILES_TO_KM = 1.60934;
 
@@ -15,13 +15,13 @@ export type CardWarningStatus = 'overdue' | 'warning' | 'ok';
 export function getCardWarningStatus(
   card: IMaintenanceCardResDTO,
   vehicleMileage: number,
-  mileageUnit: 'km' | 'mile',
+  mileageUnit: MileageUnit,
   mileageWarningThresholdKm: number,
 ): CardWarningStatus {
   const todayStr = new Date().toISOString().slice(0, 10);
 
   // Date-based overdue check
-  if (card.nextDueDate && String(card.nextDueDate).slice(0, 10) < todayStr) {
+  if (card.nextDueDate && card.nextDueDate.slice(0, 10) < todayStr) {
     return 'overdue';
   }
 
@@ -50,7 +50,7 @@ export function getCardWarningStatus(
 export function countWarningCards(
   cards: IMaintenanceCardResDTO[],
   vehicleMileage: number,
-  mileageUnit: 'km' | 'mile',
+  mileageUnit: MileageUnit,
   mileageWarningThresholdKm: number,
 ): number {
   return cards.filter((card) => {
