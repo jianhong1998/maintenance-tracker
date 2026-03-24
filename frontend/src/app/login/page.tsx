@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthContext } from '@/contexts/auth-context';
 import { Button } from '@/components/ui/button';
@@ -8,12 +8,22 @@ import { Button } from '@/components/ui/button';
 export default function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuthContext();
   const router = useRouter();
+  const [signInError, setSignInError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && user) {
       router.replace('/');
     }
   }, [user, loading, router]);
+
+  const handleSignIn = async () => {
+    setSignInError(null);
+    try {
+      await signInWithGoogle();
+    } catch {
+      setSignInError('Sign-in failed. Please try again.');
+    }
+  };
 
   return (
     <main className="flex min-h-screen items-center justify-center">
@@ -23,11 +33,14 @@ export default function LoginPage() {
           Track your vehicle maintenance schedules
         </p>
         <Button
-          onClick={() => void signInWithGoogle()}
+          onClick={() => void handleSignIn()}
           disabled={loading}
         >
           Sign in with Google
         </Button>
+        {signInError && (
+          <p className="text-destructive text-sm">{signInError}</p>
+        )}
       </div>
     </main>
   );
