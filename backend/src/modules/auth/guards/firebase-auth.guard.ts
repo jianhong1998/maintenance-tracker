@@ -9,7 +9,12 @@ import { Reflector } from '@nestjs/core';
 import { Request } from 'express';
 import { FirebaseService } from 'src/modules/firebase/firebase.service';
 import { AuthService } from '../services/auth.service';
+import { EnvironmentVariableUtil } from 'src/modules/common/utils/environment-variable.util';
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
+
+const API_TEST_TOKEN = 'api-test-token';
+const API_TEST_UID = 'api-test-uid';
+const API_TEST_EMAIL = 'api-test@test.com';
 
 @Injectable()
 export class FirebaseAuthGuard implements CanActivate {
@@ -19,6 +24,7 @@ export class FirebaseAuthGuard implements CanActivate {
     private readonly firebaseService: FirebaseService,
     private readonly authService: AuthService,
     private readonly reflector: Reflector,
+    private readonly envUtil: EnvironmentVariableUtil,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,6 +47,16 @@ export class FirebaseAuthGuard implements CanActivate {
     const token = authHeader.split(' ')[1];
     if (!token) {
       throw new UnauthorizedException('Missing bearer token');
+    }
+
+    const { enableApiTestMode } = this.envUtil.getFeatureFlags();
+    if (enableApiTestMode && token === API_TEST_TOKEN) {
+      const user = await this.authService.resolveUser({
+        firebaseUid: API_TEST_UID,
+        email: API_TEST_EMAIL,
+      });
+      (request as Request & { user: unknown }).user = user;
+      return true;
     }
 
     let decoded: { uid: string; email?: string };
