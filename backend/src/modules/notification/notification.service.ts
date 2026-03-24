@@ -19,42 +19,52 @@ export class NotificationService implements INotificationService {
   async sendUpcomingNotification(
     backgroundJob: BackgroundJobEntity,
   ): Promise<void> {
-    const card = await this.getCardWithUserOrThrow(backgroundJob.referenceId!);
-    const { user } = card.vehicle;
-
-    await this.emailService.sendEmail({
-      to: user.email,
-      subject: `Maintenance due soon: ${card.name}`,
-      body: [
-        `Your ${card.vehicle.brand} ${card.vehicle.model} is due for "${card.name}".`,
-        `Due date: ${String(card.nextDueDate).slice(0, 10)}.`,
-        `Please schedule your maintenance soon.`,
-      ].join(' '),
+    await this.dispatchNotification(backgroundJob, {
+      subject: (card) => `Maintenance due soon: ${card.name}`,
+      body: (card) =>
+        [
+          `Your ${card.vehicle.brand} ${card.vehicle.model} is due for "${card.name}".`,
+          `Due date: ${String(card.nextDueDate).slice(0, 10)}.`,
+          `Please schedule your maintenance soon.`,
+        ].join(' '),
+      logLabel: 'upcoming',
     });
-
-    this.logger.log(
-      `Sent upcoming notification for card ${card.id} to ${user.email}`,
-    );
   }
 
   async sendOverdueNotification(
     backgroundJob: BackgroundJobEntity,
+  ): Promise<void> {
+    await this.dispatchNotification(backgroundJob, {
+      subject: (card) => `Maintenance overdue: ${card.name}`,
+      body: (card) =>
+        [
+          `Your ${card.vehicle.brand} ${card.vehicle.model} has overdue maintenance: "${card.name}".`,
+          `This was due on ${String(card.nextDueDate).slice(0, 10)}.`,
+          `Please schedule your maintenance as soon as possible.`,
+        ].join(' '),
+      logLabel: 'overdue',
+    });
+  }
+
+  private async dispatchNotification(
+    backgroundJob: BackgroundJobEntity,
+    opts: {
+      subject: (card: MaintenanceCardEntity) => string;
+      body: (card: MaintenanceCardEntity) => string;
+      logLabel: string;
+    },
   ): Promise<void> {
     const card = await this.getCardWithUserOrThrow(backgroundJob.referenceId!);
     const { user } = card.vehicle;
 
     await this.emailService.sendEmail({
       to: user.email,
-      subject: `Maintenance overdue: ${card.name}`,
-      body: [
-        `Your ${card.vehicle.brand} ${card.vehicle.model} has overdue maintenance: "${card.name}".`,
-        `This was due on ${String(card.nextDueDate).slice(0, 10)}.`,
-        `Please schedule your maintenance as soon as possible.`,
-      ].join(' '),
+      subject: opts.subject(card),
+      body: opts.body(card),
     });
 
     this.logger.log(
-      `Sent overdue notification for card ${card.id} to ${user.email}`,
+      `Sent ${opts.logLabel} notification for card ${card.id} to ${user.email}`,
     );
   }
 

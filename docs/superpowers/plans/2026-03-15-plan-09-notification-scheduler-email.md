@@ -1217,3 +1217,51 @@ docker exec -it maintenance-tracker-postgres-1 psql -U postgres -d project_db \
 Expected: 0 rows initially (no maintenance cards with due dates exist yet).
 
 When cards exist with `next_due_date` values in the window, re-running the scheduler (`runNotificationSchedule` via cron or manual invocation) should insert rows into `background_jobs` and enqueue them.
+
+---
+
+## Post-Implementation Code Review (2026-03-24)
+
+A Linus-style code review was performed after implementation. Three bugs and one refactor opportunity were found and resolved.
+
+### Bug 1: `findCardsForNotification` included soft-deleted cards
+
+**Root cause:** TypeORM's `createQueryBuilder` does **not** automatically apply the soft-delete filter (`deletedAt IS NULL`) the way `find*` methods do. The query was silently returning deleted cards, contradicting the method's own docstring ("Returns non-deleted cards").
+
+**Fix:** Added `.andWhere('card.deletedAt IS NULL')` to the query chain in `maintenance-card.repository.ts`.
+
+**Test added:** `'excludes soft-deleted cards by filtering on deletedAt IS NULL'` in `maintenance-card.repository.spec.ts`.
+
+---
+
+### Bug 2: `EmailService` instantiated HTTP clients on every send
+
+**Root cause:** `sendViaPostmark` and `sendViaSes` called `new postmark.ServerClient(...)` and `new SESClient(...)` inside the method body. Config is static at runtime; there is no reason to pay client initialization cost on every email.
+
+**Fix:** Both clients are now initialized once as `readonly` private fields in the constructor. The `from` address (also static) is still read via `configService.get` at send time since it varies by provider and the tests configure it per-call.
+
+**Tests added** to `email.service.spec.ts`:
+- `'does not re-instantiate Postmark client on repeated sends'`
+- `'does not re-instantiate SES client on repeated sends'`
+
+These tests track the constructor call count before and after two `sendEmail` calls and assert the count does not increase.
+
+---
+
+### Bug 3: Unknown `EMAIL_PROVIDER` silently swallowed emails
+
+**Root cause:** The `else` branch in `sendEmail` called `this.logger.warn(...)` and returned without sending. A misconfigured `EMAIL_PROVIDER` env var would log a warning that could be missed in production, causing silent email loss with no observable failure.
+
+**Fix:** The `else` branch now throws `new Error('Unknown EMAIL_PROVIDER ...')`, surfacing the misconfiguration as a hard failure.
+
+**Test updated** in `email.service.spec.ts`: renamed from `'does not throw and logs a warning for unknown EMAIL_PROVIDER'` → `'throws for unknown EMAIL_PROVIDER'`; assertion changed from `resolves.toBeUndefined()` → `rejects.toThrow('Unknown EMAIL_PROVIDER')`.
+
+---
+
+### Refactor: Eliminated duplicate send logic in `NotificationService`
+
+**Issue:** `sendUpcomingNotification` and `sendOverdueNotification` were 90% identical — same card fetch, same email dispatch, same logging pattern. Only the subject/body strings differed.
+
+**Fix:** Extracted a private `dispatchNotification(job, { subject, body, logLabel })` helper. Both public methods now delegate to it with their respective string factories.
+
+All existing `notification.service.spec.ts` tests pass unchanged — public behavior is identical.

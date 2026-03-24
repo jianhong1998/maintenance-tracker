@@ -12,8 +12,17 @@ export interface SendEmailParams {
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
+  private readonly postmarkClient: postmark.ServerClient;
+  private readonly sesClient: SESClient;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly configService: ConfigService) {
+    this.postmarkClient = new postmark.ServerClient(
+      configService.get<string>('POSTMARK_API_KEY') ?? '',
+    );
+    this.sesClient = new SESClient({
+      region: configService.get<string>('AWS_SES_REGION'),
+    });
+  }
 
   async sendEmail(params: SendEmailParams): Promise<void> {
     const provider = this.configService.get<string>('EMAIL_PROVIDER');
@@ -23,18 +32,15 @@ export class EmailService {
     } else if (provider === 'ses') {
       await this.sendViaSes(params);
     } else {
-      this.logger.warn(
-        `Unknown EMAIL_PROVIDER "${provider ?? 'undefined'}" — email not sent`,
+      throw new Error(
+        `Unknown EMAIL_PROVIDER "${provider ?? 'undefined'}" — cannot send email`,
       );
     }
   }
 
   private async sendViaPostmark(params: SendEmailParams): Promise<void> {
-    const apiKey = this.configService.get<string>('POSTMARK_API_KEY') ?? '';
     const from = this.configService.get<string>('POSTMARK_FROM_ADDRESS') ?? '';
-
-    const client = new postmark.ServerClient(apiKey);
-    await client.sendEmail({
+    await this.postmarkClient.sendEmail({
       From: from,
       To: params.to,
       Subject: params.subject,
@@ -43,11 +49,8 @@ export class EmailService {
   }
 
   private async sendViaSes(params: SendEmailParams): Promise<void> {
-    const region = this.configService.get<string>('AWS_SES_REGION');
     const from = this.configService.get<string>('AWS_SES_FROM_ADDRESS') ?? '';
-
-    const client = new SESClient({ region });
-    await client.send(
+    await this.sesClient.send(
       new SendEmailCommand({
         Source: from,
         Destination: { ToAddresses: [params.to] },

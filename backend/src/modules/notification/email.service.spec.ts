@@ -2,19 +2,23 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-const { mockSendEmail, mockSend } = vi.hoisted(() => ({
-  mockSendEmail: vi.fn().mockResolvedValue({}),
-  mockSend: vi.fn().mockResolvedValue({}),
-}));
+const { mockSendEmail, mockSend, mockServerClient, mockSESClient } = vi.hoisted(
+  () => ({
+    mockSendEmail: vi.fn().mockResolvedValue({}),
+    mockSend: vi.fn().mockResolvedValue({}),
+    mockServerClient: vi.fn(),
+    mockSESClient: vi.fn(),
+  }),
+);
 
 vi.mock('postmark', () => ({
-  ServerClient: vi
-    .fn()
-    .mockImplementation(() => ({ sendEmail: mockSendEmail })),
+  ServerClient: mockServerClient.mockImplementation(() => ({
+    sendEmail: mockSendEmail,
+  })),
 }));
 
 vi.mock('@aws-sdk/client-ses', () => ({
-  SESClient: vi.fn().mockImplementation(() => ({ send: mockSend })),
+  SESClient: mockSESClient.mockImplementation(() => ({ send: mockSend })),
   SendEmailCommand: vi.fn().mockImplementation((input: unknown) => input),
 }));
 
@@ -84,7 +88,7 @@ describe('EmailService', () => {
       expect(mockSend).toHaveBeenCalled();
     });
 
-    it('does not throw and logs a warning for unknown EMAIL_PROVIDER', async () => {
+    it('throws for unknown EMAIL_PROVIDER', async () => {
       mockConfigService.get.mockReturnValue('unknown-provider');
 
       await expect(
@@ -93,10 +97,40 @@ describe('EmailService', () => {
           subject: 'Test Subject',
           body: 'Test body',
         }),
-      ).resolves.toBeUndefined();
+      ).rejects.toThrow('Unknown EMAIL_PROVIDER');
 
       expect(mockSendEmail).not.toHaveBeenCalled();
       expect(mockSend).not.toHaveBeenCalled();
+    });
+
+    it('does not re-instantiate Postmark client on repeated sends', async () => {
+      const callCountAfterInit = mockServerClient.mock.calls.length;
+
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'EMAIL_PROVIDER') return 'postmark';
+        if (key === 'POSTMARK_FROM_ADDRESS') return 'from@example.com';
+        return undefined;
+      });
+
+      await service.sendEmail({ to: 'a@b.com', subject: 'S', body: 'B' });
+      await service.sendEmail({ to: 'a@b.com', subject: 'S', body: 'B' });
+
+      expect(mockServerClient.mock.calls.length).toBe(callCountAfterInit);
+    });
+
+    it('does not re-instantiate SES client on repeated sends', async () => {
+      const callCountAfterInit = mockSESClient.mock.calls.length;
+
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'EMAIL_PROVIDER') return 'ses';
+        if (key === 'AWS_SES_FROM_ADDRESS') return 'from@example.com';
+        return undefined;
+      });
+
+      await service.sendEmail({ to: 'a@b.com', subject: 'S', body: 'B' });
+      await service.sendEmail({ to: 'a@b.com', subject: 'S', body: 'B' });
+
+      expect(mockSESClient.mock.calls.length).toBe(callCountAfterInit);
     });
   });
 });

@@ -69,6 +69,7 @@ export class MaintenanceCardRepository extends BaseDBUtil<
       .andWhere('card.nextDueDate <= :cutoffDate', {
         cutoffDate: cutoffDateStr,
       })
+      .andWhere('card.deletedAt IS NULL')
       .getMany();
   }
 }
