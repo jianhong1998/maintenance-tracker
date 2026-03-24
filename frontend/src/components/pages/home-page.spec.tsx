@@ -138,8 +138,8 @@ describe('HomePage', () => {
 
     render(<HomePage />);
 
-    // 2 vehicles × 2 warnings each = 4 total
-    expect(screen.getByText(/need attention/i)).toBeInTheDocument();
+    // countWarningCards returns 2 per vehicle × 2 vehicles = 4 total
+    expect(screen.getByText(/4 cards need attention/i)).toBeInTheDocument();
   });
 
   it('renders inside AuthGuard', () => {

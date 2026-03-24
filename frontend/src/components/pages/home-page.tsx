@@ -6,9 +6,8 @@ import { VehicleCard } from '@/components/vehicles/vehicle-card';
 import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import { countWarningCards } from '@/lib/warning';
-import { QueryGroup } from '@/hooks/queries/keys';
-import { apiClient } from '@/lib/api-client';
-import type { IVehicleResDTO, IMaintenanceCardResDTO } from '@project/types';
+import { maintenanceCardsQueryOptions } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
+import type { IVehicleResDTO } from '@project/types';
 
 /**
  * Computes the global warning count across all vehicles using useQueries.
@@ -21,14 +20,9 @@ function useGlobalWarningCount(
   thresholdKm: number,
 ): number {
   const results = useQueries({
-    queries: vehicles.map((vehicle) => ({
-      queryKey: [QueryGroup.MAINTENANCE_CARDS, vehicle.id],
-      queryFn: () =>
-        apiClient.get<IMaintenanceCardResDTO[]>(
-          `/vehicles/${vehicle.id}/maintenance-cards`,
-        ),
-      enabled: !!vehicle.id,
-    })),
+    queries: vehicles.map((vehicle) =>
+      maintenanceCardsQueryOptions(vehicle.id),
+    ),
   });
 
   return results.reduce((total, result, index) => {
@@ -49,7 +43,7 @@ function useGlobalWarningCount(
 function HomeContent() {
   const { data: vehicles = [], isLoading } = useVehicles();
   const { data: config } = useAppConfig();
-  const thresholdKm = config?.mileageWarningThresholdKm ?? 500;
+  const thresholdKm = config?.mileageWarningThresholdKm ?? 0;
   const globalWarningCount = useGlobalWarningCount(vehicles, thresholdKm);
 
   if (isLoading) {
