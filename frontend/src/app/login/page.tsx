@@ -9,6 +9,7 @@ export default function LoginPage() {
   const { user, loading, signInWithGoogle } = useAuthContext();
   const router = useRouter();
   const [signInError, setSignInError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState(false);
 
   useEffect(() => {
     if (!loading && user) {
@@ -18,10 +19,13 @@ export default function LoginPage() {
 
   const handleSignIn = async () => {
     setSignInError(null);
+    setIsSigningIn(true);
     try {
       await signInWithGoogle();
     } catch {
       setSignInError('Sign-in failed. Please try again.');
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
@@ -34,7 +38,7 @@ export default function LoginPage() {
         </p>
         <Button
           onClick={() => void handleSignIn()}
-          disabled={loading}
+          disabled={loading || isSigningIn}
         >
           Sign in with Google
         </Button>
