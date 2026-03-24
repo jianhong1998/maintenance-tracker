@@ -17,4 +17,8 @@ describe('QueryGroup', () => {
   it('should have MAINTENANCE_CARDS equal to "maintenance-cards"', () => {
     expect(QueryGroup.MAINTENANCE_CARDS).toBe('maintenance-cards');
   });
+
+  it('should be frozen (immutable)', () => {
+    expect(Object.isFrozen(QueryGroup)).toBe(true);
+  });
 });
