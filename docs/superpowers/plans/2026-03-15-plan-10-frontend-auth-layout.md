@@ -575,3 +575,89 @@ git add frontend/src/app/layout.tsx \
         frontend/src/components/pages/home-page.tsx
 git commit -m "feat: wrap root layout with AuthProvider and protect home page with AuthGuard"
 ```
+
+---
+
+## Post-implementation Code Review Notes
+
+Reviewed after implementation on 2026-03-24. Summary of findings and resolutions.
+
+### ✅ Fixed: Missing error handling in `signInWithGoogle` (login page)
+
+**Issue:** `signInWithGoogle()` was called with `void` and no try/catch. If the popup is blocked, the user cancels, or a network error occurs, the rejection was silently swallowed — the button would do nothing with no feedback.
+
+**Fix applied:** Wrapped in `handleSignIn` with try/catch; added `signInError` state; rendered error message below the button (`text-destructive text-sm`). Committed in `feat: 010 - add error handling for signInWithGoogle on login page`.
+
+---
+
+### ❌ Invalid: Context/provider split (`auth-context.tsx` vs `auth-provider.tsx`)
+
+**Raised as:** Unnecessary indirection — one concept split into two files.
+
+**Why invalid:** `auth-context.tsx` exports `useAuthContext` which is imported by two independent consumers (`auth-guard.tsx` and `login/page.tsx`). Both need the hook but neither should import from a "provider" file. The split is the correct boundary: context shape + hook in one file, provider implementation in another. This is an intentional, idiomatic React pattern.
+
+---
+
+### ❌ Invalid: `AuthGuard` double-check for unauthenticated state
+
+**Raised as:** `useEffect` redirect and `return null` both check `!user`, appearing redundant.
+
+**Why invalid:** They serve orthogonal roles. The `useEffect` triggers the imperative router navigation (async side effect). The `return null` suppresses content flash during the React render cycle while the navigation processes. Removing either breaks the UX. Not redundant — two mechanisms for two concerns.
+
+---
+
+### ❌ Invalid: Mutable global state for token getter (`setAuthTokenGetter`)
+
+**Raised as:** Module-level `let getToken` mutated at runtime is implicit coupling.
+
+**Why invalid:** This is the intentional design. The interceptor must call `getToken()` lazily at request time to get a fresh Firebase token — it cannot capture the token at setup time. The module-level variable is the correct mechanism. Single provider, single lifecycle, no ambiguity. Acceptable for this scope.
+
+---
+
+---
+
+### ✅ Fixed: Missing `'use client'` directive in `auth-context.tsx`
+
+**Issue:** `auth-context.tsx` exports `useAuthContext` which calls `useContext`, but had no `'use client'` directive. In Next.js App Router, any module that exports or calls React hooks must declare itself a client module. Without it there is no build-time guard — a server component accidentally importing this file would fail at runtime.
+
+**Fix applied:** Added `'use client';` as the first line of `frontend/src/contexts/auth-context.tsx`. Committed in `feat: 010 - resolve code review: add use client, fix double-click, add tests, add firebase env validation`.
+
+---
+
+### ✅ Fixed: Double-click vulnerability on sign-in button
+
+**Issue:** `login/page.tsx` had `disabled={loading}` where `loading` is the Firebase auth-state initialisation flag. It becomes `false` almost immediately on mount, long before any sign-in attempt. Clicking the button while the Google popup was already open could launch a second concurrent `signInWithPopup` call, causing undefined behaviour.
+
+**Fix applied:** Added `isSigningIn` state (`useState(false)`). Set to `true` before `signInWithGoogle()` and cleared in a `finally` block. Updated `disabled` to `{loading || isSigningIn}`. Committed in `feat: 010 - resolve code review: add use client, fix double-click, add tests, add firebase env validation`.
+
+---
+
+### ✅ Fixed: No tests (TDD mandate violated)
+
+**Issue:** The PR had zero test files and no test infrastructure in the frontend. CLAUDE.md mandates TDD.
+
+**Fix applied:** Set up Vitest + React Testing Library (`vitest.config.ts`, `vitest.setup.ts`, test dependencies in `package.json`). Added 16 tests across 4 files:
+- `auth-guard.spec.tsx` — loading state, redirect when unauthenticated, no flash on redirect, renders children when authenticated
+- `login/page.spec.tsx` — button disabled during auth loading, button disabled during sign-in (exposes the double-click bug), error message on failure, redirect when already authenticated
+- `auth-provider.spec.tsx` — loading initial state, user set on auth change, null on sign-out, token getter wired to API client
+- `firebase.spec.ts` — throws with missing var name for each required env var, passes when all present
+
+Committed in `feat: 010 - resolve code review: add use client, fix double-click, add tests, add firebase env validation`.
+
+---
+
+### ✅ Fixed: Firebase env vars not validated at startup
+
+**Issue:** `firebase.ts` passed `process.env.FRONTEND_FIREBASE_*` directly to `initializeApp` without checking for `undefined`. Missing env vars produce cryptic Firebase SDK errors instead of actionable messages.
+
+**Fix applied:** Exported `validateFirebaseEnv()` that collects the names of any missing required vars and throws `Error: Missing required Firebase environment variables: <names>`. Called at module level so misconfiguration fails fast on app startup. Committed in `feat: 010 - resolve code review: add use client, fix double-click, add tests, add firebase env validation`.
+
+---
+
+### ❌ Invalid for this plan: `AuthGuard` at component level vs. protected layout
+
+**Raised as:** Per-component `AuthGuard` wrapping is error-prone at scale — a developer can forget to add it.
+
+**Why deferred:** This plan explicitly describes `HomePage` as a stub ("full home page content is implemented in Plan 11"). The component-level guard is scaffolding to verify the auth gate end-to-end. Plan 11 should introduce a `(protected)` route group with a shared layout that applies `AuthGuard` once, replacing the per-component pattern.
+
+**Action for Plan 11:** Adopt `app/(protected)/layout.tsx` wrapping `AuthGuard`. Remove `AuthGuard` from individual page components.

@@ -12,12 +12,37 @@ export class ApiError extends Error {
   }
 }
 
+let getToken: (() => Promise<string | null>) | null = null;
+
+/**
+ * Called by AuthProvider to wire up Firebase ID token retrieval.
+ * The interceptor calls this before every request so tokens are always fresh.
+ */
+export function setAuthTokenGetter(fn: () => Promise<string | null>): void {
+  getToken = fn;
+}
+
 const axiosInstance = axios.create({
   baseURL: BACKEND_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 10000,
+});
+
+axiosInstance.interceptors.request.use(async (config) => {
+  if (getToken) {
+    try {
+      const token = await getToken();
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
+    } catch {
+      // Token fetch failed — send the request without auth.
+      // The server will return 401 and the app can handle it.
+    }
+  }
+  return config;
 });
 
 export const apiClient = {

@@ -84,4 +84,5 @@ The hook skips merge commits, squash commits, and rebase operations automaticall
 - Always use relevant skills.
 - Always apply TDD when performing tasks.
 - Always format code (command `just format`) and do lint check (command `just lint`) after editing code.
-- Environment variables for backend should always have prefix `BACKEND_`
+- Environment variables for backend should always have prefix `BACKEND_`.
+- Environment variables for frontend should always have prefix `FRONTEND_`. No `NEXT_` prefix in the variable.
