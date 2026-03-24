@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ReactQueryProvider } from '@/components/providers/react-query-provider';
+import { AuthProvider } from '@/components/providers/auth-provider';
 import { Toaster } from 'sonner';
 import React from 'react';
 import './globals.css';
@@ -18,7 +19,7 @@ const RootLayout: React.FC<RootLayoutProps> = ({ children }) => {
     <html lang="en">
       <body className={`antialiased`}>
         <ReactQueryProvider>
-          {children}
+          <AuthProvider>{children}</AuthProvider>
           <Toaster
             position="top-right"
             duration={5000}
