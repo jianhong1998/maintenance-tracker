@@ -103,5 +103,6 @@ describe('VehicleCard', () => {
     vi.mocked(countWarningCards).mockReturnValue(0);
     render(<VehicleCard vehicle={mockVehicle} />);
     expect(screen.queryByText('0')).toBeNull();
+    expect(vi.mocked(countWarningCards)).not.toHaveBeenCalled();
   });
 });

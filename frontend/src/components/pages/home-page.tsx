@@ -28,6 +28,7 @@ function useGlobalWarningCount(
   return results.reduce((total, result, index) => {
     const cards = result.data ?? [];
     const vehicle = vehicles[index];
+    if (!vehicle) return total;
     return (
       total +
       countWarningCards(
