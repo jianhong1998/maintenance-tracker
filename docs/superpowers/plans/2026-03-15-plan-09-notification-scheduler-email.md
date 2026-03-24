@@ -1357,3 +1357,39 @@ A code review of the PR was performed. All 5 issues raised were valid and have b
 **Fix:** Removed the explicit filter. Updated the spec to assert the filter is NOT explicitly added (documenting that TypeORM handles it automatically).
 
 **Files changed:** `maintenance-card.repository.ts`, `maintenance-card.repository.spec.ts`
+
+---
+
+## Code Review Findings & Resolutions — Round 2 (2026-03-24)
+
+A second code review of the PR confirmed all 5 Round 1 issues were resolved. Two minor gaps remained; both were fixed.
+
+---
+
+### Fix 6: Weak SES test assertion
+
+**Issue:** `email.service.spec.ts:88` only asserted `expect(mockSend).toHaveBeenCalled()` — no verification of the `SendEmailCommand` parameters (`Source`, `Destination`, `Message`). A regression in `sendViaSes` that miswired params (e.g., wrong field names) would have passed undetected.
+
+**Fix:** Replaced with `toHaveBeenCalledWith` asserting the full command shape — `Source`, `Destination.ToAddresses`, `Message.Subject.Data`, and `Message.Body.Text.Data` — consistent with the Postmark test above it.
+
+**Files changed:** `email.service.spec.ts`
+
+---
+
+### Fix 7: Missing test for `runNotificationSchedule`
+
+**Issue:** `scheduler.service.ts:22` — the `@Cron` entry point that sequences `scheduleNotifications` and `recoverStuckJobs` had no test. Both sub-methods were tested, but the wiring between them and the config read (`NOTIFICATION_DAYS_BEFORE`) were uncovered.
+
+**Fix:** Added a test in `scheduler.service.spec.ts` under `describe('#runNotificationSchedule')`. It spies on both sub-methods, calls `runNotificationSchedule()`, and asserts `scheduleNotifications` is called with `7` (from the mocked config) and `recoverStuckJobs` is called.
+
+**Files changed:** `scheduler.service.spec.ts`
+
+---
+
+### Non-issue: Email config not validated at startup
+
+**Reviewer note:** Required env vars (`POSTMARK_API_KEY`, `AWS_SES_REGION`, etc.) have no startup-time guard — misconfiguration surfaces only at send time.
+
+**Assessment:** Not a valid fix for this scope. Startup validation would require a NestJS `onModuleInit` hook or a custom config validation schema. The feature is purely additive and does not break anything. Deferred to a future infrastructure hardening task.
+
+**Action:** No code change.

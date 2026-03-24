@@ -85,7 +85,14 @@ describe('EmailService', () => {
         body: 'Test body',
       });
 
-      expect(mockSend).toHaveBeenCalled();
+      expect(mockSend).toHaveBeenCalledWith({
+        Source: 'from@example.com',
+        Destination: { ToAddresses: ['user@example.com'] },
+        Message: {
+          Subject: { Data: 'Test Subject' },
+          Body: { Text: { Data: 'Test body' } },
+        },
+      });
     });
 
     it('throws for unknown EMAIL_PROVIDER', async () => {

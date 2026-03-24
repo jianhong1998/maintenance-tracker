@@ -58,6 +58,22 @@ describe('SchedulerService', () => {
     expect(service).toBeDefined();
   });
 
+  describe('#runNotificationSchedule', () => {
+    it('calls scheduleNotifications and recoverStuckJobs in sequence', async () => {
+      const scheduleNotificationsSpy = vi
+        .spyOn(service, 'scheduleNotifications')
+        .mockResolvedValue();
+      const recoverStuckJobsSpy = vi
+        .spyOn(service, 'recoverStuckJobs')
+        .mockResolvedValue();
+
+      await service.runNotificationSchedule();
+
+      expect(scheduleNotificationsSpy).toHaveBeenCalledWith(7);
+      expect(recoverStuckJobsSpy).toHaveBeenCalled();
+    });
+  });
+
   describe('#scheduleNotifications', () => {
     it('does nothing when no cards are found', async () => {
       mockCardRepository.findCardsForNotification.mockResolvedValue([]);
