@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import type { IVehicleResDTO, IMaintenanceCardResDTO } from '@project/types';
+import type { IVehicleResDTO } from '@project/types';
 
 vi.mock('@/hooks/queries/maintenance-cards/useMaintenanceCards', () => ({
   useMaintenanceCards: vi.fn(),
@@ -11,6 +11,24 @@ vi.mock('@/hooks/queries/config/useAppConfig', () => ({
 }));
 vi.mock('@/lib/warning', () => ({
   countWarningCards: vi.fn(),
+}));
+vi.mock('next/link', () => ({
+  default: ({
+    href,
+    children,
+    className,
+  }: {
+    href: string;
+    children: React.ReactNode;
+    className?: string;
+  }) => (
+    <a
+      href={href}
+      className={className}
+    >
+      {children}
+    </a>
+  ),
 }));
 
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
@@ -29,7 +47,7 @@ const mockVehicle: IVehicleResDTO = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
-const mockCards: IMaintenanceCardResDTO[] = [];
+const mockCards = [];
 
 describe('VehicleCard', () => {
   beforeEach(() => {
@@ -73,5 +91,17 @@ describe('VehicleCard', () => {
 
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/vehicles/vehicle-1');
+  });
+
+  it('shows no badge when config is undefined (loading state)', () => {
+    vi.mocked(useMaintenanceCards).mockReturnValue({ data: [] } as ReturnType<
+      typeof useMaintenanceCards
+    >);
+    vi.mocked(useAppConfig).mockReturnValue({ data: undefined } as ReturnType<
+      typeof useAppConfig
+    >);
+    vi.mocked(countWarningCards).mockReturnValue(0);
+    render(<VehicleCard vehicle={mockVehicle} />);
+    expect(screen.queryByText('0')).toBeNull();
   });
 });
