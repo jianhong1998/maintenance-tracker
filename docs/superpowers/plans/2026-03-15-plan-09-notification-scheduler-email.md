@@ -22,7 +22,7 @@
 - Modify: `backend/package.json` (via pnpm add)
 - Modify: `.env.template`
 
-- [ ] **Step 1: Install backend dependencies**
+- [x] **Step 1: Install backend dependencies**
 
 ```bash
 cd backend && pnpm add @nestjs/schedule postmark @aws-sdk/client-ses
@@ -30,7 +30,7 @@ cd backend && pnpm add @nestjs/schedule postmark @aws-sdk/client-ses
 
 Expected: `@nestjs/schedule`, `postmark`, and `@aws-sdk/client-ses` appear in `backend/package.json` dependencies.
 
-- [ ] **Step 2: Update `.env.template` with new variables**
+- [x] **Step 2: Update `.env.template` with new variables**
 
 Append to `.env.template`:
 
@@ -56,7 +56,7 @@ AWS_SES_REGION=ap-southeast-1
 AWS_SES_FROM_ADDRESS=noreply@yourdomain.com
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/package.json backend/pnpm-lock.yaml .env.template
@@ -71,7 +71,7 @@ git commit -m "chore: install schedule/email packages and update env template"
 - Modify: `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts`
 - Modify: `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add inside `describe('MaintenanceCardRepository', ...)` in `maintenance-card.repository.spec.ts`:
 
@@ -103,7 +103,7 @@ describe('#findCardsForNotification', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts
@@ -111,7 +111,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: FAIL — `findCardsForNotification` not found.
 
-- [ ] **Step 3: Implement `findCardsForNotification`**
+- [x] **Step 3: Implement `findCardsForNotification`**
 
 Add the following method to `MaintenanceCardRepository` in `maintenance-card.repository.ts`:
 
@@ -137,7 +137,7 @@ async findCardsForNotification(
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts
@@ -145,7 +145,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: PASS — all tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -153,7 +153,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts \
@@ -169,7 +169,7 @@ git commit -m "feat: add findCardsForNotification to MaintenanceCardRepository"
 - Create: `backend/src/modules/scheduler/scheduler.service.ts`
 - Create: `backend/src/modules/scheduler/scheduler.service.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/scheduler/scheduler.service.spec.ts`:
 
@@ -408,7 +408,7 @@ describe('SchedulerService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/scheduler/scheduler.service.spec.ts
@@ -416,7 +416,7 @@ cd backend && pnpm exec vitest run src/modules/scheduler/scheduler.service.spec.
 
 Expected: FAIL — `SchedulerService` not found.
 
-- [ ] **Step 3: Create `SchedulerService`**
+- [x] **Step 3: Create `SchedulerService`**
 
 Create `backend/src/modules/scheduler/scheduler.service.ts`:
 
@@ -498,7 +498,7 @@ export class SchedulerService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/scheduler/scheduler.service.spec.ts
@@ -506,7 +506,7 @@ cd backend && pnpm exec vitest run src/modules/scheduler/scheduler.service.spec.
 
 Expected: PASS — all 8 tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -514,7 +514,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/scheduler/scheduler.service.ts \
@@ -530,7 +530,7 @@ git commit -m "feat: add SchedulerService with cron-driven notification job sche
 - Create: `backend/src/modules/scheduler/scheduler.module.ts`
 - Modify: `backend/src/modules/app/app.module.ts`
 
-- [ ] **Step 1: Create `SchedulerModule`**
+- [x] **Step 1: Create `SchedulerModule`**
 
 Create `backend/src/modules/scheduler/scheduler.module.ts`:
 
@@ -549,7 +549,7 @@ import { SchedulerService } from './scheduler.service';
 export class SchedulerModule {}
 ```
 
-- [ ] **Step 2: Register `SchedulerModule` and `ScheduleModule.forRoot()` in `AppModule`**
+- [x] **Step 2: Register `SchedulerModule` and `ScheduleModule.forRoot()` in `AppModule`**
 
 In `backend/src/modules/app/app.module.ts`, add the following imports at the top:
 
@@ -589,7 +589,7 @@ export class AppModule {}
 
 Do not remove previously-added modules (AuthModule, VehicleModule, MaintenanceCardModule, ConfigModule as AppConfigModule, etc.) — only add the new imports alongside them.
 
-- [ ] **Step 3: Run all unit tests**
+- [x] **Step 3: Run all unit tests**
 
 ```bash
 just test-unit
@@ -597,7 +597,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 4: Format and lint**
+- [x] **Step 4: Format and lint**
 
 ```bash
 just format && just lint
@@ -605,7 +605,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/scheduler/scheduler.module.ts \
@@ -623,7 +623,7 @@ git commit -m "feat: add SchedulerModule and wire cron schedule into AppModule"
 - Create: `backend/src/modules/notification/email.service.ts`
 - Create: `backend/src/modules/notification/email.service.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/notification/email.service.spec.ts`:
 
@@ -730,7 +730,7 @@ describe('EmailService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/notification/email.service.spec.ts
@@ -738,7 +738,7 @@ cd backend && pnpm exec vitest run src/modules/notification/email.service.spec.t
 
 Expected: FAIL — `EmailService` not found.
 
-- [ ] **Step 3: Create `EmailService`**
+- [x] **Step 3: Create `EmailService`**
 
 Create `backend/src/modules/notification/email.service.ts`:
 
@@ -808,7 +808,7 @@ export class EmailService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/notification/email.service.spec.ts
@@ -816,7 +816,7 @@ cd backend && pnpm exec vitest run src/modules/notification/email.service.spec.t
 
 Expected: PASS — all 4 tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -824,7 +824,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/notification/email.service.ts \
@@ -842,7 +842,7 @@ git commit -m "feat: add EmailService with Postmark/SES provider switching"
 
 `NotificationService` implements `INotificationService` from Plan 08. It looks up the `MaintenanceCard` (with `vehicle` and `vehicle.user` relations, using `withDeleted: true` since the card may be soft-deleted) via the `referenceId` from the `BackgroundJobEntity`, then sends the appropriate email via `EmailService`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/notification/notification.service.spec.ts`:
 
@@ -962,7 +962,7 @@ describe('NotificationService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/notification/notification.service.spec.ts
@@ -970,7 +970,7 @@ cd backend && pnpm exec vitest run src/modules/notification/notification.service
 
 Expected: FAIL — `NotificationService` not found.
 
-- [ ] **Step 3: Create `NotificationService`**
+- [x] **Step 3: Create `NotificationService`**
 
 Create `backend/src/modules/notification/notification.service.ts`:
 
@@ -1049,7 +1049,7 @@ export class NotificationService implements INotificationService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/notification/notification.service.spec.ts
@@ -1057,7 +1057,7 @@ cd backend && pnpm exec vitest run src/modules/notification/notification.service
 
 Expected: PASS — all 5 tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -1065,7 +1065,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/notification/notification.service.ts \
@@ -1083,7 +1083,7 @@ git commit -m "feat: add NotificationService implementing INotificationService w
 
 `NotificationModule` provides and exports `NOTIFICATION_SERVICE_TOKEN` bound to the real `NotificationService`. `WorkerModule` is updated to import `NotificationModule` and remove the stub binding.
 
-- [ ] **Step 1: Create `NotificationModule`**
+- [x] **Step 1: Create `NotificationModule`**
 
 Create `backend/src/modules/notification/notification.module.ts`:
 
@@ -1111,7 +1111,7 @@ import { EmailService } from './email.service';
 export class NotificationModule {}
 ```
 
-- [ ] **Step 2: Update `WorkerModule` to use `NotificationModule`**
+- [x] **Step 2: Update `WorkerModule` to use `NotificationModule`**
 
 Replace the contents of `backend/src/modules/worker/worker.module.ts` with:
 
@@ -1147,7 +1147,7 @@ import { WorkerProcessor } from './worker.processor';
 export class WorkerModule {}
 ```
 
-- [ ] **Step 3: Run all unit tests**
+- [x] **Step 3: Run all unit tests**
 
 ```bash
 just test-unit
@@ -1155,7 +1155,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 4: Format and lint**
+- [x] **Step 4: Format and lint**
 
 ```bash
 just format && just lint
@@ -1163,7 +1163,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/notification/notification.module.ts \
@@ -1177,7 +1177,7 @@ git commit -m "feat: add NotificationModule and replace WorkerModule stub with r
 
 ### Task 8: Build and smoke test
 
-- [ ] **Step 1: Build all workspaces**
+- [x] **Step 1: Build all workspaces**
 
 ```bash
 just build
@@ -1185,7 +1185,7 @@ just build
 
 Expected: No TypeScript errors. `backend/dist/main.js` and `backend/dist/main-worker.js` both produced.
 
-- [ ] **Step 2: Run the full unit test suite**
+- [x] **Step 2: Run the full unit test suite**
 
 ```bash
 just test-unit
@@ -1193,7 +1193,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 3: Start all services and verify scheduler and worker boot**
+- [x] **Step 3: Start all services and verify scheduler and worker boot**
 
 ```bash
 just up-build
@@ -1206,7 +1206,7 @@ Expected:
 - `worker` container logs show NestJS bootstrap with `WorkerProcessor` listening on the `'maintenance'` queue.
 - No `ECONNREFUSED` errors for Redis or Postgres.
 
-- [ ] **Step 4: Manually trigger the scheduler and verify a job is created**
+- [x] **Step 4: Manually trigger the scheduler and verify a job is created**
 
 ```bash
 # Check background_jobs table (should be empty before trigger)
