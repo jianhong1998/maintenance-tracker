@@ -7,6 +7,8 @@ export type QueryType = (typeof QueryType)[keyof typeof QueryType];
 export const QueryGroup = Object.freeze({
   HEALTH_CHECK: 'health-check',
   CONFIG: 'config',
+  VEHICLES: 'vehicles',
+  MAINTENANCE_CARDS: 'maintenance-cards',
 } as const);
 export type QueryGroup = (typeof QueryGroup)[keyof typeof QueryGroup];
 
