@@ -130,6 +130,20 @@ describe('BackgroundJobRepository', () => {
       expect(result).toEqual(jobs);
       expect(mockTypeOrmRepo.find).toHaveBeenCalledOnce();
     });
+
+    it('only queries PENDING jobs, not PROCESSING ones', async () => {
+      mockTypeOrmRepo.find.mockResolvedValue([]);
+
+      await repository.findPendingForRecovery();
+
+      expect(mockTypeOrmRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: BackgroundJobStatus.PENDING,
+          }) as unknown,
+        }),
+      );
+    });
   });
 
   describe('#updateStatus', () => {

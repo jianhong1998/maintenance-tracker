@@ -103,9 +103,41 @@ describe('EmailService', () => {
       expect(mockSend).not.toHaveBeenCalled();
     });
 
-    it('does not re-instantiate Postmark client on repeated sends', async () => {
-      const callCountAfterInit = mockServerClient.mock.calls.length;
+    it('does not instantiate SES client when EMAIL_PROVIDER is "postmark"', async () => {
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'EMAIL_PROVIDER') return 'postmark';
+        if (key === 'POSTMARK_API_KEY') return 'test-key';
+        if (key === 'POSTMARK_FROM_ADDRESS') return 'from@example.com';
+        return undefined;
+      });
 
+      await service.sendEmail({
+        to: 'user@example.com',
+        subject: 'Test Subject',
+        body: 'Test body',
+      });
+
+      expect(mockSESClient).not.toHaveBeenCalled();
+    });
+
+    it('does not instantiate Postmark client when EMAIL_PROVIDER is "ses"', async () => {
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'EMAIL_PROVIDER') return 'ses';
+        if (key === 'AWS_SES_REGION') return 'ap-southeast-1';
+        if (key === 'AWS_SES_FROM_ADDRESS') return 'from@example.com';
+        return undefined;
+      });
+
+      await service.sendEmail({
+        to: 'user@example.com',
+        subject: 'Test Subject',
+        body: 'Test body',
+      });
+
+      expect(mockServerClient).not.toHaveBeenCalled();
+    });
+
+    it('creates Postmark client once and reuses it for repeated sends', async () => {
       mockConfigService.get.mockImplementation((key: string) => {
         if (key === 'EMAIL_PROVIDER') return 'postmark';
         if (key === 'POSTMARK_FROM_ADDRESS') return 'from@example.com';
@@ -115,12 +147,10 @@ describe('EmailService', () => {
       await service.sendEmail({ to: 'a@b.com', subject: 'S', body: 'B' });
       await service.sendEmail({ to: 'a@b.com', subject: 'S', body: 'B' });
 
-      expect(mockServerClient.mock.calls.length).toBe(callCountAfterInit);
+      expect(mockServerClient).toHaveBeenCalledTimes(1);
     });
 
-    it('does not re-instantiate SES client on repeated sends', async () => {
-      const callCountAfterInit = mockSESClient.mock.calls.length;
-
+    it('creates SES client once and reuses it for repeated sends', async () => {
       mockConfigService.get.mockImplementation((key: string) => {
         if (key === 'EMAIL_PROVIDER') return 'ses';
         if (key === 'AWS_SES_FROM_ADDRESS') return 'from@example.com';
@@ -130,7 +160,7 @@ describe('EmailService', () => {
       await service.sendEmail({ to: 'a@b.com', subject: 'S', body: 'B' });
       await service.sendEmail({ to: 'a@b.com', subject: 'S', body: 'B' });
 
-      expect(mockSESClient.mock.calls.length).toBe(callCountAfterInit);
+      expect(mockSESClient).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -1301,3 +1301,59 @@ A three-axis review (reuse, quality, efficiency) was performed after the code re
 **Issue:** The JSDoc block described *what* the query does (which the code itself shows clearly), adding reading overhead without insight. Only the design decision — why both overdue and upcoming cards are returned together — was non-obvious.
 
 **Fix:** Replaced the four-line JSDoc with a single inline comment capturing the non-obvious WHY: caller distinguishes job type by comparing `nextDueDate` to today.
+
+---
+
+## Code Review Findings & Resolutions (2026-03-24)
+
+A code review of the PR was performed. All 5 issues raised were valid and have been fixed.
+
+---
+
+### Fix 1 (Critical): `recoverStuckJobs` double-processing
+
+**Issue:** `findPendingForRecovery` queried `status IN ('pending', 'processing')`. On every cron run, `PROCESSING` jobs were re-enqueued — even while a worker was actively processing them. The worker skips non-PENDING jobs on pickup (wasted queue resources), and truly stuck `PROCESSING` jobs were never actually recovered.
+
+**Fix:** Changed `findPendingForRecovery` to query only `status = 'pending'`. Added an explanatory comment noting that stuck `PROCESSING` jobs require a separate recovery strategy using a `lastAttemptedAt` staleness threshold (out of scope for this plan).
+
+**Files changed:** `background-job.repository.ts`, `background-job.repository.spec.ts`, `scheduler.service.spec.ts`
+
+---
+
+### Fix 2: Non-null assertion on `referenceId`
+
+**Issue:** `backgroundJob.referenceId!` at `notification.service.ts:57` is a compile-only assertion. `referenceId` is typed `string | null`. If null at runtime, it silently passes `null` to `findOne`, producing an opaque "not found" error with no indication of root cause.
+
+**Fix:** Replaced `!` with an explicit null guard that throws a descriptive error: `throw new Error(\`BackgroundJob ${backgroundJob.id} has no referenceId\`)`. Added a test for the null referenceId case.
+
+**Files changed:** `notification.service.ts`, `notification.service.spec.ts`
+
+---
+
+### Fix 3: Fragile date formatting (`String(date).slice(0,10)`)
+
+**Issue:** `String(card.nextDueDate).slice(0, 10)` works in practice because the pg driver returns `date` columns as `'YYYY-MM-DD'` strings. But the TypeScript type is `Date | null`, and if TypeORM ever returns a Date object, `String(new Date(...))` produces a locale-specific format like `'Mon Mar 24 2026...'`, making `.slice(0,10)` produce garbage.
+
+**Fix:** Changed to `new Date(String(card.nextDueDate)).toISOString().slice(0, 10)` in all three occurrences. This correctly handles both string (`'YYYY-MM-DD'`) and Date object inputs. Added a test case that passes a real `Date` object as `nextDueDate`.
+
+**Files changed:** `scheduler.service.ts`, `notification.service.ts`, `scheduler.service.spec.ts`
+
+---
+
+### Fix 4: Both email clients always instantiated in constructor
+
+**Issue:** `EmailService` constructor always created both `postmarkClient` and `sesClient` regardless of `EMAIL_PROVIDER`. If only Postmark is configured, an SES client with `region: undefined` was created and held in memory permanently.
+
+**Fix:** Switched to lazy initialization. Private `getPostmarkClient()` and `getSesClient()` helpers create and cache the client on first use. Neither client is created unless `sendEmail` is called with the matching provider. Added tests asserting the non-configured client is never instantiated. Updated the "does not re-instantiate" tests to assert `toHaveBeenCalledTimes(1)` (created once on first use) instead of comparing against a pre-captured count.
+
+**Files changed:** `email.service.ts`, `email.service.spec.ts`
+
+---
+
+### Fix 5: Redundant `.andWhere('card.deletedAt IS NULL')`
+
+**Issue:** `MaintenanceCardEntity` has `@DeleteDateColumn`. TypeORM's `createQueryBuilder` automatically excludes soft-deleted rows when this decorator is present. The explicit `.andWhere('card.deletedAt IS NULL')` created a duplicate SQL condition.
+
+**Fix:** Removed the explicit filter. Updated the spec to assert the filter is NOT explicitly added (documenting that TypeORM handles it automatically).
+
+**Files changed:** `maintenance-card.repository.ts`, `maintenance-card.repository.spec.ts`

@@ -24,7 +24,7 @@ export class NotificationService implements INotificationService {
       body: (card) =>
         [
           `Your ${card.vehicle.brand} ${card.vehicle.model} is due for "${card.name}".`,
-          `Due date: ${String(card.nextDueDate).slice(0, 10)}.`,
+          `Due date: ${new Date(String(card.nextDueDate)).toISOString().slice(0, 10)}.`,
           `Please schedule your maintenance soon.`,
         ].join(' '),
       logLabel: 'upcoming',
@@ -39,7 +39,7 @@ export class NotificationService implements INotificationService {
       body: (card) =>
         [
           `Your ${card.vehicle.brand} ${card.vehicle.model} has overdue maintenance: "${card.name}".`,
-          `This was due on ${String(card.nextDueDate).slice(0, 10)}.`,
+          `This was due on ${new Date(String(card.nextDueDate)).toISOString().slice(0, 10)}.`,
           `Please schedule your maintenance as soon as possible.`,
         ].join(' '),
       logLabel: 'overdue',
@@ -54,7 +54,10 @@ export class NotificationService implements INotificationService {
       logLabel: string;
     },
   ): Promise<void> {
-    const card = await this.getCardWithUserOrThrow(backgroundJob.referenceId!);
+    if (!backgroundJob.referenceId) {
+      throw new Error(`BackgroundJob ${backgroundJob.id} has no referenceId`);
+    }
+    const card = await this.getCardWithUserOrThrow(backgroundJob.referenceId);
     const { user } = card.vehicle;
 
     await this.emailService.sendEmail({

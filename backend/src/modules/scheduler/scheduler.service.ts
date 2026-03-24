@@ -35,7 +35,9 @@ export class SchedulerService {
 
     await Promise.all(
       cards.map(async (card) => {
-        const nextDueDateStr = String(card.nextDueDate).slice(0, 10);
+        const nextDueDateStr = new Date(String(card.nextDueDate))
+          .toISOString()
+          .slice(0, 10);
         const isOverdue = nextDueDateStr < todayStr;
         const jobType = isOverdue
           ? JOB_TYPES.notificationOverdue

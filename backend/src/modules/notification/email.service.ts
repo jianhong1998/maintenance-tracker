@@ -12,17 +12,10 @@ export interface SendEmailParams {
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
-  private readonly postmarkClient: postmark.ServerClient;
-  private readonly sesClient: SESClient;
+  private postmarkClient?: postmark.ServerClient;
+  private sesClient?: SESClient;
 
-  constructor(private readonly configService: ConfigService) {
-    this.postmarkClient = new postmark.ServerClient(
-      configService.get<string>('POSTMARK_API_KEY') ?? '',
-    );
-    this.sesClient = new SESClient({
-      region: configService.get<string>('AWS_SES_REGION'),
-    });
-  }
+  constructor(private readonly configService: ConfigService) {}
 
   async sendEmail(params: SendEmailParams): Promise<void> {
     const provider = this.configService.get<string>('EMAIL_PROVIDER');
@@ -38,9 +31,27 @@ export class EmailService {
     }
   }
 
+  private getPostmarkClient(): postmark.ServerClient {
+    if (!this.postmarkClient) {
+      this.postmarkClient = new postmark.ServerClient(
+        this.configService.get<string>('POSTMARK_API_KEY') ?? '',
+      );
+    }
+    return this.postmarkClient;
+  }
+
+  private getSesClient(): SESClient {
+    if (!this.sesClient) {
+      this.sesClient = new SESClient({
+        region: this.configService.get<string>('AWS_SES_REGION'),
+      });
+    }
+    return this.sesClient;
+  }
+
   private async sendViaPostmark(params: SendEmailParams): Promise<void> {
     const from = this.configService.get<string>('POSTMARK_FROM_ADDRESS') ?? '';
-    await this.postmarkClient.sendEmail({
+    await this.getPostmarkClient().sendEmail({
       From: from,
       To: params.to,
       Subject: params.subject,
@@ -50,7 +61,7 @@ export class EmailService {
 
   private async sendViaSes(params: SendEmailParams): Promise<void> {
     const from = this.configService.get<string>('AWS_SES_FROM_ADDRESS') ?? '';
-    await this.sesClient.send(
+    await this.getSesClient().send(
       new SendEmailCommand({
         Source: from,
         Destination: { ToAddresses: [params.to] },

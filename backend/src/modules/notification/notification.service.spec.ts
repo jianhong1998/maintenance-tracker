@@ -61,6 +61,20 @@ describe('NotificationService', () => {
   });
 
   describe('#sendUpcomingNotification', () => {
+    it('throws descriptive error when backgroundJob has null referenceId', async () => {
+      const jobWithNullRef = {
+        id: 'job-1',
+        referenceId: null,
+      } as unknown as BackgroundJobEntity;
+
+      await expect(
+        service.sendUpcomingNotification(jobWithNullRef),
+      ).rejects.toThrow('BackgroundJob job-1 has no referenceId');
+
+      expect(mockCardRepo.findOne).not.toHaveBeenCalled();
+      expect(mockEmailService.sendEmail).not.toHaveBeenCalled();
+    });
+
     it('fetches card with vehicle+user relations and sends upcoming email', async () => {
       const card = buildCard();
       mockCardRepo.findOne.mockResolvedValue(card as never);

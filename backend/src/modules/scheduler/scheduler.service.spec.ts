@@ -130,6 +130,32 @@ describe('SchedulerService', () => {
       );
     });
 
+    it('correctly formats nextDueDate idempotency key when nextDueDate is a Date object', async () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+
+      const card = {
+        id: 'card-1',
+        nextDueDate: new Date(`${tomorrowStr}T00:00:00Z`), // Date object, not string
+      } as unknown as MaintenanceCardEntity;
+      mockCardRepository.findCardsForNotification.mockResolvedValue([card]);
+      mockBackgroundJobRepository.insertIfNotExists.mockResolvedValue({
+        id: 'job-1',
+      } as BackgroundJobEntity);
+      mockQueue.add.mockResolvedValue(undefined);
+
+      await service.scheduleNotifications(7);
+
+      expect(
+        mockBackgroundJobRepository.insertIfNotExists,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          idempotencyKey: `notification.upcoming:card-1:${tomorrowStr}`,
+        }),
+      );
+    });
+
     it('skips enqueue when insertIfNotExists returns null (duplicate key)', async () => {
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
@@ -212,7 +238,7 @@ describe('SchedulerService', () => {
       expect(mockQueue.add).not.toHaveBeenCalled();
     });
 
-    it('re-enqueues all stuck pending/processing jobs', async () => {
+    it('re-enqueues stuck PENDING jobs', async () => {
       const stuckJobs = [
         {
           id: 'job-1',
@@ -220,7 +246,7 @@ describe('SchedulerService', () => {
         },
         {
           id: 'job-2',
-          status: BackgroundJobStatus.PROCESSING,
+          status: BackgroundJobStatus.PENDING,
         },
       ] as BackgroundJobEntity[];
       mockBackgroundJobRepository.findPendingForRecovery.mockResolvedValue(

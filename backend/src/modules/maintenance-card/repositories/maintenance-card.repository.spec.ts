@@ -127,12 +127,12 @@ describe('MaintenanceCardRepository', () => {
       expect(result).toEqual([]);
     });
 
-    it('excludes soft-deleted cards by filtering on deletedAt IS NULL', async () => {
+    it('does not explicitly filter on deletedAt — TypeORM excludes soft-deleted rows automatically via @DeleteDateColumn', async () => {
       mockQueryBuilder.getMany.mockResolvedValue([]);
 
       await repository.findCardsForNotification(7);
 
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+      expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
         'card.deletedAt IS NULL',
       );
     });
