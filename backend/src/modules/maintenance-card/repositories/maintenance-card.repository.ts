@@ -50,12 +50,8 @@ export class MaintenanceCardRepository extends BaseDBUtil<
     });
   }
 
-  /**
-   * Returns non-deleted cards whose nextDueDate is not null and falls on or
-   * before today + notificationDaysBefore. This captures both overdue cards
-   * (nextDueDate < today) and upcoming cards (nextDueDate within the window).
-   * The caller decides which job type to create based on the date comparison.
-   */
+  // Returns both overdue and upcoming cards in one query; caller distinguishes
+  // job type by comparing nextDueDate to today.
   async findCardsForNotification(
     notificationDaysBefore: number,
   ): Promise<MaintenanceCardEntity[]> {

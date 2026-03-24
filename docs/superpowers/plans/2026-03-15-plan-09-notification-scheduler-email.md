@@ -1265,3 +1265,39 @@ These tests track the constructor call count before and after two `sendEmail` ca
 **Fix:** Extracted a private `dispatchNotification(job, { subject, body, logLabel })` helper. Both public methods now delegate to it with their respective string factories.
 
 All existing `notification.service.spec.ts` tests pass unchanged — public behavior is identical.
+
+---
+
+## Post-Implementation Simplification (2026-03-24)
+
+A three-axis review (reuse, quality, efficiency) was performed after the code review pass. Four issues were found and resolved.
+
+### Fix 1: `BullModule.forRootAsync` duplicated across entry points
+
+**Issue:** Identical `BullModule.forRootAsync` configuration blocks appeared in both `app.module.ts` (server entry point) and `worker.module.ts` (worker entry point). Infrastructure configuration was scattered instead of centralized.
+
+**Fix:** Added `AppConfig.bullModule` static property to `src/configs/app.config.ts`, following the same pattern as the existing `AppConfig.configModule` and `AppConfig.typeormModule`. Both modules now import `AppConfig.bullModule` and their now-unused `BullModule`/`ConfigModule`/`ConfigService` imports were removed.
+
+---
+
+### Fix 2: Stringly-typed job type constants in `SchedulerService`
+
+**Issue:** `scheduler.service.ts` used raw string literals `'notification.overdue'` and `'notification.upcoming'` even though `JOB_TYPES` enum already existed at `src/modules/background-job/enums/job-type.enum.ts` with these exact values.
+
+**Fix:** Imported `JOB_TYPES` and replaced both literals with `JOB_TYPES.notificationOverdue` and `JOB_TYPES.notificationUpcoming`.
+
+---
+
+### Fix 3: Sequential queue operations in `scheduleNotifications` and `recoverStuckJobs`
+
+**Issue:** Both methods used `for...await` loops, running each `insertIfNotExists` + `queue.add` call serially. Cards and stuck jobs are independent — there is no ordering dependency between them.
+
+**Fix:** Replaced both `for` loops with `Promise.all(items.map(async (item) => { ... }))`. Each card/job is now processed concurrently; queue adds happen in parallel rather than sequentially.
+
+---
+
+### Fix 4: Unnecessary JSDoc comment on `findCardsForNotification`
+
+**Issue:** The JSDoc block described *what* the query does (which the code itself shows clearly), adding reading overhead without insight. Only the design decision — why both overdue and upcoming cards are returned together — was non-obvious.
+
+**Fix:** Replaced the four-line JSDoc with a single inline comment capturing the non-obvious WHY: caller distinguishes job type by comparing `nextDueDate` to today.

@@ -1,5 +1,6 @@
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { BullModule } from '@nestjs/bullmq';
 import { DataSource } from 'typeorm';
 
 import DatabaseConfig from '../db/database.config';
@@ -24,5 +25,15 @@ export class AppConfig {
 
       return await new DataSource(options).initialize();
     },
+  });
+
+  public static bullModule = BullModule.forRootAsync({
+    imports: [ConfigModule],
+    inject: [ConfigService],
+    useFactory: (configService: ConfigService) => ({
+      connection: {
+        url: configService.get<string>('REDIS_URL'),
+      },
+    }),
   });
 }
