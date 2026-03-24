@@ -48,15 +48,27 @@ describe('useVehicles', () => {
 
     vi.mocked(apiClient.get).mockResolvedValue(mockVehicles);
 
-    const { result } = renderHook(() => useVehicles(), {
-      wrapper: createWrapper(),
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
     });
+    const Wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+      );
+    Wrapper.displayName = 'TestQueryClientWrapper';
+
+    const { result } = renderHook(() => useVehicles(), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockVehicles);
-    // Verify the queryKey is ['vehicles'] which equals [QueryGroup.VEHICLES]
-    expect(QueryGroup.VEHICLES).toBe('vehicles');
+    // Verify the hook actually registered a query under [QueryGroup.VEHICLES] in the cache
+    const cachedQuery = queryClient
+      .getQueryCache()
+      .findAll({ queryKey: [QueryGroup.VEHICLES] });
+    expect(cachedQuery).toHaveLength(1);
   });
 
   it('should call apiClient.get("/vehicles") in its queryFn', async () => {
