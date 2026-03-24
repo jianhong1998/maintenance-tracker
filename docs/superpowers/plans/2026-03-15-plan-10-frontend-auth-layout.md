@@ -575,3 +575,49 @@ git add frontend/src/app/layout.tsx \
         frontend/src/components/pages/home-page.tsx
 git commit -m "feat: wrap root layout with AuthProvider and protect home page with AuthGuard"
 ```
+
+---
+
+## Post-implementation Code Review Notes
+
+Reviewed after implementation on 2026-03-24. Summary of findings and resolutions.
+
+### ✅ Fixed: Missing error handling in `signInWithGoogle` (login page)
+
+**Issue:** `signInWithGoogle()` was called with `void` and no try/catch. If the popup is blocked, the user cancels, or a network error occurs, the rejection was silently swallowed — the button would do nothing with no feedback.
+
+**Fix applied:** Wrapped in `handleSignIn` with try/catch; added `signInError` state; rendered error message below the button (`text-destructive text-sm`). Committed in `feat: 010 - add error handling for signInWithGoogle on login page`.
+
+---
+
+### ❌ Invalid: Context/provider split (`auth-context.tsx` vs `auth-provider.tsx`)
+
+**Raised as:** Unnecessary indirection — one concept split into two files.
+
+**Why invalid:** `auth-context.tsx` exports `useAuthContext` which is imported by two independent consumers (`auth-guard.tsx` and `login/page.tsx`). Both need the hook but neither should import from a "provider" file. The split is the correct boundary: context shape + hook in one file, provider implementation in another. This is an intentional, idiomatic React pattern.
+
+---
+
+### ❌ Invalid: `AuthGuard` double-check for unauthenticated state
+
+**Raised as:** `useEffect` redirect and `return null` both check `!user`, appearing redundant.
+
+**Why invalid:** They serve orthogonal roles. The `useEffect` triggers the imperative router navigation (async side effect). The `return null` suppresses content flash during the React render cycle while the navigation processes. Removing either breaks the UX. Not redundant — two mechanisms for two concerns.
+
+---
+
+### ❌ Invalid: Mutable global state for token getter (`setAuthTokenGetter`)
+
+**Raised as:** Module-level `let getToken` mutated at runtime is implicit coupling.
+
+**Why invalid:** This is the intentional design. The interceptor must call `getToken()` lazily at request time to get a fresh Firebase token — it cannot capture the token at setup time. The module-level variable is the correct mechanism. Single provider, single lifecycle, no ambiguity. Acceptable for this scope.
+
+---
+
+### ❌ Invalid for this plan: `AuthGuard` at component level vs. protected layout
+
+**Raised as:** Per-component `AuthGuard` wrapping is error-prone at scale — a developer can forget to add it.
+
+**Why deferred:** This plan explicitly describes `HomePage` as a stub ("full home page content is implemented in Plan 11"). The component-level guard is scaffolding to verify the auth gate end-to-end. Plan 11 should introduce a `(protected)` route group with a shared layout that applies `AuthGuard` once, replacing the per-component pattern.
+
+**Action for Plan 11:** Adopt `app/(protected)/layout.tsx` wrapping `AuthGuard`. Remove `AuthGuard` from individual page components.
