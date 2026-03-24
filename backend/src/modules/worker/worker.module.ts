@@ -2,23 +2,18 @@ import { Module } from '@nestjs/common';
 import { BackgroundJobModule } from 'src/modules/background-job/background-job.module';
 import { QueueModule } from 'src/modules/queue/queue.module';
 import { AppConfig } from 'src/configs/app.config';
+import { NotificationModule } from 'src/modules/notification/notification.module';
 import { WorkerProcessor } from './worker.processor';
-import { NotificationServiceStub } from './notification-service.stub';
-import { NOTIFICATION_SERVICE_TOKEN } from './notification-service.interface';
 
 @Module({
   imports: [
     AppConfig.configModule,
     AppConfig.typeormModule,
+    AppConfig.bullModule,
     QueueModule,
     BackgroundJobModule,
+    NotificationModule,
   ],
-  providers: [
-    WorkerProcessor,
-    {
-      provide: NOTIFICATION_SERVICE_TOKEN,
-      useClass: NotificationServiceStub,
-    },
-  ],
+  providers: [WorkerProcessor],
 })
 export class WorkerModule {}

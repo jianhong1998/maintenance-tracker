@@ -22,7 +22,7 @@
 - Modify: `backend/package.json` (via pnpm add)
 - Modify: `.env.template`
 
-- [ ] **Step 1: Install backend dependencies**
+- [x] **Step 1: Install backend dependencies**
 
 ```bash
 cd backend && pnpm add @nestjs/schedule postmark @aws-sdk/client-ses
@@ -30,7 +30,7 @@ cd backend && pnpm add @nestjs/schedule postmark @aws-sdk/client-ses
 
 Expected: `@nestjs/schedule`, `postmark`, and `@aws-sdk/client-ses` appear in `backend/package.json` dependencies.
 
-- [ ] **Step 2: Update `.env.template` with new variables**
+- [x] **Step 2: Update `.env.template` with new variables**
 
 Append to `.env.template`:
 
@@ -56,7 +56,7 @@ AWS_SES_REGION=ap-southeast-1
 AWS_SES_FROM_ADDRESS=noreply@yourdomain.com
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add backend/package.json backend/pnpm-lock.yaml .env.template
@@ -71,7 +71,7 @@ git commit -m "chore: install schedule/email packages and update env template"
 - Modify: `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts`
 - Modify: `backend/src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add inside `describe('MaintenanceCardRepository', ...)` in `maintenance-card.repository.spec.ts`:
 
@@ -103,7 +103,7 @@ describe('#findCardsForNotification', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts
@@ -111,7 +111,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: FAIL — `findCardsForNotification` not found.
 
-- [ ] **Step 3: Implement `findCardsForNotification`**
+- [x] **Step 3: Implement `findCardsForNotification`**
 
 Add the following method to `MaintenanceCardRepository` in `maintenance-card.repository.ts`:
 
@@ -137,7 +137,7 @@ async findCardsForNotification(
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/maintenance-card.repository.spec.ts
@@ -145,7 +145,7 @@ cd backend && pnpm exec vitest run src/modules/maintenance-card/repositories/mai
 
 Expected: PASS — all tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -153,7 +153,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/maintenance-card/repositories/maintenance-card.repository.ts \
@@ -169,7 +169,7 @@ git commit -m "feat: add findCardsForNotification to MaintenanceCardRepository"
 - Create: `backend/src/modules/scheduler/scheduler.service.ts`
 - Create: `backend/src/modules/scheduler/scheduler.service.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/scheduler/scheduler.service.spec.ts`:
 
@@ -408,7 +408,7 @@ describe('SchedulerService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/scheduler/scheduler.service.spec.ts
@@ -416,7 +416,7 @@ cd backend && pnpm exec vitest run src/modules/scheduler/scheduler.service.spec.
 
 Expected: FAIL — `SchedulerService` not found.
 
-- [ ] **Step 3: Create `SchedulerService`**
+- [x] **Step 3: Create `SchedulerService`**
 
 Create `backend/src/modules/scheduler/scheduler.service.ts`:
 
@@ -498,7 +498,7 @@ export class SchedulerService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/scheduler/scheduler.service.spec.ts
@@ -506,7 +506,7 @@ cd backend && pnpm exec vitest run src/modules/scheduler/scheduler.service.spec.
 
 Expected: PASS — all 8 tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -514,7 +514,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/scheduler/scheduler.service.ts \
@@ -530,7 +530,7 @@ git commit -m "feat: add SchedulerService with cron-driven notification job sche
 - Create: `backend/src/modules/scheduler/scheduler.module.ts`
 - Modify: `backend/src/modules/app/app.module.ts`
 
-- [ ] **Step 1: Create `SchedulerModule`**
+- [x] **Step 1: Create `SchedulerModule`**
 
 Create `backend/src/modules/scheduler/scheduler.module.ts`:
 
@@ -549,7 +549,7 @@ import { SchedulerService } from './scheduler.service';
 export class SchedulerModule {}
 ```
 
-- [ ] **Step 2: Register `SchedulerModule` and `ScheduleModule.forRoot()` in `AppModule`**
+- [x] **Step 2: Register `SchedulerModule` and `ScheduleModule.forRoot()` in `AppModule`**
 
 In `backend/src/modules/app/app.module.ts`, add the following imports at the top:
 
@@ -589,7 +589,7 @@ export class AppModule {}
 
 Do not remove previously-added modules (AuthModule, VehicleModule, MaintenanceCardModule, ConfigModule as AppConfigModule, etc.) — only add the new imports alongside them.
 
-- [ ] **Step 3: Run all unit tests**
+- [x] **Step 3: Run all unit tests**
 
 ```bash
 just test-unit
@@ -597,7 +597,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 4: Format and lint**
+- [x] **Step 4: Format and lint**
 
 ```bash
 just format && just lint
@@ -605,7 +605,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/scheduler/scheduler.module.ts \
@@ -623,7 +623,7 @@ git commit -m "feat: add SchedulerModule and wire cron schedule into AppModule"
 - Create: `backend/src/modules/notification/email.service.ts`
 - Create: `backend/src/modules/notification/email.service.spec.ts`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/notification/email.service.spec.ts`:
 
@@ -730,7 +730,7 @@ describe('EmailService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/notification/email.service.spec.ts
@@ -738,7 +738,7 @@ cd backend && pnpm exec vitest run src/modules/notification/email.service.spec.t
 
 Expected: FAIL — `EmailService` not found.
 
-- [ ] **Step 3: Create `EmailService`**
+- [x] **Step 3: Create `EmailService`**
 
 Create `backend/src/modules/notification/email.service.ts`:
 
@@ -808,7 +808,7 @@ export class EmailService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/notification/email.service.spec.ts
@@ -816,7 +816,7 @@ cd backend && pnpm exec vitest run src/modules/notification/email.service.spec.t
 
 Expected: PASS — all 4 tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -824,7 +824,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/notification/email.service.ts \
@@ -842,7 +842,7 @@ git commit -m "feat: add EmailService with Postmark/SES provider switching"
 
 `NotificationService` implements `INotificationService` from Plan 08. It looks up the `MaintenanceCard` (with `vehicle` and `vehicle.user` relations, using `withDeleted: true` since the card may be soft-deleted) via the `referenceId` from the `BackgroundJobEntity`, then sends the appropriate email via `EmailService`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `backend/src/modules/notification/notification.service.spec.ts`:
 
@@ -962,7 +962,7 @@ describe('NotificationService', () => {
 });
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/notification/notification.service.spec.ts
@@ -970,7 +970,7 @@ cd backend && pnpm exec vitest run src/modules/notification/notification.service
 
 Expected: FAIL — `NotificationService` not found.
 
-- [ ] **Step 3: Create `NotificationService`**
+- [x] **Step 3: Create `NotificationService`**
 
 Create `backend/src/modules/notification/notification.service.ts`:
 
@@ -1049,7 +1049,7 @@ export class NotificationService implements INotificationService {
 }
 ```
 
-- [ ] **Step 4: Run the test to verify it passes**
+- [x] **Step 4: Run the test to verify it passes**
 
 ```bash
 cd backend && pnpm exec vitest run src/modules/notification/notification.service.spec.ts
@@ -1057,7 +1057,7 @@ cd backend && pnpm exec vitest run src/modules/notification/notification.service
 
 Expected: PASS — all 5 tests green.
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 just format && just lint
@@ -1065,7 +1065,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/src/modules/notification/notification.service.ts \
@@ -1083,7 +1083,7 @@ git commit -m "feat: add NotificationService implementing INotificationService w
 
 `NotificationModule` provides and exports `NOTIFICATION_SERVICE_TOKEN` bound to the real `NotificationService`. `WorkerModule` is updated to import `NotificationModule` and remove the stub binding.
 
-- [ ] **Step 1: Create `NotificationModule`**
+- [x] **Step 1: Create `NotificationModule`**
 
 Create `backend/src/modules/notification/notification.module.ts`:
 
@@ -1111,7 +1111,7 @@ import { EmailService } from './email.service';
 export class NotificationModule {}
 ```
 
-- [ ] **Step 2: Update `WorkerModule` to use `NotificationModule`**
+- [x] **Step 2: Update `WorkerModule` to use `NotificationModule`**
 
 Replace the contents of `backend/src/modules/worker/worker.module.ts` with:
 
@@ -1147,7 +1147,7 @@ import { WorkerProcessor } from './worker.processor';
 export class WorkerModule {}
 ```
 
-- [ ] **Step 3: Run all unit tests**
+- [x] **Step 3: Run all unit tests**
 
 ```bash
 just test-unit
@@ -1155,7 +1155,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 4: Format and lint**
+- [x] **Step 4: Format and lint**
 
 ```bash
 just format && just lint
@@ -1163,7 +1163,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/src/modules/notification/notification.module.ts \
@@ -1177,7 +1177,7 @@ git commit -m "feat: add NotificationModule and replace WorkerModule stub with r
 
 ### Task 8: Build and smoke test
 
-- [ ] **Step 1: Build all workspaces**
+- [x] **Step 1: Build all workspaces**
 
 ```bash
 just build
@@ -1185,7 +1185,7 @@ just build
 
 Expected: No TypeScript errors. `backend/dist/main.js` and `backend/dist/main-worker.js` both produced.
 
-- [ ] **Step 2: Run the full unit test suite**
+- [x] **Step 2: Run the full unit test suite**
 
 ```bash
 just test-unit
@@ -1193,7 +1193,7 @@ just test-unit
 
 Expected: All tests pass.
 
-- [ ] **Step 3: Start all services and verify scheduler and worker boot**
+- [x] **Step 3: Start all services and verify scheduler and worker boot**
 
 ```bash
 just up-build
@@ -1206,7 +1206,7 @@ Expected:
 - `worker` container logs show NestJS bootstrap with `WorkerProcessor` listening on the `'maintenance'` queue.
 - No `ECONNREFUSED` errors for Redis or Postgres.
 
-- [ ] **Step 4: Manually trigger the scheduler and verify a job is created**
+- [x] **Step 4: Manually trigger the scheduler and verify a job is created**
 
 ```bash
 # Check background_jobs table (should be empty before trigger)
@@ -1217,3 +1217,179 @@ docker exec -it maintenance-tracker-postgres-1 psql -U postgres -d project_db \
 Expected: 0 rows initially (no maintenance cards with due dates exist yet).
 
 When cards exist with `next_due_date` values in the window, re-running the scheduler (`runNotificationSchedule` via cron or manual invocation) should insert rows into `background_jobs` and enqueue them.
+
+---
+
+## Post-Implementation Code Review (2026-03-24)
+
+A Linus-style code review was performed after implementation. Three bugs and one refactor opportunity were found and resolved.
+
+### Bug 1: `findCardsForNotification` included soft-deleted cards
+
+**Root cause:** TypeORM's `createQueryBuilder` does **not** automatically apply the soft-delete filter (`deletedAt IS NULL`) the way `find*` methods do. The query was silently returning deleted cards, contradicting the method's own docstring ("Returns non-deleted cards").
+
+**Fix:** Added `.andWhere('card.deletedAt IS NULL')` to the query chain in `maintenance-card.repository.ts`.
+
+**Test added:** `'excludes soft-deleted cards by filtering on deletedAt IS NULL'` in `maintenance-card.repository.spec.ts`.
+
+---
+
+### Bug 2: `EmailService` instantiated HTTP clients on every send
+
+**Root cause:** `sendViaPostmark` and `sendViaSes` called `new postmark.ServerClient(...)` and `new SESClient(...)` inside the method body. Config is static at runtime; there is no reason to pay client initialization cost on every email.
+
+**Fix:** Both clients are now initialized once as `readonly` private fields in the constructor. The `from` address (also static) is still read via `configService.get` at send time since it varies by provider and the tests configure it per-call.
+
+**Tests added** to `email.service.spec.ts`:
+- `'does not re-instantiate Postmark client on repeated sends'`
+- `'does not re-instantiate SES client on repeated sends'`
+
+These tests track the constructor call count before and after two `sendEmail` calls and assert the count does not increase.
+
+---
+
+### Bug 3: Unknown `EMAIL_PROVIDER` silently swallowed emails
+
+**Root cause:** The `else` branch in `sendEmail` called `this.logger.warn(...)` and returned without sending. A misconfigured `EMAIL_PROVIDER` env var would log a warning that could be missed in production, causing silent email loss with no observable failure.
+
+**Fix:** The `else` branch now throws `new Error('Unknown EMAIL_PROVIDER ...')`, surfacing the misconfiguration as a hard failure.
+
+**Test updated** in `email.service.spec.ts`: renamed from `'does not throw and logs a warning for unknown EMAIL_PROVIDER'` → `'throws for unknown EMAIL_PROVIDER'`; assertion changed from `resolves.toBeUndefined()` → `rejects.toThrow('Unknown EMAIL_PROVIDER')`.
+
+---
+
+### Refactor: Eliminated duplicate send logic in `NotificationService`
+
+**Issue:** `sendUpcomingNotification` and `sendOverdueNotification` were 90% identical — same card fetch, same email dispatch, same logging pattern. Only the subject/body strings differed.
+
+**Fix:** Extracted a private `dispatchNotification(job, { subject, body, logLabel })` helper. Both public methods now delegate to it with their respective string factories.
+
+All existing `notification.service.spec.ts` tests pass unchanged — public behavior is identical.
+
+---
+
+## Post-Implementation Simplification (2026-03-24)
+
+A three-axis review (reuse, quality, efficiency) was performed after the code review pass. Four issues were found and resolved.
+
+### Fix 1: `BullModule.forRootAsync` duplicated across entry points
+
+**Issue:** Identical `BullModule.forRootAsync` configuration blocks appeared in both `app.module.ts` (server entry point) and `worker.module.ts` (worker entry point). Infrastructure configuration was scattered instead of centralized.
+
+**Fix:** Added `AppConfig.bullModule` static property to `src/configs/app.config.ts`, following the same pattern as the existing `AppConfig.configModule` and `AppConfig.typeormModule`. Both modules now import `AppConfig.bullModule` and their now-unused `BullModule`/`ConfigModule`/`ConfigService` imports were removed.
+
+---
+
+### Fix 2: Stringly-typed job type constants in `SchedulerService`
+
+**Issue:** `scheduler.service.ts` used raw string literals `'notification.overdue'` and `'notification.upcoming'` even though `JOB_TYPES` enum already existed at `src/modules/background-job/enums/job-type.enum.ts` with these exact values.
+
+**Fix:** Imported `JOB_TYPES` and replaced both literals with `JOB_TYPES.notificationOverdue` and `JOB_TYPES.notificationUpcoming`.
+
+---
+
+### Fix 3: Sequential queue operations in `scheduleNotifications` and `recoverStuckJobs`
+
+**Issue:** Both methods used `for...await` loops, running each `insertIfNotExists` + `queue.add` call serially. Cards and stuck jobs are independent — there is no ordering dependency between them.
+
+**Fix:** Replaced both `for` loops with `Promise.all(items.map(async (item) => { ... }))`. Each card/job is now processed concurrently; queue adds happen in parallel rather than sequentially.
+
+---
+
+### Fix 4: Unnecessary JSDoc comment on `findCardsForNotification`
+
+**Issue:** The JSDoc block described *what* the query does (which the code itself shows clearly), adding reading overhead without insight. Only the design decision — why both overdue and upcoming cards are returned together — was non-obvious.
+
+**Fix:** Replaced the four-line JSDoc with a single inline comment capturing the non-obvious WHY: caller distinguishes job type by comparing `nextDueDate` to today.
+
+---
+
+## Code Review Findings & Resolutions (2026-03-24)
+
+A code review of the PR was performed. All 5 issues raised were valid and have been fixed.
+
+---
+
+### Fix 1 (Critical): `recoverStuckJobs` double-processing
+
+**Issue:** `findPendingForRecovery` queried `status IN ('pending', 'processing')`. On every cron run, `PROCESSING` jobs were re-enqueued — even while a worker was actively processing them. The worker skips non-PENDING jobs on pickup (wasted queue resources), and truly stuck `PROCESSING` jobs were never actually recovered.
+
+**Fix:** Changed `findPendingForRecovery` to query only `status = 'pending'`. Added an explanatory comment noting that stuck `PROCESSING` jobs require a separate recovery strategy using a `lastAttemptedAt` staleness threshold (out of scope for this plan).
+
+**Files changed:** `background-job.repository.ts`, `background-job.repository.spec.ts`, `scheduler.service.spec.ts`
+
+---
+
+### Fix 2: Non-null assertion on `referenceId`
+
+**Issue:** `backgroundJob.referenceId!` at `notification.service.ts:57` is a compile-only assertion. `referenceId` is typed `string | null`. If null at runtime, it silently passes `null` to `findOne`, producing an opaque "not found" error with no indication of root cause.
+
+**Fix:** Replaced `!` with an explicit null guard that throws a descriptive error: `throw new Error(\`BackgroundJob ${backgroundJob.id} has no referenceId\`)`. Added a test for the null referenceId case.
+
+**Files changed:** `notification.service.ts`, `notification.service.spec.ts`
+
+---
+
+### Fix 3: Fragile date formatting (`String(date).slice(0,10)`)
+
+**Issue:** `String(card.nextDueDate).slice(0, 10)` works in practice because the pg driver returns `date` columns as `'YYYY-MM-DD'` strings. But the TypeScript type is `Date | null`, and if TypeORM ever returns a Date object, `String(new Date(...))` produces a locale-specific format like `'Mon Mar 24 2026...'`, making `.slice(0,10)` produce garbage.
+
+**Fix:** Changed to `new Date(String(card.nextDueDate)).toISOString().slice(0, 10)` in all three occurrences. This correctly handles both string (`'YYYY-MM-DD'`) and Date object inputs. Added a test case that passes a real `Date` object as `nextDueDate`.
+
+**Files changed:** `scheduler.service.ts`, `notification.service.ts`, `scheduler.service.spec.ts`
+
+---
+
+### Fix 4: Both email clients always instantiated in constructor
+
+**Issue:** `EmailService` constructor always created both `postmarkClient` and `sesClient` regardless of `EMAIL_PROVIDER`. If only Postmark is configured, an SES client with `region: undefined` was created and held in memory permanently.
+
+**Fix:** Switched to lazy initialization. Private `getPostmarkClient()` and `getSesClient()` helpers create and cache the client on first use. Neither client is created unless `sendEmail` is called with the matching provider. Added tests asserting the non-configured client is never instantiated. Updated the "does not re-instantiate" tests to assert `toHaveBeenCalledTimes(1)` (created once on first use) instead of comparing against a pre-captured count.
+
+**Files changed:** `email.service.ts`, `email.service.spec.ts`
+
+---
+
+### Fix 5: Redundant `.andWhere('card.deletedAt IS NULL')`
+
+**Issue:** `MaintenanceCardEntity` has `@DeleteDateColumn`. TypeORM's `createQueryBuilder` automatically excludes soft-deleted rows when this decorator is present. The explicit `.andWhere('card.deletedAt IS NULL')` created a duplicate SQL condition.
+
+**Fix:** Removed the explicit filter. Updated the spec to assert the filter is NOT explicitly added (documenting that TypeORM handles it automatically).
+
+**Files changed:** `maintenance-card.repository.ts`, `maintenance-card.repository.spec.ts`
+
+---
+
+## Code Review Findings & Resolutions — Round 2 (2026-03-24)
+
+A second code review of the PR confirmed all 5 Round 1 issues were resolved. Two minor gaps remained; both were fixed.
+
+---
+
+### Fix 6: Weak SES test assertion
+
+**Issue:** `email.service.spec.ts:88` only asserted `expect(mockSend).toHaveBeenCalled()` — no verification of the `SendEmailCommand` parameters (`Source`, `Destination`, `Message`). A regression in `sendViaSes` that miswired params (e.g., wrong field names) would have passed undetected.
+
+**Fix:** Replaced with `toHaveBeenCalledWith` asserting the full command shape — `Source`, `Destination.ToAddresses`, `Message.Subject.Data`, and `Message.Body.Text.Data` — consistent with the Postmark test above it.
+
+**Files changed:** `email.service.spec.ts`
+
+---
+
+### Fix 7: Missing test for `runNotificationSchedule`
+
+**Issue:** `scheduler.service.ts:22` — the `@Cron` entry point that sequences `scheduleNotifications` and `recoverStuckJobs` had no test. Both sub-methods were tested, but the wiring between them and the config read (`NOTIFICATION_DAYS_BEFORE`) were uncovered.
+
+**Fix:** Added a test in `scheduler.service.spec.ts` under `describe('#runNotificationSchedule')`. It spies on both sub-methods, calls `runNotificationSchedule()`, and asserts `scheduleNotifications` is called with `7` (from the mocked config) and `recoverStuckJobs` is called.
+
+**Files changed:** `scheduler.service.spec.ts`
+
+---
+
+### Non-issue: Email config not validated at startup
+
+**Reviewer note:** Required env vars (`POSTMARK_API_KEY`, `AWS_SES_REGION`, etc.) have no startup-time guard — misconfiguration surfaces only at send time.
+
+**Assessment:** Not a valid fix for this scope. Startup validation would require a NestJS `onModuleInit` hook or a custom config validation schema. The feature is purely additive and does not break anything. Deferred to a future infrastructure hardening task.
+
+**Action:** No code change.

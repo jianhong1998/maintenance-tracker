@@ -49,4 +49,22 @@ export class MaintenanceCardRepository extends BaseDBUtil<
       withDeleted: true,
     });
   }
+
+  // Returns both overdue and upcoming cards in one query; caller distinguishes
+  // job type by comparing nextDueDate to today.
+  async findCardsForNotification(
+    notificationDaysBefore: number,
+  ): Promise<MaintenanceCardEntity[]> {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() + notificationDaysBefore);
+    const cutoffDateStr = cutoffDate.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+
+    return this.cardRepo
+      .createQueryBuilder('card')
+      .where('card.nextDueDate IS NOT NULL')
+      .andWhere('card.nextDueDate <= :cutoffDate', {
+        cutoffDate: cutoffDateStr,
+      })
+      .getMany();
+  }
 }

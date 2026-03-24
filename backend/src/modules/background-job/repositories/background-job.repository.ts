@@ -84,17 +84,19 @@ export class BackgroundJobRepository extends BaseDBUtil<
   }
 
   /**
-   * Finds jobs in pending/processing state eligible for recovery:
+   * Finds PENDING jobs eligible for recovery:
    * scheduled_from <= now AND expires_at > now
+   *
+   * Deliberately excludes PROCESSING jobs: if a worker is actively processing
+   * a job, re-enqueuing it wastes queue resources (the worker skips non-PENDING
+   * jobs on pickup). Truly stuck PROCESSING jobs require a separate recovery
+   * strategy with a lastAttemptedAt staleness threshold.
    */
   async findPendingForRecovery(): Promise<BackgroundJobEntity[]> {
     const now = new Date();
     return this.repo.find({
       where: {
-        status: In([
-          BackgroundJobStatus.PENDING,
-          BackgroundJobStatus.PROCESSING,
-        ]),
+        status: BackgroundJobStatus.PENDING,
         scheduledFrom: LessThanOrEqual(now),
         expiresAt: MoreThan(now),
       },

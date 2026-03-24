@@ -23,6 +23,6 @@ import { MaintenanceCardController } from './controllers/maintenance-card.contro
     MaintenanceHistoryService,
   ],
   controllers: [MaintenanceCardController],
-  exports: [MaintenanceCardService],
+  exports: [MaintenanceCardService, MaintenanceCardRepository],
 })
 export class MaintenanceCardModule {}
