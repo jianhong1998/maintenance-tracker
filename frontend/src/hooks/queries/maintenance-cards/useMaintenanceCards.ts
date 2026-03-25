@@ -12,8 +12,20 @@ export const maintenanceCardsQueryOptions = (vehicleId: string) => ({
   enabled: !!vehicleId,
 });
 
-export const useMaintenanceCards = (vehicleId: string) => {
+export const useMaintenanceCards = (
+  vehicleId: string,
+  sort?: 'urgency' | 'name',
+) => {
   return useQuery<IMaintenanceCardResDTO[]>(
-    maintenanceCardsQueryOptions(vehicleId),
+    sort
+      ? {
+          queryKey: [QueryGroup.MAINTENANCE_CARDS, vehicleId, sort],
+          queryFn: () =>
+            apiClient.get<IMaintenanceCardResDTO[]>(
+              `/vehicles/${vehicleId}/maintenance-cards?sort=${sort}`,
+            ),
+          enabled: !!vehicleId,
+        }
+      : maintenanceCardsQueryOptions(vehicleId),
   );
 };
