@@ -1,0 +1,79 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderHook, waitFor } from '@testing-library/react';
+import { useMaintenanceCards } from './useMaintenanceCards';
+import { QueryGroup } from '../keys';
+import { createWrapper, createWrapperWithClient } from '../test-utils';
+
+vi.mock('@/lib/api-client', () => ({
+  apiClient: {
+    get: vi.fn(),
+  },
+}));
+
+import { apiClient } from '@/lib/api-client';
+
+describe('useMaintenanceCards', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should use queryKey [QueryGroup.MAINTENANCE_CARDS, vehicleId]', async () => {
+    const vehicleId = 'vehicle-123';
+    vi.mocked(apiClient.get).mockResolvedValue([]);
+
+    const { wrapper, queryClient } = createWrapperWithClient();
+    const { result } = renderHook(() => useMaintenanceCards(vehicleId), {
+      wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const cachedQuery = queryClient
+      .getQueryCache()
+      .findAll({ queryKey: [QueryGroup.MAINTENANCE_CARDS, vehicleId] });
+    expect(cachedQuery).toHaveLength(1);
+  });
+
+  it('should call apiClient.get("/vehicles/vehicle-123/maintenance-cards") in its queryFn', async () => {
+    const vehicleId = 'vehicle-123';
+    vi.mocked(apiClient.get).mockResolvedValue([]);
+
+    const { result } = renderHook(() => useMaintenanceCards(vehicleId), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(apiClient.get).toHaveBeenCalledWith(
+      '/vehicles/vehicle-123/maintenance-cards',
+    );
+    expect(apiClient.get).toHaveBeenCalledTimes(1);
+  });
+
+  it('should NOT fetch when vehicleId is an empty string (enabled: false)', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue([]);
+
+    const { result } = renderHook(() => useMaintenanceCards(''), {
+      wrapper: createWrapper(),
+    });
+
+    // With enabled: false, query stays in 'pending' status with fetchStatus 'idle'
+    expect(result.current.fetchStatus).toBe('idle');
+    expect(result.current.status).toBe('pending');
+    expect(apiClient.get).not.toHaveBeenCalled();
+  });
+
+  it('should fetch when vehicleId is provided', async () => {
+    const vehicleId = 'vehicle-123';
+    vi.mocked(apiClient.get).mockResolvedValue([]);
+
+    const { result } = renderHook(() => useMaintenanceCards(vehicleId), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(apiClient.get).toHaveBeenCalledTimes(1);
+    expect(result.current.status).toBe('success');
+  });
+});

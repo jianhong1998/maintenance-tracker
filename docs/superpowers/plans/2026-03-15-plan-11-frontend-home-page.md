@@ -488,3 +488,190 @@ Expected: No errors.
 git add frontend/src/components/pages/home-page.tsx
 git commit -m "feat: implement home page with vehicle grid and global warning count"
 ```
+
+---
+
+## Post-Implementation: Code Review — Round 1 (2026-03-24)
+
+Review raised 4 issues. Analysis and resolution below.
+
+---
+
+### Issue 1 — `VehicleCard` fetches config it shouldn't own ✅ VALID — Fixed
+
+**Reviewer claim:** `VehicleCard` calls `useAppConfig()` internally when the parent `HomeContent` already holds `thresholdKm`. This creates hidden coupling and a loading-state inconsistency: `HomeContent` defaults `thresholdKm` to `0` when config is loading (`?? 0`), while `VehicleCard` skipped the calculation entirely when config was `undefined`. During config load the global count and per-card badges could disagree.
+
+**Fix:**
+- Removed `useAppConfig()` from `VehicleCard`.
+- Added `thresholdKm: number` to `VehicleCardProps`.
+- `HomeContent` now passes `thresholdKm={thresholdKm}` to each `VehicleCard`.
+- Updated `vehicle-card.spec.tsx`: removed `useAppConfig` mock, replaced the "config undefined" loading-state test with a `passes thresholdKm to countWarningCards` test.
+
+**Files changed:**
+- `frontend/src/components/vehicles/vehicle-card.tsx`
+- `frontend/src/components/vehicles/vehicle-card.spec.tsx`
+- `frontend/src/components/pages/home-page.tsx`
+
+---
+
+### Issue 2 — Dead export `getQueryKey` in `key.ts` ❌ INVALID
+
+**Reviewer claim:** `getQueryKey` is used by neither `useVehicles` nor `useMaintenanceCards`, therefore it is dead code.
+
+**Why invalid:** The reviewer only checked the two new hooks introduced in this branch. `getQueryKey` is actively used by `useAppConfig.ts` and `useBackendHealthCheck.ts` — pre-existing hooks that predate this branch. It is not dead code.
+
+**No change made.**
+
+---
+
+### Issue 3 — Tautological tests in `key.spec.ts` ✅ VALID — Fixed
+
+**Reviewer claim:** Tests asserting `QueryGroup.HEALTH_CHECK === 'health-check'` etc. are tautologies. They will never catch a real bug — if the string value changes, the test's hardcoded literal must also change, so the test provides zero protection.
+
+**Fix:** Removed the 4 string-equality tests. Retained the `Object.isFrozen` test, which verifies actual runtime behaviour (immutability enforcement).
+
+**Files changed:**
+- `frontend/src/hooks/queries/keys/key.spec.ts`
+
+---
+
+### Issue 4 — `createWrapper()` duplicated across hook spec files ✅ VALID — Fixed
+
+**Reviewer claim:** Identical `createWrapper()` factory copied verbatim into both `useMaintenanceCards.spec.ts` and `useVehicles.spec.ts`.
+
+**Note on "inline setup in first test":** The first test in each spec file intentionally bypasses `createWrapper()` to retain a local `queryClient` reference needed for cache-inspection assertions (`queryClient.getQueryCache().findAll(...)`). This pattern is correct and was left as-is.
+
+**Fix:** Extracted `createWrapper` to `frontend/src/hooks/queries/test-utils.ts`. Both spec files now import it from there.
+
+**Files changed:**
+- `frontend/src/hooks/queries/test-utils.ts` (new)
+- `frontend/src/hooks/queries/maintenance-cards/useMaintenanceCards.spec.ts`
+- `frontend/src/hooks/queries/vehicles/useVehicles.spec.ts`
+
+---
+
+## Post-Implementation: Code Review — Round 2 (2026-03-25)
+
+Review raised 4 issues. 3 valid, 1 invalid.
+
+---
+
+### Issue 1 — First test in each hook spec still inlines QueryClient ✅ VALID — Fixed
+
+**Reviewer claim:** The first test in `useMaintenanceCards.spec.ts` and `useVehicles.spec.ts` still hand-rolls `QueryClient` + `Wrapper` inline even though `test-utils.ts` was created in Round 1. The helper didn't expose the client, so the tests couldn't use it.
+
+**Fix:** Added `createWrapperWithClient()` to `frontend/src/hooks/queries/test-utils.ts`. It returns `{ wrapper, queryClient }`, giving tests access to the client for cache-inspection assertions. Updated both spec files to use it.
+
+**Files changed:**
+- `frontend/src/hooks/queries/test-utils.ts`
+- `frontend/src/hooks/queries/maintenance-cards/useMaintenanceCards.spec.ts`
+- `frontend/src/hooks/queries/vehicles/useVehicles.spec.ts`
+
+---
+
+### Issue 2 — `home-page.spec.tsx` mocks `@tanstack/react-query` itself ✅ VALID — Fixed
+
+**Reviewer claim:** The spec mocked `useQueries` from `@tanstack/react-query` to test `HomeContent` behavior. This tests whether you spelled `useQueries` correctly, not whether the component works correctly. If the implementation ever changes away from `useQueries`, the test breaks for the wrong reason.
+
+**Root cause:** `useGlobalWarningCount` was a private function inside `home-page.tsx`, making it impossible to mock at a sensible boundary.
+
+**Fix:** Extracted `useGlobalWarningCount` to `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.ts` with its own spec. `home-page.tsx` now imports it. `home-page.spec.tsx` mocks `useGlobalWarningCount` directly — no TanStack internals touched.
+
+**Files changed:**
+- `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.ts` (new)
+- `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.spec.ts` (new)
+- `frontend/src/components/pages/home-page.tsx`
+- `frontend/src/components/pages/home-page.spec.tsx`
+
+---
+
+### Issue 3 — Boundary condition: `nextDueMileage === vehicleMileage` returns 'warning' instead of 'overdue' ✅ VALID — Fixed
+
+**Reviewer claim:** The mileage overdue check in `warning.ts` uses strict `<`. When `nextDueMileage === vehicleMileage`, the card falls through to the warning check. With `thresholdKm=0` (the `?? 0` default in `HomeContent` during config load), `0 <= 0` fires and returns `'warning'` — but a vehicle at exactly its service mileage is overdue, not just warning.
+
+**Fix:** Changed `nextDueMileage < vehicleMileage` to `nextDueMileage <= vehicleMileage`. Added a test covering the exact-due-mileage case.
+
+**Files changed:**
+- `frontend/src/lib/warning.ts`
+- `frontend/src/lib/warning.spec.ts`
+
+---
+
+### Issue 4 — Double computation of warning counts ❌ INVALID (known trade-off)
+
+**Reviewer claim:** `useGlobalWarningCount` calls `countWarningCards` per vehicle, and each `VehicleCard` independently calls it too — so warning counts are computed twice per vehicle.
+
+**Why invalid as an actionable item:** TanStack Query deduplicates the network fetches (one request per vehicle regardless of how many components ask). The computation (`countWarningCards`) is O(n) over a typically small card list — cheap enough that running it twice is not a real problem. Lifting all counts into `HomeContent` and passing them as props would couple the home page more tightly to VehicleCard's internal concerns. The reviewer noted this is "pre-existing" and "not urgent". Documented here as a known trade-off, not a defect.
+
+**No change made.**
+
+---
+
+## Post-Implementation: Code Review — Round 3 (2026-03-25)
+
+Review raised 2 issues. Both valid.
+
+---
+
+### Issue 1 — Docstring in `warning.ts` says `<` but code does `<=` ✅ VALID — Fixed
+
+**Reviewer claim:** The docstring at `warning.ts:10` still reads `nextDueMileage < vehicleMileage`. The Round 2 boundary fix changed the code to `<=` but the docstring was not updated. A comment that contradicts the code is worse than no comment.
+
+**Why valid:** The docstring was written before the fix and not updated alongside it. It now actively misleads — a reader consulting the docstring would believe exact-due-mileage is not overdue, but the code (correctly) treats it as overdue.
+
+**Fix:** Updated the docstring to `nextDueMileage <= vehicleMileage`.
+
+**Files changed:**
+- `frontend/src/lib/warning.ts`
+
+---
+
+### Issue 2 — Dead guard `if (!vehicle) return total;` in `useGlobalWarningCount` ✅ VALID — Fixed
+
+**Reviewer claim:** The guard at `useGlobalWarningCount.ts:25` checks `if (!vehicle) return total`. This is unreachable: `useQueries` is called with `queries: vehicles.map(...)`, so `results.length === vehicles.length` by construction. `vehicles[index]` is always defined. The guard tells the reader "this can be undefined" when it cannot.
+
+**Why valid:** `noUncheckedIndexedAccess` is not enabled in the project tsconfig, so TypeScript does not require the guard. It is purely defensive dead code with no runtime or compile-time purpose.
+
+**Fix:** Removed the guard.
+
+**Files changed:**
+- `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.ts`
+
+---
+
+## Post-Implementation: Code Review — Round 4 (2026-03-25)
+
+Review raised 3 issues. 1 valid, 2 invalid.
+
+---
+
+### Issue 1 — `createWrapper` duplicates `createWrapperWithClient` setup ✅ VALID — Fixed
+
+**Reviewer claim:** `test-utils.ts` exports both `createWrapper` and `createWrapperWithClient`, but both create an identical `QueryClient` config internally. `createWrapper` should derive from `createWrapperWithClient` — if the `QueryClient` options ever change, there is only one place to update.
+
+**Why valid:** The duplication is real. `createWrapper` is a strict subset of `createWrapperWithClient` — it does the same setup and discards the client reference. One can trivially derive from the other.
+
+**Fix:** Replaced `createWrapper`'s body with `return createWrapperWithClient().wrapper`. Reordered so `createWrapperWithClient` is defined first (required since `const` declarations are not hoisted).
+
+**Files changed:**
+- `frontend/src/hooks/queries/test-utils.ts`
+
+---
+
+### Issue 2 — Double computation of `countWarningCards` ❌ INVALID (known trade-off, pre-existing)
+
+**Reviewer claim:** `useGlobalWarningCount` runs `countWarningCards` for every vehicle to build the global total. Each `VehicleCard` runs it again independently for its badge. The computation runs twice per vehicle.
+
+**Why invalid:** This was flagged in Round 1 (Issue 4) and Round 2 (Issue 4) and already documented as a known trade-off. TanStack Query deduplicates the network fetches. The computation is O(n) over a small card list — cheap enough that running it twice is not a real problem. The reviewer's own Round 4 note says "not urgent". No new reasoning to change the prior decision.
+
+**No change made.**
+
+---
+
+### Issue 3 — `getQueryKey` in `key.ts` goes untested ❌ INVALID (out of scope)
+
+**Reviewer claim:** `getQueryKey` has non-trivial logic (subTypes spreading, key ordering) but no tests. Only `Object.isFrozen` on `QueryGroup` is tested in `key.spec.ts`.
+
+**Why invalid:** `getQueryKey` is pre-existing code that this PR (Plan 11) did not add, modify, or use. The new hooks introduced by this plan (`useVehicles`, `useMaintenanceCards`, `useGlobalWarningCount`) deliberately build keys inline rather than via `getQueryKey` — a simpler pattern that needs no factory. Adding tests for untouched pre-existing code is out of scope for this PR. If tests are needed for `getQueryKey`, they belong in a separate task.
+
+**No change made.**
