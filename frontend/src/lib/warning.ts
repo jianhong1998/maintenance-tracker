@@ -26,7 +26,7 @@ export function getCardWarningStatus(
   }
 
   // Mileage-based overdue check
-  if (card.nextDueMileage !== null && card.nextDueMileage < vehicleMileage) {
+  if (card.nextDueMileage !== null && card.nextDueMileage <= vehicleMileage) {
     return 'overdue';
   }
 

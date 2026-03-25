@@ -74,6 +74,12 @@ describe('getCardWarningStatus', () => {
     const card = makeCard({ nextDueDate: '2020-01-01', nextDueMileage: 40000 });
     expect(getCardWarningStatus(card, 50000, 'km', 500)).toBe('overdue');
   });
+
+  it('returns overdue when nextDueMileage === vehicleMileage (service is due now)', () => {
+    // Exactly at service mileage — should be overdue, not warning
+    const card = makeCard({ nextDueMileage: 50000, nextDueDate: '2099-01-01' });
+    expect(getCardWarningStatus(card, 50000, 'km', 500)).toBe('overdue');
+  });
 });
 
 describe('countWarningCards', () => {
