@@ -1,10 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import React from 'react';
 import { useMaintenanceCards } from './useMaintenanceCards';
 import { QueryGroup } from '../keys';
-import { createWrapper } from '../test-utils';
+import { createWrapper, createWrapperWithClient } from '../test-utils';
 
 vi.mock('@/lib/api-client', () => ({
   apiClient: {
@@ -23,19 +21,9 @@ describe('useMaintenanceCards', () => {
     const vehicleId = 'vehicle-123';
     vi.mocked(apiClient.get).mockResolvedValue([]);
 
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false } },
-    });
-    const Wrapper = ({ children }: { children: React.ReactNode }) =>
-      React.createElement(
-        QueryClientProvider,
-        { client: queryClient },
-        children,
-      );
-    Wrapper.displayName = 'TestQueryClientWrapper';
-
+    const { wrapper, queryClient } = createWrapperWithClient();
     const { result } = renderHook(() => useMaintenanceCards(vehicleId), {
-      wrapper: Wrapper,
+      wrapper,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
