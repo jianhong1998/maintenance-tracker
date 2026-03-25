@@ -604,3 +604,35 @@ Review raised 4 issues. 3 valid, 1 invalid.
 **Why invalid as an actionable item:** TanStack Query deduplicates the network fetches (one request per vehicle regardless of how many components ask). The computation (`countWarningCards`) is O(n) over a typically small card list — cheap enough that running it twice is not a real problem. Lifting all counts into `HomeContent` and passing them as props would couple the home page more tightly to VehicleCard's internal concerns. The reviewer noted this is "pre-existing" and "not urgent". Documented here as a known trade-off, not a defect.
 
 **No change made.**
+
+---
+
+## Post-Implementation: Code Review — Round 3 (2026-03-25)
+
+Review raised 2 issues. Both valid.
+
+---
+
+### Issue 1 — Docstring in `warning.ts` says `<` but code does `<=` ✅ VALID — Fixed
+
+**Reviewer claim:** The docstring at `warning.ts:10` still reads `nextDueMileage < vehicleMileage`. The Round 2 boundary fix changed the code to `<=` but the docstring was not updated. A comment that contradicts the code is worse than no comment.
+
+**Why valid:** The docstring was written before the fix and not updated alongside it. It now actively misleads — a reader consulting the docstring would believe exact-due-mileage is not overdue, but the code (correctly) treats it as overdue.
+
+**Fix:** Updated the docstring to `nextDueMileage <= vehicleMileage`.
+
+**Files changed:**
+- `frontend/src/lib/warning.ts`
+
+---
+
+### Issue 2 — Dead guard `if (!vehicle) return total;` in `useGlobalWarningCount` ✅ VALID — Fixed
+
+**Reviewer claim:** The guard at `useGlobalWarningCount.ts:25` checks `if (!vehicle) return total`. This is unreachable: `useQueries` is called with `queries: vehicles.map(...)`, so `results.length === vehicles.length` by construction. `vehicles[index]` is always defined. The guard tells the reader "this can be undefined" when it cannot.
+
+**Why valid:** `noUncheckedIndexedAccess` is not enabled in the project tsconfig, so TypeScript does not require the guard. It is purely defensive dead code with no runtime or compile-time purpose.
+
+**Fix:** Removed the guard.
+
+**Files changed:**
+- `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.ts`
