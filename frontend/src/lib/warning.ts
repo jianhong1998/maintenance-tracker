@@ -7,7 +7,7 @@ export type CardWarningStatus = 'overdue' | 'warning' | 'ok';
 /**
  * Computes the warning status of a single maintenance card.
  *
- * - 'overdue'  — nextDueDate < today OR nextDueMileage < vehicleMileage
+ * - 'overdue'  — nextDueDate < today OR nextDueMileage <= vehicleMileage
  * - 'warning'  — mileage remaining (in km) <= mileageWarningThresholdKm
  *                (only when card has intervalMileage)
  * - 'ok'       — all clear
