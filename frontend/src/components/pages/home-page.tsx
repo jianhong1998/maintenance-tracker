@@ -1,45 +1,10 @@
 'use client';
 
-import { useQueries } from '@tanstack/react-query';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { VehicleCard } from '@/components/vehicles/vehicle-card';
 import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
-import { countWarningCards } from '@/lib/warning';
-import { maintenanceCardsQueryOptions } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
-import type { IVehicleResDTO } from '@project/types';
-
-/**
- * Computes the global warning count across all vehicles using useQueries.
- * useQueries is a single hook call that safely runs a dynamic number of
- * parallel queries — no hooks-in-loop violation.
- * TanStack Query deduplicates these fetches with VehicleCard's useMaintenanceCards calls.
- */
-function useGlobalWarningCount(
-  vehicles: IVehicleResDTO[],
-  thresholdKm: number,
-): number {
-  const results = useQueries({
-    queries: vehicles.map((vehicle) =>
-      maintenanceCardsQueryOptions(vehicle.id),
-    ),
-  });
-
-  return results.reduce((total, result, index) => {
-    const cards = result.data ?? [];
-    const vehicle = vehicles[index];
-    if (!vehicle) return total;
-    return (
-      total +
-      countWarningCards(
-        cards,
-        vehicle.mileage,
-        vehicle.mileageUnit,
-        thresholdKm,
-      )
-    );
-  }, 0);
-}
+import { useGlobalWarningCount } from '@/hooks/queries/vehicles/useGlobalWarningCount';
 
 function HomeContent() {
   const { data: vehicles = [], isLoading } = useVehicles();

@@ -1,8 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import type { UseQueryResult } from '@tanstack/react-query';
-import type { IVehicleResDTO, IMaintenanceCardResDTO } from '@project/types';
+import type { IVehicleResDTO } from '@project/types';
 
 vi.mock('@/hooks/queries/vehicles/useVehicles', () => ({
   useVehicles: vi.fn(),
@@ -12,8 +11,8 @@ vi.mock('@/hooks/queries/config/useAppConfig', () => ({
   useAppConfig: vi.fn(),
 }));
 
-vi.mock('@tanstack/react-query', () => ({
-  useQueries: vi.fn(),
+vi.mock('@/hooks/queries/vehicles/useGlobalWarningCount', () => ({
+  useGlobalWarningCount: vi.fn(),
 }));
 
 vi.mock('@/components/vehicles/vehicle-card', () => ({
@@ -26,14 +25,9 @@ vi.mock('@/components/auth/auth-guard', () => ({
   AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-vi.mock('@/lib/warning', () => ({
-  countWarningCards: vi.fn(),
-}));
-
 import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
-import { useQueries } from '@tanstack/react-query';
-import { countWarningCards } from '@/lib/warning';
+import { useGlobalWarningCount } from '@/hooks/queries/vehicles/useGlobalWarningCount';
 import { HomePage } from './home-page';
 
 const mockVehicle: IVehicleResDTO = {
@@ -64,10 +58,7 @@ describe('HomePage', () => {
     vi.mocked(useAppConfig).mockReturnValue({
       data: { mileageWarningThresholdKm: 500 },
     } as ReturnType<typeof useAppConfig>);
-    vi.mocked(useQueries).mockReturnValue(
-      [] as UseQueryResult<IMaintenanceCardResDTO[]>[],
-    );
-    vi.mocked(countWarningCards).mockReturnValue(0);
+    vi.mocked(useGlobalWarningCount).mockReturnValue(0);
   });
 
   it('shows loading message when useVehicles is loading', () => {
@@ -97,10 +88,6 @@ describe('HomePage', () => {
       data: [mockVehicle, mockVehicle2],
       isLoading: false,
     } as ReturnType<typeof useVehicles>);
-    vi.mocked(useQueries).mockReturnValue([
-      { data: [] },
-      { data: [] },
-    ] as UseQueryResult<IMaintenanceCardResDTO[]>[]);
 
     render(<HomePage />);
 
@@ -115,10 +102,7 @@ describe('HomePage', () => {
       data: [mockVehicle],
       isLoading: false,
     } as ReturnType<typeof useVehicles>);
-    vi.mocked(useQueries).mockReturnValue([{ data: [] }] as UseQueryResult<
-      IMaintenanceCardResDTO[]
-    >[]);
-    vi.mocked(countWarningCards).mockReturnValue(0);
+    vi.mocked(useGlobalWarningCount).mockReturnValue(0);
 
     render(<HomePage />);
 
@@ -130,15 +114,10 @@ describe('HomePage', () => {
       data: [mockVehicle, mockVehicle2],
       isLoading: false,
     } as ReturnType<typeof useVehicles>);
-    vi.mocked(useQueries).mockReturnValue([
-      { data: [] },
-      { data: [] },
-    ] as UseQueryResult<IMaintenanceCardResDTO[]>[]);
-    vi.mocked(countWarningCards).mockReturnValue(2);
+    vi.mocked(useGlobalWarningCount).mockReturnValue(4);
 
     render(<HomePage />);
 
-    // countWarningCards returns 2 per vehicle × 2 vehicles = 4 total
     expect(screen.getByText(/4 cards need attention/i)).toBeInTheDocument();
   });
 
