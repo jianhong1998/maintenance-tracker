@@ -491,7 +491,7 @@ git commit -m "feat: implement home page with vehicle grid and global warning co
 
 ---
 
-## Post-Implementation: Code Review (2026-03-25)
+## Post-Implementation: Code Review — Round 1 (2026-03-24)
 
 Review raised 4 issues. Analysis and resolution below.
 
@@ -547,3 +547,60 @@ Review raised 4 issues. Analysis and resolution below.
 - `frontend/src/hooks/queries/test-utils.ts` (new)
 - `frontend/src/hooks/queries/maintenance-cards/useMaintenanceCards.spec.ts`
 - `frontend/src/hooks/queries/vehicles/useVehicles.spec.ts`
+
+---
+
+## Post-Implementation: Code Review — Round 2 (2026-03-25)
+
+Review raised 4 issues. 3 valid, 1 invalid.
+
+---
+
+### Issue 1 — First test in each hook spec still inlines QueryClient ✅ VALID — Fixed
+
+**Reviewer claim:** The first test in `useMaintenanceCards.spec.ts` and `useVehicles.spec.ts` still hand-rolls `QueryClient` + `Wrapper` inline even though `test-utils.ts` was created in Round 1. The helper didn't expose the client, so the tests couldn't use it.
+
+**Fix:** Added `createWrapperWithClient()` to `frontend/src/hooks/queries/test-utils.ts`. It returns `{ wrapper, queryClient }`, giving tests access to the client for cache-inspection assertions. Updated both spec files to use it.
+
+**Files changed:**
+- `frontend/src/hooks/queries/test-utils.ts`
+- `frontend/src/hooks/queries/maintenance-cards/useMaintenanceCards.spec.ts`
+- `frontend/src/hooks/queries/vehicles/useVehicles.spec.ts`
+
+---
+
+### Issue 2 — `home-page.spec.tsx` mocks `@tanstack/react-query` itself ✅ VALID — Fixed
+
+**Reviewer claim:** The spec mocked `useQueries` from `@tanstack/react-query` to test `HomeContent` behavior. This tests whether you spelled `useQueries` correctly, not whether the component works correctly. If the implementation ever changes away from `useQueries`, the test breaks for the wrong reason.
+
+**Root cause:** `useGlobalWarningCount` was a private function inside `home-page.tsx`, making it impossible to mock at a sensible boundary.
+
+**Fix:** Extracted `useGlobalWarningCount` to `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.ts` with its own spec. `home-page.tsx` now imports it. `home-page.spec.tsx` mocks `useGlobalWarningCount` directly — no TanStack internals touched.
+
+**Files changed:**
+- `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.ts` (new)
+- `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.spec.ts` (new)
+- `frontend/src/components/pages/home-page.tsx`
+- `frontend/src/components/pages/home-page.spec.tsx`
+
+---
+
+### Issue 3 — Boundary condition: `nextDueMileage === vehicleMileage` returns 'warning' instead of 'overdue' ✅ VALID — Fixed
+
+**Reviewer claim:** The mileage overdue check in `warning.ts` uses strict `<`. When `nextDueMileage === vehicleMileage`, the card falls through to the warning check. With `thresholdKm=0` (the `?? 0` default in `HomeContent` during config load), `0 <= 0` fires and returns `'warning'` — but a vehicle at exactly its service mileage is overdue, not just warning.
+
+**Fix:** Changed `nextDueMileage < vehicleMileage` to `nextDueMileage <= vehicleMileage`. Added a test covering the exact-due-mileage case.
+
+**Files changed:**
+- `frontend/src/lib/warning.ts`
+- `frontend/src/lib/warning.spec.ts`
+
+---
+
+### Issue 4 — Double computation of warning counts ❌ INVALID (known trade-off)
+
+**Reviewer claim:** `useGlobalWarningCount` calls `countWarningCards` per vehicle, and each `VehicleCard` independently calls it too — so warning counts are computed twice per vehicle.
+
+**Why invalid as an actionable item:** TanStack Query deduplicates the network fetches (one request per vehicle regardless of how many components ask). The computation (`countWarningCards`) is O(n) over a typically small card list — cheap enough that running it twice is not a real problem. Lifting all counts into `HomeContent` and passing them as props would couple the home page more tightly to VehicleCard's internal concerns. The reviewer noted this is "pre-existing" and "not urgent". Documented here as a known trade-off, not a defect.
+
+**No change made.**
