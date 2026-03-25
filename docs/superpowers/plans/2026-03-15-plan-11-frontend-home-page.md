@@ -636,3 +636,42 @@ Review raised 2 issues. Both valid.
 
 **Files changed:**
 - `frontend/src/hooks/queries/vehicles/useGlobalWarningCount.ts`
+
+---
+
+## Post-Implementation: Code Review — Round 4 (2026-03-25)
+
+Review raised 3 issues. 1 valid, 2 invalid.
+
+---
+
+### Issue 1 — `createWrapper` duplicates `createWrapperWithClient` setup ✅ VALID — Fixed
+
+**Reviewer claim:** `test-utils.ts` exports both `createWrapper` and `createWrapperWithClient`, but both create an identical `QueryClient` config internally. `createWrapper` should derive from `createWrapperWithClient` — if the `QueryClient` options ever change, there is only one place to update.
+
+**Why valid:** The duplication is real. `createWrapper` is a strict subset of `createWrapperWithClient` — it does the same setup and discards the client reference. One can trivially derive from the other.
+
+**Fix:** Replaced `createWrapper`'s body with `return createWrapperWithClient().wrapper`. Reordered so `createWrapperWithClient` is defined first (required since `const` declarations are not hoisted).
+
+**Files changed:**
+- `frontend/src/hooks/queries/test-utils.ts`
+
+---
+
+### Issue 2 — Double computation of `countWarningCards` ❌ INVALID (known trade-off, pre-existing)
+
+**Reviewer claim:** `useGlobalWarningCount` runs `countWarningCards` for every vehicle to build the global total. Each `VehicleCard` runs it again independently for its badge. The computation runs twice per vehicle.
+
+**Why invalid:** This was flagged in Round 1 (Issue 4) and Round 2 (Issue 4) and already documented as a known trade-off. TanStack Query deduplicates the network fetches. The computation is O(n) over a small card list — cheap enough that running it twice is not a real problem. The reviewer's own Round 4 note says "not urgent". No new reasoning to change the prior decision.
+
+**No change made.**
+
+---
+
+### Issue 3 — `getQueryKey` in `key.ts` goes untested ❌ INVALID (out of scope)
+
+**Reviewer claim:** `getQueryKey` has non-trivial logic (subTypes spreading, key ordering) but no tests. Only `Object.isFrozen` on `QueryGroup` is tested in `key.spec.ts`.
+
+**Why invalid:** `getQueryKey` is pre-existing code that this PR (Plan 11) did not add, modify, or use. The new hooks introduced by this plan (`useVehicles`, `useMaintenanceCards`, `useGlobalWarningCount`) deliberately build keys inline rather than via `getQueryKey` — a simpler pattern that needs no factory. Adding tests for untouched pre-existing code is out of scope for this PR. If tests are needed for `getQueryKey`, they belong in a separate task.
+
+**No change made.**
