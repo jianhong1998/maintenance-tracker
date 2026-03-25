@@ -6,9 +6,6 @@ import type { IVehicleResDTO } from '@project/types';
 vi.mock('@/hooks/queries/maintenance-cards/useMaintenanceCards', () => ({
   useMaintenanceCards: vi.fn(),
 }));
-vi.mock('@/hooks/queries/config/useAppConfig', () => ({
-  useAppConfig: vi.fn(),
-}));
 vi.mock('@/lib/warning', () => ({
   countWarningCards: vi.fn(),
 }));
@@ -32,7 +29,6 @@ vi.mock('next/link', () => ({
 }));
 
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
-import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import { countWarningCards } from '@/lib/warning';
 import { VehicleCard } from './vehicle-card';
 
@@ -55,14 +51,16 @@ describe('VehicleCard', () => {
     vi.mocked(useMaintenanceCards).mockReturnValue({
       data: mockCards,
     } as ReturnType<typeof useMaintenanceCards>);
-    vi.mocked(useAppConfig).mockReturnValue({
-      data: { mileageWarningThresholdKm: 500 },
-    } as ReturnType<typeof useAppConfig>);
     vi.mocked(countWarningCards).mockReturnValue(0);
   });
 
   it('renders vehicle brand, model, colour, and mileage', () => {
-    render(<VehicleCard vehicle={mockVehicle} />);
+    render(
+      <VehicleCard
+        vehicle={mockVehicle}
+        thresholdKm={500}
+      />,
+    );
 
     expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
     expect(screen.getByText('Silver')).toBeInTheDocument();
@@ -72,7 +70,12 @@ describe('VehicleCard', () => {
   it('shows a warning badge with count when there are warning/overdue cards', () => {
     vi.mocked(countWarningCards).mockReturnValue(3);
 
-    render(<VehicleCard vehicle={mockVehicle} />);
+    render(
+      <VehicleCard
+        vehicle={mockVehicle}
+        thresholdKm={500}
+      />,
+    );
 
     expect(screen.getByText('3')).toBeInTheDocument();
   });
@@ -80,29 +83,43 @@ describe('VehicleCard', () => {
   it('does NOT show a badge when warningCount is 0', () => {
     vi.mocked(countWarningCards).mockReturnValue(0);
 
-    render(<VehicleCard vehicle={mockVehicle} />);
+    render(
+      <VehicleCard
+        vehicle={mockVehicle}
+        thresholdKm={500}
+      />,
+    );
 
-    // Badge should not be rendered at all
     expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 
   it('links to /vehicles/:id', () => {
-    render(<VehicleCard vehicle={mockVehicle} />);
+    render(
+      <VehicleCard
+        vehicle={mockVehicle}
+        thresholdKm={500}
+      />,
+    );
 
     const link = screen.getByRole('link');
     expect(link).toHaveAttribute('href', '/vehicles/vehicle-1');
   });
 
-  it('shows no badge when config is undefined (loading state)', () => {
-    vi.mocked(useMaintenanceCards).mockReturnValue({ data: [] } as ReturnType<
-      typeof useMaintenanceCards
-    >);
-    vi.mocked(useAppConfig).mockReturnValue({ data: undefined } as ReturnType<
-      typeof useAppConfig
-    >);
-    vi.mocked(countWarningCards).mockReturnValue(0);
-    render(<VehicleCard vehicle={mockVehicle} />);
-    expect(screen.queryByText('0')).toBeNull();
-    expect(vi.mocked(countWarningCards)).not.toHaveBeenCalled();
+  it('passes thresholdKm to countWarningCards', () => {
+    const thresholdKm = 750;
+
+    render(
+      <VehicleCard
+        vehicle={mockVehicle}
+        thresholdKm={thresholdKm}
+      />,
+    );
+
+    expect(vi.mocked(countWarningCards)).toHaveBeenCalledWith(
+      mockCards,
+      mockVehicle.mileage,
+      mockVehicle.mileageUnit,
+      thresholdKm,
+    );
   });
 });

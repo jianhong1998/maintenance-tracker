@@ -488,3 +488,62 @@ Expected: No errors.
 git add frontend/src/components/pages/home-page.tsx
 git commit -m "feat: implement home page with vehicle grid and global warning count"
 ```
+
+---
+
+## Post-Implementation: Code Review (2026-03-25)
+
+Review raised 4 issues. Analysis and resolution below.
+
+---
+
+### Issue 1 — `VehicleCard` fetches config it shouldn't own ✅ VALID — Fixed
+
+**Reviewer claim:** `VehicleCard` calls `useAppConfig()` internally when the parent `HomeContent` already holds `thresholdKm`. This creates hidden coupling and a loading-state inconsistency: `HomeContent` defaults `thresholdKm` to `0` when config is loading (`?? 0`), while `VehicleCard` skipped the calculation entirely when config was `undefined`. During config load the global count and per-card badges could disagree.
+
+**Fix:**
+- Removed `useAppConfig()` from `VehicleCard`.
+- Added `thresholdKm: number` to `VehicleCardProps`.
+- `HomeContent` now passes `thresholdKm={thresholdKm}` to each `VehicleCard`.
+- Updated `vehicle-card.spec.tsx`: removed `useAppConfig` mock, replaced the "config undefined" loading-state test with a `passes thresholdKm to countWarningCards` test.
+
+**Files changed:**
+- `frontend/src/components/vehicles/vehicle-card.tsx`
+- `frontend/src/components/vehicles/vehicle-card.spec.tsx`
+- `frontend/src/components/pages/home-page.tsx`
+
+---
+
+### Issue 2 — Dead export `getQueryKey` in `key.ts` ❌ INVALID
+
+**Reviewer claim:** `getQueryKey` is used by neither `useVehicles` nor `useMaintenanceCards`, therefore it is dead code.
+
+**Why invalid:** The reviewer only checked the two new hooks introduced in this branch. `getQueryKey` is actively used by `useAppConfig.ts` and `useBackendHealthCheck.ts` — pre-existing hooks that predate this branch. It is not dead code.
+
+**No change made.**
+
+---
+
+### Issue 3 — Tautological tests in `key.spec.ts` ✅ VALID — Fixed
+
+**Reviewer claim:** Tests asserting `QueryGroup.HEALTH_CHECK === 'health-check'` etc. are tautologies. They will never catch a real bug — if the string value changes, the test's hardcoded literal must also change, so the test provides zero protection.
+
+**Fix:** Removed the 4 string-equality tests. Retained the `Object.isFrozen` test, which verifies actual runtime behaviour (immutability enforcement).
+
+**Files changed:**
+- `frontend/src/hooks/queries/keys/key.spec.ts`
+
+---
+
+### Issue 4 — `createWrapper()` duplicated across hook spec files ✅ VALID — Fixed
+
+**Reviewer claim:** Identical `createWrapper()` factory copied verbatim into both `useMaintenanceCards.spec.ts` and `useVehicles.spec.ts`.
+
+**Note on "inline setup in first test":** The first test in each spec file intentionally bypasses `createWrapper()` to retain a local `queryClient` reference needed for cache-inspection assertions (`queryClient.getQueryCache().findAll(...)`). This pattern is correct and was left as-is.
+
+**Fix:** Extracted `createWrapper` to `frontend/src/hooks/queries/test-utils.ts`. Both spec files now import it from there.
+
+**Files changed:**
+- `frontend/src/hooks/queries/test-utils.ts` (new)
+- `frontend/src/hooks/queries/maintenance-cards/useMaintenanceCards.spec.ts`
+- `frontend/src/hooks/queries/vehicles/useVehicles.spec.ts`

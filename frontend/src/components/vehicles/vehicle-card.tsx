@@ -3,26 +3,22 @@
 import Link from 'next/link';
 import type { IVehicleResDTO } from '@project/types';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
-import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import { countWarningCards } from '@/lib/warning';
 
 interface VehicleCardProps {
   vehicle: IVehicleResDTO;
+  thresholdKm: number;
 }
 
-export function VehicleCard({ vehicle }: VehicleCardProps) {
+export function VehicleCard({ vehicle, thresholdKm }: VehicleCardProps) {
   const { data: cards = [] } = useMaintenanceCards(vehicle.id);
-  const { data: config } = useAppConfig();
 
-  const warningCount =
-    config !== undefined
-      ? countWarningCards(
-          cards,
-          vehicle.mileage,
-          vehicle.mileageUnit,
-          config.mileageWarningThresholdKm,
-        )
-      : 0;
+  const warningCount = countWarningCards(
+    cards,
+    vehicle.mileage,
+    vehicle.mileageUnit,
+    thresholdKm,
+  );
 
   return (
     <Link

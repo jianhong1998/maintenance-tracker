@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import { useMaintenanceCards } from './useMaintenanceCards';
 import { QueryGroup } from '../keys';
+import { createWrapper } from '../test-utils';
 
 vi.mock('@/lib/api-client', () => ({
   apiClient: {
@@ -12,20 +13,6 @@ vi.mock('@/lib/api-client', () => ({
 }));
 
 import { apiClient } from '@/lib/api-client';
-
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  });
-  const Wrapper = ({ children }: { children: React.ReactNode }) =>
-    React.createElement(QueryClientProvider, { client: queryClient }, children);
-  Wrapper.displayName = 'TestQueryClientWrapper';
-  return Wrapper;
-};
 
 describe('useMaintenanceCards', () => {
   beforeEach(() => {

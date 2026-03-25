@@ -76,6 +76,7 @@ function HomeContent() {
           <VehicleCard
             key={vehicle.id}
             vehicle={vehicle}
+            thresholdKm={thresholdKm}
           />
         ))}
       </div>
