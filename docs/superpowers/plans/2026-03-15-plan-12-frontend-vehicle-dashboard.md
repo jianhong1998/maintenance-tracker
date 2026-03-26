@@ -622,6 +622,80 @@ The implementation also preserves the existing `maintenanceCardsQueryOptions` ex
 
 **No fix required.**
 
+---
+
+### Issue 2 — `MileagePrompt.handleSubmit` silently discards mutation errors
+
+**Review claim:** `dismiss()` fires synchronously before `patchVehicle` settles. If the mutation fails, the prompt disappears and localStorage is marked as seen, so the user believes mileage was saved when it wasn't.
+
+**Verdict: VALID — Fixed**
+
+`dismiss()` was moved into the `onSuccess` callback:
+
+```ts
+// Before
+const handleSubmit = () => {
+  patchVehicle({ mileage: parseFloat(value.trim()) });
+  dismiss();
+};
+
+// After
+const handleSubmit = () => {
+  patchVehicle({ mileage: parseFloat(value.trim()) }, { onSuccess: dismiss });
+};
+```
+
+Tests updated: the "calls patchVehicle and dismisses" test was split into two:
+1. Verifies `patchVehicle` is called with `{ onSuccess: expect.any(Function) }` and that dismiss does NOT fire before mutation settles.
+2. Simulates `onSuccess` firing synchronously and verifies dismiss then happens.
+
+---
+
+### Issue 3 — Warning colors not dark-mode aware
+
+**Review claim:** `border-yellow-300 bg-yellow-50 text-yellow-700` are hardcoded light-mode colors with no `dark:` variants, inconsistent with `overdue` which uses CSS variable-based classes.
+
+**Verdict: VALID — Fixed**
+
+Dark mode IS active in this project (`@custom-variant dark (&:is(.dark *))` + `.dark { }` block in `globals.css`). Added dark variants:
+
+```tsx
+// Before
+status === 'warning' && 'border-yellow-300 bg-yellow-50'
+status === 'warning' && 'text-yellow-700'
+
+// After
+status === 'warning' && 'border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950'
+status === 'warning' && 'text-yellow-700 dark:text-yellow-400'
+```
+
+Existing tests pass unchanged (they check for `bg-yellow-50`/`border-yellow-300` which are still present).
+
+---
+
+### Issue 4 — `usePatchVehicle` dual cache operations lack explanatory comment
+
+**Review claim:** The comment `// Update the individual vehicle cache entry (no refetch)` followed immediately by `invalidateQueries` is contradictory without context explaining that `exact: true` targets only the list key.
+
+**Verdict: VALID — Fixed**
+
+Updated comment to clarify both cache operations:
+
+```ts
+// Before
+// Update the individual vehicle cache entry (no refetch)
+queryClient.setQueryData([QueryGroup.VEHICLES, vehicleId], updatedVehicle);
+void queryClient.invalidateQueries({ queryKey: [QueryGroup.VEHICLES], exact: true });
+
+// After
+// Update the individual vehicle cache entry directly (no refetch for this entry)
+queryClient.setQueryData([QueryGroup.VEHICLES, vehicleId], updatedVehicle);
+// exact: true targets only the list key [VEHICLES], not individual [VEHICLES, id] entries
+void queryClient.invalidateQueries({ queryKey: [QueryGroup.VEHICLES], exact: true });
+```
+
+---
+
 ### Implementation deviations from plan (minor, intentional)
 
 | File | Plan | Implementation | Reason |
