@@ -21,6 +21,7 @@ function renderLoginPage(overrides: Partial<AuthContextValue> = {}) {
   const defaultContext: AuthContextValue = {
     user: null,
     loading: false,
+    authError: null,
     signInWithGoogle: vi.fn(),
     signOut: vi.fn(),
     ...overrides,
