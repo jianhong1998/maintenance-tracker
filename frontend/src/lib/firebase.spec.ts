@@ -1,48 +1,73 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('firebase/app', () => ({
   getApps: vi.fn(() => []),
-  initializeApp: vi.fn(() => ({})),
+  initializeApp: vi.fn(() => ({ name: 'test-app' })),
 }));
 
 vi.mock('firebase/auth', () => ({
-  getAuth: vi.fn(() => ({})),
+  getAuth: vi.fn(() => ({ name: 'test-auth' })),
 }));
 
-describe('Firebase module initialization', () => {
+const validConfig = {
+  apiKey: 'test-key',
+  authDomain: 'test.firebaseapp.com',
+  projectId: 'test-project',
+};
+
+describe('firebase', () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.stubEnv('FRONTEND_FIREBASE_API_KEY', 'test-api-key');
-    vi.stubEnv('FRONTEND_FIREBASE_AUTH_DOMAIN', 'test.firebaseapp.com');
-    vi.stubEnv('FRONTEND_FIREBASE_PROJECT_ID', 'test-project');
   });
 
-  afterEach(() => {
-    vi.unstubAllEnvs();
+  describe('initFirebase', () => {
+    it('initializes and returns an Auth instance when config is valid', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
+      const auth = initFirebase(validConfig);
+      expect(auth).toBeDefined();
+    });
+
+    it('is idempotent — second call returns same instance without reinitializing', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
+      const { initializeApp } = await import('firebase/app');
+      vi.clearAllMocks();
+      const auth1 = initFirebase(validConfig);
+      const auth2 = initFirebase(validConfig);
+      expect(auth1).toBe(auth2);
+      expect(initializeApp).toHaveBeenCalledTimes(1);
+    });
+
+    it('throws with controlled message when apiKey is undefined', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
+      expect(() => initFirebase({ ...validConfig, apiKey: undefined })).toThrow(
+        'Missing required Firebase config: apiKey',
+      );
+    });
+
+    it('throws with controlled message when multiple config values are undefined', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
+      expect(() =>
+        initFirebase({
+          apiKey: undefined,
+          authDomain: undefined,
+          projectId: 'test',
+        }),
+      ).toThrow('Missing required Firebase config');
+    });
   });
 
-  it('throws with missing var name when API key is absent', async () => {
-    vi.stubEnv('FRONTEND_FIREBASE_API_KEY', '');
-    await expect(import('@/lib/firebase')).rejects.toThrow(
-      'FRONTEND_FIREBASE_API_KEY',
-    );
-  });
+  describe('getFirebaseAuth', () => {
+    it('throws before initFirebase is called', async () => {
+      const { getFirebaseAuth } = await import('@/lib/firebase');
+      expect(() => getFirebaseAuth()).toThrow(
+        'Firebase has not been initialized',
+      );
+    });
 
-  it('throws with missing var name when auth domain is absent', async () => {
-    vi.stubEnv('FRONTEND_FIREBASE_AUTH_DOMAIN', '');
-    await expect(import('@/lib/firebase')).rejects.toThrow(
-      'FRONTEND_FIREBASE_AUTH_DOMAIN',
-    );
-  });
-
-  it('throws with missing var name when project ID is absent', async () => {
-    vi.stubEnv('FRONTEND_FIREBASE_PROJECT_ID', '');
-    await expect(import('@/lib/firebase')).rejects.toThrow(
-      'FRONTEND_FIREBASE_PROJECT_ID',
-    );
-  });
-
-  it('initializes without error when all required env vars are present', async () => {
-    await expect(import('@/lib/firebase')).resolves.toHaveProperty('auth');
+    it('returns auth instance after initFirebase is called', async () => {
+      const { initFirebase, getFirebaseAuth } = await import('@/lib/firebase');
+      initFirebase(validConfig);
+      expect(getFirebaseAuth()).toBeDefined();
+    });
   });
 });
