@@ -11,6 +11,7 @@ async function bootstrap(): Promise<void> {
 }
 
 bootstrap().catch((err: unknown) => {
+  // eslint-disable-next-line no-console
   console.error('Worker failed to start', err);
   process.exit(1);
 });
