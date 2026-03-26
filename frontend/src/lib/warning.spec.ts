@@ -8,7 +8,7 @@ function makeCard(
   return {
     id: 'card-1',
     vehicleId: 'vehicle-1',
-    type: 'oil_change',
+    type: 'task',
     name: 'Oil Change',
     description: null,
     intervalMileage: 5000,

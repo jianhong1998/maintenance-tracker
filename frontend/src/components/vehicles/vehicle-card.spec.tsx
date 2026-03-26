@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import React from 'react';
-import type { IVehicleResDTO } from '@project/types';
+import type { IVehicleResDTO, IMaintenanceCardResDTO } from '@project/types';
 
 vi.mock('@/hooks/queries/maintenance-cards/useMaintenanceCards', () => ({
   useMaintenanceCards: vi.fn(),
@@ -43,7 +43,7 @@ const mockVehicle: IVehicleResDTO = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
-const mockCards = [];
+const mockCards: IMaintenanceCardResDTO[] = [];
 
 describe('VehicleCard', () => {
   beforeEach(() => {
