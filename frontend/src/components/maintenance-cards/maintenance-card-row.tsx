@@ -42,7 +42,8 @@ export function MaintenanceCardRow({ card, vehicle }: MaintenanceCardRowProps) {
       className={cn(
         'flex items-center justify-between rounded-md border px-4 py-3',
         status === 'overdue' && 'border-destructive/40 bg-destructive/10',
-        status === 'warning' && 'border-yellow-300 bg-yellow-50',
+        status === 'warning' &&
+          'border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950',
       )}
     >
       <div className="flex items-center gap-2">
@@ -57,7 +58,7 @@ export function MaintenanceCardRow({ card, vehicle }: MaintenanceCardRowProps) {
           className={cn(
             'text-xs font-semibold',
             status === 'overdue' && 'text-destructive',
-            status === 'warning' && 'text-yellow-700',
+            status === 'warning' && 'text-yellow-700 dark:text-yellow-400',
           )}
         >
           {mileageLabel}

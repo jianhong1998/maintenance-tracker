@@ -60,7 +60,7 @@ describe('MileagePrompt', () => {
     expect(localStorage.getItem(getTodayKey(VEHICLE_ID))).toBe('1');
   });
 
-  it('calls patchVehicle with parsed mileage and dismisses when Update is clicked', async () => {
+  it('calls patchVehicle with parsed mileage and onSuccess callback when Update is clicked', async () => {
     render(<MileagePrompt vehicleId={VEHICLE_ID} />);
 
     await waitFor(() => {
@@ -72,9 +72,35 @@ describe('MileagePrompt', () => {
 
     fireEvent.click(screen.getByText('Update'));
 
-    expect(mockMutate).toHaveBeenCalledWith({ mileage: 12345 });
-    expect(localStorage.getItem(getTodayKey(VEHICLE_ID))).toBe('1');
+    expect(mockMutate).toHaveBeenCalledWith(
+      { mileage: 12345 },
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+    // dismiss() must NOT fire before mutation settles
+    expect(localStorage.getItem(getTodayKey(VEHICLE_ID))).toBeNull();
+    expect(
+      screen.queryByText("What's your current odometer reading?"),
+    ).toBeInTheDocument();
+  });
 
+  it('dismisses prompt only after successful mutation', async () => {
+    mockMutate.mockImplementation(
+      (_data: unknown, options?: { onSuccess?: () => void }) => {
+        options?.onSuccess?.();
+      },
+    );
+
+    render(<MileagePrompt vehicleId={VEHICLE_ID} />);
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter mileage')).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText('Enter mileage');
+    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.click(screen.getByText('Update'));
+
+    expect(localStorage.getItem(getTodayKey(VEHICLE_ID))).toBe('1');
     await waitFor(() => {
       expect(
         screen.queryByText("What's your current odometer reading?"),

@@ -31,8 +31,7 @@ export function MileagePrompt({ vehicleId }: MileagePromptProps) {
   };
 
   const handleSubmit = () => {
-    patchVehicle({ mileage: parseFloat(value.trim()) });
-    dismiss();
+    patchVehicle({ mileage: parseFloat(value.trim()) }, { onSuccess: dismiss });
   };
 
   if (!visible) return null;

@@ -10,11 +10,12 @@ export const usePatchVehicle = (vehicleId: string) => {
     mutationFn: (data) =>
       apiClient.patch<IVehicleResDTO>(`/vehicles/${vehicleId}`, data),
     onSuccess: (updatedVehicle) => {
-      // Update the individual vehicle cache entry (no refetch)
+      // Update the individual vehicle cache entry directly (no refetch for this entry)
       queryClient.setQueryData(
         [QueryGroup.VEHICLES, vehicleId],
         updatedVehicle,
       );
+      // exact: true targets only the list key [VEHICLES], not individual [VEHICLES, id] entries
       void queryClient.invalidateQueries({
         queryKey: [QueryGroup.VEHICLES],
         exact: true,
