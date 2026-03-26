@@ -83,6 +83,21 @@ describe('MileagePrompt', () => {
     ).toBeInTheDocument();
   });
 
+  it('shows error message when mutation fails (isError=true)', async () => {
+    vi.mocked(usePatchVehicle).mockReturnValue({
+      mutate: mockMutate,
+      isError: true,
+    } as unknown as ReturnType<typeof usePatchVehicle>);
+
+    render(<MileagePrompt vehicleId={VEHICLE_ID} />);
+
+    await waitFor(() => {
+      expect(
+        screen.getByText('Failed to update mileage. Please try again.'),
+      ).toBeInTheDocument();
+    });
+  });
+
   it('dismisses prompt only after successful mutation', async () => {
     mockMutate.mockImplementation(
       (_data: unknown, options?: { onSuccess?: () => void }) => {

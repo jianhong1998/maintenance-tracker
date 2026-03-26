@@ -16,7 +16,7 @@ export function getTodayKey(vehicleId: string): string {
 export function MileagePrompt({ vehicleId }: MileagePromptProps) {
   const [visible, setVisible] = useState(false);
   const [value, setValue] = useState('');
-  const { mutate: patchVehicle } = usePatchVehicle(vehicleId);
+  const { mutate: patchVehicle, isError } = usePatchVehicle(vehicleId);
 
   useEffect(() => {
     const key = getTodayKey(vehicleId);
@@ -41,6 +41,11 @@ export function MileagePrompt({ vehicleId }: MileagePromptProps) {
       <p className="mb-2 text-sm font-medium">
         What&apos;s your current odometer reading?
       </p>
+      {isError && (
+        <p className="text-destructive mb-2 text-xs">
+          Failed to update mileage. Please try again.
+        </p>
+      )}
       <div className="flex gap-2">
         <input
           type="number"

@@ -167,4 +167,24 @@ describe('maintenanceCardsQueryOptions', () => {
       '/vehicles/vehicle-123/maintenance-cards',
     );
   });
+
+  it('should generate queryKey [MAINTENANCE_CARDS, vehicleId, sort] when sort is provided', () => {
+    const vehicleId = 'vehicle-123';
+    const options = maintenanceCardsQueryOptions(vehicleId, 'urgency');
+    expect(options.queryKey).toEqual([
+      QueryGroup.MAINTENANCE_CARDS,
+      vehicleId,
+      'urgency',
+    ]);
+  });
+
+  it('should generate URL with ?sort=urgency when sort="urgency"', async () => {
+    const vehicleId = 'vehicle-123';
+    vi.mocked(apiClient.get).mockResolvedValue([]);
+    const options = maintenanceCardsQueryOptions(vehicleId, 'urgency');
+    await options.queryFn();
+    expect(apiClient.get).toHaveBeenCalledWith(
+      '/vehicles/vehicle-123/maintenance-cards?sort=urgency',
+    );
+  });
 });
