@@ -90,7 +90,7 @@ describe('usePatchVehicle', () => {
     );
   });
 
-  it('should call queryClient.invalidateQueries with a predicate that targets only the vehicles list', async () => {
+  it('should call queryClient.invalidateQueries targeting only the exact vehicles list key', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper, queryClient } = createWrapperWithClient();
@@ -106,25 +106,10 @@ describe('usePatchVehicle', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(invalidateQueriesSpy).toHaveBeenCalled();
-    const callArg = invalidateQueriesSpy.mock.calls[0][0];
-    expect(callArg).toHaveProperty('predicate');
-
-    // Test the predicate directly
-    const predicate = callArg.predicate as (query: {
-      queryKey: unknown[];
-    }) => boolean;
-
-    // Should invalidate the vehicles list query
-    expect(predicate({ queryKey: [QueryGroup.VEHICLES] })).toBe(true);
-
-    // Should NOT invalidate the individual vehicle entry
-    expect(predicate({ queryKey: [QueryGroup.VEHICLES, 'abc-123'] })).toBe(
-      false,
-    );
-
-    // Should NOT invalidate other queries
-    expect(predicate({ queryKey: ['other'] })).toBe(false);
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: [QueryGroup.VEHICLES],
+      exact: true,
+    });
   });
 
   it('should set isError when apiClient.patch rejects and not update the cache', async () => {

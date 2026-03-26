@@ -15,11 +15,9 @@ export const usePatchVehicle = (vehicleId: string) => {
         [QueryGroup.VEHICLES, vehicleId],
         updatedVehicle,
       );
-      // Invalidate only the vehicles list (not the individual entry)
       void queryClient.invalidateQueries({
-        predicate: (query) =>
-          query.queryKey.length === 1 &&
-          query.queryKey[0] === QueryGroup.VEHICLES,
+        queryKey: [QueryGroup.VEHICLES],
+        exact: true,
       });
     },
   });

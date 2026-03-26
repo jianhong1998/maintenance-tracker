@@ -43,7 +43,6 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      {/* Vehicle header */}
       <div>
         <h1 className="text-xl font-semibold">
           {vehicle.brand} {vehicle.model}
@@ -54,10 +53,8 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
         </p>
       </div>
 
-      {/* Mileage update prompt (shown once per day) */}
       <MileagePrompt vehicleId={vehicleId} />
 
-      {/* Sort toggle */}
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -75,7 +72,6 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
         </Button>
       </div>
 
-      {/* Maintenance card list */}
       {cardsLoading ? (
         <p className="text-muted-foreground text-sm">Loading cards…</p>
       ) : cards.length === 0 ? (
