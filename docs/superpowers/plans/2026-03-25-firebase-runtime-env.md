@@ -31,7 +31,7 @@
 - Create: `frontend/src/actions/firebase-config.ts`
 - Create: `frontend/src/actions/firebase-config.spec.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `frontend/src/actions/firebase-config.spec.ts`:
 
@@ -83,7 +83,7 @@ describe('getFirebaseConfig', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/actions/firebase-config.spec.ts
@@ -91,7 +91,7 @@ cd frontend && pnpm exec vitest run src/actions/firebase-config.spec.ts
 
 Expected: FAIL — `Cannot find module './firebase-config'`
 
-- [ ] **Step 3: Create the server action**
+- [x] **Step 3: Create the server action**
 
 Create `frontend/src/actions/firebase-config.ts`:
 
@@ -107,7 +107,7 @@ export async function getFirebaseConfig() {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/actions/firebase-config.spec.ts
@@ -115,7 +115,7 @@ cd frontend && pnpm exec vitest run src/actions/firebase-config.spec.ts
 
 Expected: PASS — 4 tests pass
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 cd /Users/leejianhong/projects/personal-project/maintenance-tracker && just format && just lint
@@ -123,7 +123,7 @@ cd /Users/leejianhong/projects/personal-project/maintenance-tracker && just form
 
 Expected: no errors
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/actions/firebase-config.ts frontend/src/actions/firebase-config.spec.ts
@@ -138,7 +138,7 @@ git commit -m "add getFirebaseConfig server action with tests"
 - Modify: `frontend/src/lib/firebase.ts`
 - Modify: `frontend/src/lib/firebase.spec.ts`
 
-- [ ] **Step 1: Rewrite the tests first**
+- [x] **Step 1: Rewrite the tests first**
 
 Replace the entire contents of `frontend/src/lib/firebase.spec.ts`:
 
@@ -211,7 +211,7 @@ describe('firebase', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/lib/firebase.spec.ts
@@ -219,7 +219,7 @@ cd frontend && pnpm exec vitest run src/lib/firebase.spec.ts
 
 Expected: FAIL — `initFirebase is not a function` (old API doesn't match)
 
-- [ ] **Step 3: Rewrite `firebase.ts`**
+- [x] **Step 3: Rewrite `firebase.ts`**
 
 Replace the entire contents of `frontend/src/lib/firebase.ts`:
 
@@ -256,7 +256,7 @@ export function getFirebaseAuth(): Auth {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/lib/firebase.spec.ts
@@ -264,7 +264,7 @@ cd frontend && pnpm exec vitest run src/lib/firebase.spec.ts
 
 Expected: PASS — 6 tests pass
 
-- [ ] **Step 5: Format and lint**
+- [x] **Step 5: Format and lint**
 
 ```bash
 cd /Users/leejianhong/projects/personal-project/maintenance-tracker && just format && just lint
@@ -272,7 +272,7 @@ cd /Users/leejianhong/projects/personal-project/maintenance-tracker && just form
 
 Expected: no errors
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/lib/firebase.ts frontend/src/lib/firebase.spec.ts
@@ -288,7 +288,7 @@ git commit -m "rewrite firebase.ts with lazy initFirebase and getFirebaseAuth"
 
 This is a type-only change. No new tests needed — TypeScript will enforce correct usage at compile time.
 
-- [ ] **Step 1: Update `AuthContextValue`**
+- [x] **Step 1: Update `AuthContextValue`**
 
 In `frontend/src/contexts/auth-context.tsx`, add `authError: Error | null` to the interface:
 
@@ -302,7 +302,7 @@ export interface AuthContextValue {
 }
 ```
 
-- [ ] **Step 2: Verify TypeScript compiles**
+- [x] **Step 2: Verify TypeScript compiles**
 
 ```bash
 cd frontend && pnpm exec tsc --noEmit
@@ -310,7 +310,7 @@ cd frontend && pnpm exec tsc --noEmit
 
 Expected: TypeScript errors on `auth-provider.tsx` — it no longer satisfies `AuthContextValue` (missing `authError`). This is expected and will be fixed in Task 4.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/contexts/auth-context.tsx
@@ -325,7 +325,7 @@ git commit -m "add authError field to AuthContextValue"
 - Modify: `frontend/src/components/providers/auth-provider.tsx`
 - Modify: `frontend/src/components/providers/auth-provider.spec.tsx`
 
-- [ ] **Step 1: Rewrite the tests**
+- [x] **Step 1: Rewrite the tests**
 
 Replace the entire contents of `frontend/src/components/providers/auth-provider.spec.tsx`:
 
@@ -575,7 +575,7 @@ describe('AuthProvider', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/providers/auth-provider.spec.tsx
@@ -583,7 +583,7 @@ cd frontend && pnpm exec vitest run src/components/providers/auth-provider.spec.
 
 Expected: FAIL — mock for `@/actions/firebase-config` not found, and `authError` missing from context
 
-- [ ] **Step 3: Update `AuthProvider`**
+- [x] **Step 3: Update `AuthProvider`**
 
 Replace the entire contents of `frontend/src/components/providers/auth-provider.tsx`:
 
@@ -665,7 +665,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/providers/auth-provider.spec.tsx
@@ -673,7 +673,7 @@ cd frontend && pnpm exec vitest run src/components/providers/auth-provider.spec.
 
 Expected: PASS — all tests pass
 
-- [ ] **Step 5: Run all frontend tests to catch regressions**
+- [x] **Step 5: Run all frontend tests to catch regressions**
 
 ```bash
 cd frontend && pnpm exec vitest run
@@ -681,7 +681,7 @@ cd frontend && pnpm exec vitest run
 
 Expected: PASS — no regressions
 
-- [ ] **Step 6: Format and lint**
+- [x] **Step 6: Format and lint**
 
 ```bash
 cd /Users/leejianhong/projects/personal-project/maintenance-tracker && just format && just lint
@@ -689,7 +689,7 @@ cd /Users/leejianhong/projects/personal-project/maintenance-tracker && just form
 
 Expected: no errors
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/components/providers/auth-provider.tsx \
@@ -706,7 +706,7 @@ git commit -m "update AuthProvider to init Firebase via server action"
 
 No tests — this is config-only. TypeScript build verification is sufficient.
 
-- [ ] **Step 1: Remove the `env` block**
+- [x] **Step 1: Remove the `env` block**
 
 Replace the entire contents of `frontend/next.config.ts`:
 
@@ -718,7 +718,7 @@ const nextConfig: NextConfig = {};
 export default nextConfig;
 ```
 
-- [ ] **Step 2: Verify TypeScript compiles cleanly**
+- [x] **Step 2: Verify TypeScript compiles cleanly**
 
 ```bash
 cd frontend && pnpm exec tsc --noEmit
@@ -726,7 +726,7 @@ cd frontend && pnpm exec tsc --noEmit
 
 Expected: no errors
 
-- [ ] **Step 3: Run all frontend tests one final time**
+- [x] **Step 3: Run all frontend tests one final time**
 
 ```bash
 cd frontend && pnpm exec vitest run
@@ -734,7 +734,7 @@ cd frontend && pnpm exec vitest run
 
 Expected: PASS — all tests pass
 
-- [ ] **Step 4: Format and lint**
+- [x] **Step 4: Format and lint**
 
 ```bash
 cd /Users/leejianhong/projects/personal-project/maintenance-tracker && just format && just lint
@@ -742,7 +742,7 @@ cd /Users/leejianhong/projects/personal-project/maintenance-tracker && just form
 
 Expected: no errors
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/next.config.ts
@@ -766,3 +766,23 @@ This change was not part of this plan; it was introduced during a post-implement
 **Why the change is correct:** Adding `"types": []` in `tsconfig.build.json` prevents the vitest global types (`expect`, `describe`, `it`, etc.) from leaking into the NestJS build output. Without it, TypeScript would auto-include `@types/vitest` because it appears in `devDependencies`, potentially allowing test-only globals to appear valid in production code. The accompanying exclusion of `vitest.config.ts` from the `exclude` list further isolates test infrastructure from the production compile.
 
 **No fix required.** Build verified clean.
+
+---
+
+## Completion Verification (2026-03-26)
+
+All plan tasks verified complete. 106/106 frontend tests pass, format and lint clean.
+
+### Missed Fix — `authError` propagation to downstream test mocks
+
+**Issue:** Task 3 added `authError: Error | null` as a required field to `AuthContextValue`. Two test files that construct mock context objects were not updated:
+- `src/components/auth/auth-guard.spec.tsx` — 4 mock objects missing `authError: null`
+- `src/app/login/page.spec.tsx` — default context object missing `authError: null`
+
+This caused TypeScript compilation errors (`TS2345`, `TS2322`) on `tsc --noEmit` despite all Vitest tests passing (Vitest does not do full type checking).
+
+**Root cause:** The plan's Task 3 scope was limited to `auth-context.tsx`. It noted TypeScript would error on `auth-provider.tsx` (expected, fixed in Task 4) but did not enumerate all other files constructing `AuthContextValue` objects.
+
+**Fix:** Added `authError: null` to all affected mock objects. Committed as `feat: 012 - fix missing authError in auth-guard and login-page test mocks`.
+
+**Prevention:** When adding a required field to a shared interface, grep for all construction sites (`{.*user.*loading.*signIn`) before committing — not just the files explicitly listed in the plan.
