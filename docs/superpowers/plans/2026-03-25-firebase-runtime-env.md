@@ -615,6 +615,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function init() {
       try {
         const config = await getFirebaseConfig();
+        if (settled) return; // unmounted during config fetch — abort
+
         const auth = initFirebase(config);
 
         setAuthTokenGetter(async () => {
@@ -746,3 +748,21 @@ Expected: no errors
 git add frontend/next.config.ts
 git commit -m "remove compile-time Firebase env block from next.config.ts"
 ```
+
+---
+
+## Code Review Post-Mortem (2026-03-26)
+
+### Issue 1 — `backend/tsconfig.build.json "types": []`
+
+**Review claim:** Adding `"types": []` to `tsconfig.build.json` strips all ambient type declarations (including `@types/node`) from the NestJS production build. This could silently break code relying on Node.js globals.
+
+**Verdict: VALID concern — verified resolved**
+
+This change was not part of this plan; it was introduced during a post-implementation simplify pass. The concern is legitimate: `"types": []` opts out of automatic `@types/*` inclusion.
+
+**Verification:** Running `tsc -p tsconfig.build.json --noEmit` against the backend produces zero errors. The NestJS codebase does not rely on ambient `@types/node` globals in production code — all Node.js APIs used in the backend are accessed through explicit module imports (e.g., `import * as path from 'path'`), not ambient type injections.
+
+**Why the change is correct:** Adding `"types": []` in `tsconfig.build.json` prevents the vitest global types (`expect`, `describe`, `it`, etc.) from leaking into the NestJS build output. Without it, TypeScript would auto-include `@types/vitest` because it appears in `devDependencies`, potentially allowing test-only globals to appear valid in production code. The accompanying exclusion of `vitest.config.ts` from the `exclude` list further isolates test infrastructure from the production compile.
+
+**No fix required.** Build verified clean.
