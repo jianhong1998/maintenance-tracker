@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import type { IMaintenanceCardResDTO } from '@project/types';
+import {
+  type IMaintenanceCardResDTO,
+  MAINTENANCE_CARD_TYPES,
+} from '@project/types';
 import { getCardWarningStatus, countWarningCards } from '@/lib/warning';
 
 function makeCard(
@@ -8,7 +11,7 @@ function makeCard(
   return {
     id: 'card-1',
     vehicleId: 'vehicle-1',
-    type: 'task',
+    type: MAINTENANCE_CARD_TYPES.TASK,
     name: 'Oil Change',
     description: null,
     intervalMileage: 5000,

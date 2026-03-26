@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
-import type { IVehicleResDTO, IMaintenanceCardResDTO } from '@project/types';
+import {
+  type IVehicleResDTO,
+  type IMaintenanceCardResDTO,
+  MAINTENANCE_CARD_TYPES,
+} from '@project/types';
 import { useGlobalWarningCount } from './useGlobalWarningCount';
 import { QueryGroup } from '../keys';
 import { createWrapperWithClient } from '../test-utils';
@@ -33,7 +37,7 @@ function makeCard(
   return {
     id: 'card-1',
     vehicleId: 'vehicle-1',
-    type: 'task',
+    type: MAINTENANCE_CARD_TYPES.TASK,
     name: 'Oil Change',
     description: null,
     intervalMileage: 5000,

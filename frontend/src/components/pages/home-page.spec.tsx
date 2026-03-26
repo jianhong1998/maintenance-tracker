@@ -63,9 +63,9 @@ describe('HomePage', () => {
 
   it('shows loading message when useVehicles is loading', () => {
     vi.mocked(useVehicles).mockReturnValue({
-      data: [] as IVehicleResDTO[],
+      data: undefined,
       isLoading: true,
-    } as unknown as ReturnType<typeof useVehicles>);
+    } as ReturnType<typeof useVehicles>);
 
     render(<HomePage />);
 
