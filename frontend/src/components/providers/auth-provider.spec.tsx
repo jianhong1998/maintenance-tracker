@@ -224,6 +224,34 @@ describe('AuthProvider', () => {
     );
   });
 
+  it('does not subscribe to auth state if component unmounts before config resolves', async () => {
+    let resolveConfig!: (value: typeof testConfig) => void;
+    mockGetFirebaseConfig.mockReturnValue(
+      new Promise<typeof testConfig>((resolve) => {
+        resolveConfig = resolve;
+      }),
+    );
+
+    const { unmount } = render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    // unmount before config resolves
+    unmount();
+
+    // now resolve the config
+    await act(async () => {
+      resolveConfig(testConfig);
+      // flush microtasks
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(mockInitFirebase).not.toHaveBeenCalled();
+    expect(mockOnAuthStateChanged).not.toHaveBeenCalled();
+  });
+
   it('signOut calls getFirebaseAuth to retrieve auth instance', async () => {
     const { signOut: firebaseSignOut } = await import('firebase/auth');
 

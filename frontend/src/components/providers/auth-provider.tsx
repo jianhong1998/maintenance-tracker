@@ -25,6 +25,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async function init() {
       try {
         const config = await getFirebaseConfig();
+        if (settled) return; // unmounted during config fetch — abort
         const auth = initFirebase(config);
 
         setAuthTokenGetter(async () => {
