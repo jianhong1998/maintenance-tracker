@@ -35,6 +35,7 @@ describe('AuthGuard', () => {
     renderWithContext({
       user: null,
       loading: true,
+      authError: null,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
     });
@@ -45,6 +46,7 @@ describe('AuthGuard', () => {
     renderWithContext({
       user: null,
       loading: false,
+      authError: null,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
     });
@@ -55,6 +57,7 @@ describe('AuthGuard', () => {
     const { container } = renderWithContext({
       user: null,
       loading: false,
+      authError: null,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
     });
@@ -66,6 +69,7 @@ describe('AuthGuard', () => {
     renderWithContext({
       user: mockUser,
       loading: false,
+      authError: null,
       signInWithGoogle: vi.fn(),
       signOut: vi.fn(),
     });

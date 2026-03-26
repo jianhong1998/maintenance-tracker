@@ -5,9 +5,18 @@ import { AuthProvider } from '@/components/providers/auth-provider';
 import { useAuthContext } from '@/contexts/auth-context';
 import type { User } from 'firebase/auth';
 
-const { mockOnAuthStateChanged, mockSetAuthTokenGetter } = vi.hoisted(() => ({
+const {
+  mockOnAuthStateChanged,
+  mockSetAuthTokenGetter,
+  mockGetFirebaseConfig,
+  mockInitFirebase,
+  mockGetFirebaseAuth,
+} = vi.hoisted(() => ({
   mockOnAuthStateChanged: vi.fn(),
   mockSetAuthTokenGetter: vi.fn(),
+  mockGetFirebaseConfig: vi.fn(),
+  mockInitFirebase: vi.fn(),
+  mockGetFirebaseAuth: vi.fn(),
 }));
 
 vi.mock('firebase/auth', () => ({
@@ -18,21 +27,35 @@ vi.mock('firebase/auth', () => ({
 }));
 
 vi.mock('@/lib/firebase', () => ({
-  auth: {},
+  initFirebase: mockInitFirebase,
+  getFirebaseAuth: mockGetFirebaseAuth,
+}));
+
+vi.mock('@/actions/firebase-config', () => ({
+  getFirebaseConfig: mockGetFirebaseConfig,
 }));
 
 vi.mock('@/lib/api-client', () => ({
   setAuthTokenGetter: mockSetAuthTokenGetter,
 }));
 
+const testConfig = {
+  apiKey: 'test-key',
+  authDomain: 'test.firebaseapp.com',
+  projectId: 'test-project',
+};
+
+const mockAuthInstance = { name: 'test-auth' };
+
 function TestConsumer() {
-  const { user, loading } = useAuthContext();
+  const { user, loading, authError } = useAuthContext();
   return (
     <div>
       <span data-testid="loading">{loading ? 'loading' : 'ready'}</span>
       <span data-testid="user">
         {user ? (user.email ?? 'no-email') : 'null'}
       </span>
+      <span data-testid="error">{authError ? authError.message : 'none'}</span>
     </div>
   );
 }
@@ -40,11 +63,14 @@ function TestConsumer() {
 describe('AuthProvider', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetFirebaseConfig.mockResolvedValue(testConfig);
+    mockInitFirebase.mockReturnValue(mockAuthInstance);
+    mockGetFirebaseAuth.mockReturnValue(mockAuthInstance);
     mockOnAuthStateChanged.mockReturnValue(vi.fn()); // default unsubscribe
   });
 
   it('starts in loading state before auth resolves', () => {
-    // Never calls the callback - simulates in-flight auth check
+    // onAuthStateChanged never calls callback — simulates in-flight auth check
     render(
       <AuthProvider>
         <TestConsumer />
@@ -74,6 +100,8 @@ describe('AuthProvider', () => {
       email: 'test@example.com',
       getIdToken: vi.fn().mockResolvedValue('token'),
     } as unknown as User;
+
+    await waitFor(() => expect(authCallback).toBeDefined());
     act(() => authCallback(mockUser));
 
     await waitFor(() => {
@@ -97,6 +125,7 @@ describe('AuthProvider', () => {
       </AuthProvider>,
     );
 
+    await waitFor(() => expect(authCallback).toBeDefined());
     act(() => authCallback(null));
 
     await waitFor(() => {
@@ -105,12 +134,145 @@ describe('AuthProvider', () => {
     });
   });
 
-  it('wires up auth token getter so API client can attach Bearer tokens', () => {
+  it('sets authError and loading=false when getFirebaseConfig rejects', async () => {
+    mockGetFirebaseConfig.mockRejectedValue(new Error('Config fetch failed'));
+
     render(
       <AuthProvider>
         <TestConsumer />
       </AuthProvider>,
     );
-    expect(mockSetAuthTokenGetter).toHaveBeenCalledWith(expect.any(Function));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('loading')).toHaveTextContent('ready');
+      expect(screen.getByTestId('error')).toHaveTextContent(
+        'Config fetch failed',
+      );
+    });
+  });
+
+  it('sets authError and loading=false when initFirebase throws', async () => {
+    mockInitFirebase.mockImplementation(() => {
+      throw new Error('Missing required Firebase config: apiKey');
+    });
+
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('loading')).toHaveTextContent('ready');
+      expect(screen.getByTestId('error')).toHaveTextContent(
+        'Missing required Firebase config: apiKey',
+      );
+    });
+  });
+
+  it('wires up auth token getter after successful init', async () => {
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockSetAuthTokenGetter).toHaveBeenCalledWith(expect.any(Function));
+    });
+  });
+
+  it('wires up onAuthStateChanged after successful init', async () => {
+    render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockOnAuthStateChanged).toHaveBeenCalledWith(
+        mockAuthInstance,
+        expect.any(Function),
+      );
+    });
+  });
+
+  it('signInWithGoogle calls getFirebaseAuth to retrieve auth instance', async () => {
+    const { signInWithPopup } = await import('firebase/auth');
+
+    function SignInButton() {
+      const { signInWithGoogle } = useAuthContext();
+      return <button onClick={signInWithGoogle}>Sign In</button>;
+    }
+
+    render(
+      <AuthProvider>
+        <SignInButton />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(mockInitFirebase).toHaveBeenCalled());
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Sign In' }).click();
+    });
+
+    expect(mockGetFirebaseAuth).toHaveBeenCalled();
+    expect(signInWithPopup).toHaveBeenCalledWith(
+      mockAuthInstance,
+      expect.any(Object),
+    );
+  });
+
+  it('does not subscribe to auth state if component unmounts before config resolves', async () => {
+    let resolveConfig!: (value: typeof testConfig) => void;
+    mockGetFirebaseConfig.mockReturnValue(
+      new Promise<typeof testConfig>((resolve) => {
+        resolveConfig = resolve;
+      }),
+    );
+
+    const { unmount } = render(
+      <AuthProvider>
+        <TestConsumer />
+      </AuthProvider>,
+    );
+
+    // unmount before config resolves
+    unmount();
+
+    // now resolve the config
+    await act(async () => {
+      resolveConfig(testConfig);
+      // flush microtasks
+      await new Promise((r) => setTimeout(r, 0));
+    });
+
+    expect(mockInitFirebase).not.toHaveBeenCalled();
+    expect(mockOnAuthStateChanged).not.toHaveBeenCalled();
+  });
+
+  it('signOut calls getFirebaseAuth to retrieve auth instance', async () => {
+    const { signOut: firebaseSignOut } = await import('firebase/auth');
+
+    function SignOutButton() {
+      const { signOut } = useAuthContext();
+      return <button onClick={signOut}>Sign Out</button>;
+    }
+
+    render(
+      <AuthProvider>
+        <SignOutButton />
+      </AuthProvider>,
+    );
+
+    await waitFor(() => expect(mockInitFirebase).toHaveBeenCalled());
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'Sign Out' }).click();
+    });
+
+    expect(mockGetFirebaseAuth).toHaveBeenCalled();
+    expect(firebaseSignOut).toHaveBeenCalledWith(mockAuthInstance);
   });
 });

@@ -1,29 +1,33 @@
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, type Auth } from 'firebase/auth';
 
-export function validateFirebaseEnv(): void {
-  const missing = [
-    'FRONTEND_FIREBASE_API_KEY',
-    'FRONTEND_FIREBASE_AUTH_DOMAIN',
-    'FRONTEND_FIREBASE_PROJECT_ID',
-  ].filter((key) => !process.env[key]);
+let _auth: Auth | null = null;
 
+export function initFirebase(config: {
+  apiKey: string | undefined;
+  authDomain: string | undefined;
+  projectId: string | undefined;
+}): Auth {
+  if (_auth) return _auth;
+
+  const missing = Object.entries(config)
+    .filter(([, v]) => !v)
+    .map(([k]) => k);
   if (missing.length > 0) {
-    throw new Error(
-      `Missing required Firebase environment variables: ${missing.join(', ')}`,
-    );
+    throw new Error(`Missing required Firebase config: ${missing.join(', ')}`);
   }
+
+  // getApps()[0] reuses an existing app (e.g. across HMR cycles in dev).
+  // This is intentional — we always own the first Firebase app in this project.
+  const app = getApps().length === 0 ? initializeApp(config) : getApps()[0];
+  _auth = getAuth(app);
+  return _auth;
 }
 
-validateFirebaseEnv();
-
-const firebaseConfig = {
-  apiKey: process.env.FRONTEND_FIREBASE_API_KEY,
-  authDomain: process.env.FRONTEND_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.FRONTEND_FIREBASE_PROJECT_ID,
-};
-
-const app =
-  getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-
-export const auth = getAuth(app);
+export function getFirebaseAuth(): Auth {
+  if (!_auth)
+    throw new Error(
+      'Firebase has not been initialized. Call initFirebase() first.',
+    );
+  return _auth;
+}

@@ -31,12 +31,14 @@ import type { IVehicleResDTO } from '@project/types';
 import { apiClient } from '@/lib/api-client';
 import { QueryGroup } from '../keys';
 
+export const vehicleQueryOptions = (vehicleId: string) => ({
+  queryKey: [QueryGroup.VEHICLES, vehicleId] as const,
+  queryFn: () => apiClient.get<IVehicleResDTO>(`/vehicles/${vehicleId}`),
+  enabled: !!vehicleId,
+});
+
 export const useVehicle = (vehicleId: string) => {
-  return useQuery<IVehicleResDTO>({
-    queryKey: [QueryGroup.VEHICLES, vehicleId],
-    queryFn: () => apiClient.get<IVehicleResDTO>(`/vehicles/${vehicleId}`),
-    enabled: !!vehicleId,
-  });
+  return useQuery<IVehicleResDTO>(vehicleQueryOptions(vehicleId));
 };
 ```
 
@@ -150,14 +152,14 @@ export const usePatchVehicle = (vehicleId: string) => {
     mutationFn: (data) =>
       apiClient.patch<IVehicleResDTO>(`/vehicles/${vehicleId}`, data),
     onSuccess: (updatedVehicle) => {
-      // Update the individual vehicle cache entry
       queryClient.setQueryData(
         [QueryGroup.VEHICLES, vehicleId],
         updatedVehicle,
       );
-      // Invalidate the vehicles list so the home page refreshes
+      // exact: true targets only the list key [VEHICLES], not individual entries [VEHICLES, id]
       void queryClient.invalidateQueries({
         queryKey: [QueryGroup.VEHICLES],
+        exact: true,
       });
     },
   });
@@ -458,7 +460,6 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      {/* Vehicle header */}
       <div>
         <h1 className="text-xl font-semibold">
           {vehicle.brand} {vehicle.model}
@@ -469,10 +470,8 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
         </p>
       </div>
 
-      {/* Mileage update prompt (shown once per day) */}
       <MileagePrompt vehicleId={vehicleId} />
 
-      {/* Sort toggle */}
       <div className="flex gap-2">
         <Button
           size="sm"
@@ -490,7 +489,6 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
         </Button>
       </div>
 
-      {/* Maintenance card list */}
       {cardsLoading ? (
         <p className="text-muted-foreground text-sm">Loading cards…</p>
       ) : cards.length === 0 ? (
@@ -603,3 +601,105 @@ just up-build
 git add frontend/src/app/vehicles/[id]/page.tsx
 git commit -m "feat: add /vehicles/[id] App Router page for vehicle dashboard"
 ```
+
+---
+
+## Code Review Post-Mortem (2026-03-26)
+
+### Issue 1 — `useMaintenanceCards` split cache keys
+
+**Review claim:** The `sort ? { queryKey: [..., sort] } : maintenanceCardsQueryOptions(vehicleId)` ternary creates two divergent cache entries for the same resource and is a data design smell.
+
+**Verdict: INVALID**
+
+The separate cache entries are **intentional by design**. This plan (Task 2) states explicitly:
+
+> "The home page calls it without `sort` (key `[MAINTENANCE_CARDS, vehicleId]`); the dashboard calls it with `sort` (key `[MAINTENANCE_CARDS, vehicleId, sort]`) — separate cache entries by design."
+
+The home page fetches the unsorted card list; the dashboard fetches a server-sorted list. These are different response payloads — merging them into a single cache entry would mean either always sending `?sort=urgency` to the API (changing home page query behaviour) or losing sort granularity in the cache. The implementation deliberately keeps them separate.
+
+The implementation also preserves the existing `maintenanceCardsQueryOptions` export for backward compatibility with `VehicleCard` and `useGlobalWarningCount`, which import it directly. This is a valid deviation from the plan's Task 2 code (which replaced the file entirely) in order to avoid breaking existing consumers.
+
+**No fix required.**
+
+---
+
+### Issue 2 — `MileagePrompt.handleSubmit` silently discards mutation errors
+
+**Review claim:** `dismiss()` fires synchronously before `patchVehicle` settles. If the mutation fails, the prompt disappears and localStorage is marked as seen, so the user believes mileage was saved when it wasn't.
+
+**Verdict: VALID — Fixed**
+
+`dismiss()` was moved into the `onSuccess` callback:
+
+```ts
+// Before
+const handleSubmit = () => {
+  patchVehicle({ mileage: parseFloat(value.trim()) });
+  dismiss();
+};
+
+// After
+const handleSubmit = () => {
+  patchVehicle({ mileage: parseFloat(value.trim()) }, { onSuccess: dismiss });
+};
+```
+
+Tests updated: the "calls patchVehicle and dismisses" test was split into two:
+1. Verifies `patchVehicle` is called with `{ onSuccess: expect.any(Function) }` and that dismiss does NOT fire before mutation settles.
+2. Simulates `onSuccess` firing synchronously and verifies dismiss then happens.
+
+---
+
+### Issue 3 — Warning colors not dark-mode aware
+
+**Review claim:** `border-yellow-300 bg-yellow-50 text-yellow-700` are hardcoded light-mode colors with no `dark:` variants, inconsistent with `overdue` which uses CSS variable-based classes.
+
+**Verdict: VALID — Fixed**
+
+Dark mode IS active in this project (`@custom-variant dark (&:is(.dark *))` + `.dark { }` block in `globals.css`). Added dark variants:
+
+```tsx
+// Before
+status === 'warning' && 'border-yellow-300 bg-yellow-50'
+status === 'warning' && 'text-yellow-700'
+
+// After
+status === 'warning' && 'border-yellow-300 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950'
+status === 'warning' && 'text-yellow-700 dark:text-yellow-400'
+```
+
+Existing tests pass unchanged (they check for `bg-yellow-50`/`border-yellow-300` which are still present).
+
+---
+
+### Issue 4 — `usePatchVehicle` dual cache operations lack explanatory comment
+
+**Review claim:** The comment `// Update the individual vehicle cache entry (no refetch)` followed immediately by `invalidateQueries` is contradictory without context explaining that `exact: true` targets only the list key.
+
+**Verdict: VALID — Fixed**
+
+Updated comment to clarify both cache operations:
+
+```ts
+// Before
+// Update the individual vehicle cache entry (no refetch)
+queryClient.setQueryData([QueryGroup.VEHICLES, vehicleId], updatedVehicle);
+void queryClient.invalidateQueries({ queryKey: [QueryGroup.VEHICLES], exact: true });
+
+// After
+// Update the individual vehicle cache entry directly (no refetch for this entry)
+queryClient.setQueryData([QueryGroup.VEHICLES, vehicleId], updatedVehicle);
+// exact: true targets only the list key [VEHICLES], not individual [VEHICLES, id] entries
+void queryClient.invalidateQueries({ queryKey: [QueryGroup.VEHICLES], exact: true });
+```
+
+---
+
+### Implementation deviations from plan (minor, intentional)
+
+| File | Plan | Implementation | Reason |
+|---|---|---|---|
+| `mileage-prompt.tsx` | `export function getTodayKey` not in plan | `getTodayKey` is exported | Tests (`mileage-prompt.spec.tsx`) import it directly to set/check localStorage keys |
+| `mileage-prompt.tsx` | `disabled={!value}` | `disabled={!value.trim() \|\| isNaN(parseFloat(value))}` | Stricter validation prevents submitting whitespace-only or non-numeric input |
+| `maintenance-card-row.tsx` | `status === 'ok' && 'bg-background'` in `cn()` | Omitted | The default background already resolves to `bg-background`; explicit class is redundant |

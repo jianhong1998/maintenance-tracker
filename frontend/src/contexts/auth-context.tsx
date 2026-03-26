@@ -6,6 +6,7 @@ import type { User } from 'firebase/auth';
 export interface AuthContextValue {
   user: User | null;
   loading: boolean;
+  authError: Error | null;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
