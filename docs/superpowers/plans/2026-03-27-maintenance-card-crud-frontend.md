@@ -1087,7 +1087,7 @@ export function MaintenanceCardFormDialog({
   const patchMutation = usePatchMaintenanceCard(vehicleId, card?.id ?? '');
 
   const parsedIntervalMileage = intervalMileage.trim()
-    ? parseFloat(intervalMileage)
+    ? parseInt(intervalMileage, 10)
     : null;
   const parsedIntervalTimeMonths = intervalTimeMonths.trim()
     ? parseInt(intervalTimeMonths, 10)
