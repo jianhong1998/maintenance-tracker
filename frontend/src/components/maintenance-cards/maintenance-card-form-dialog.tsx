@@ -14,6 +14,8 @@ interface MaintenanceCardFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vehicleId: string;
+  vehicleMileage: number;
+  vehicleMileageUnit: string;
   card?: IMaintenanceCardResDTO;
 }
 
@@ -27,6 +29,8 @@ export function MaintenanceCardFormDialog({
   open,
   onOpenChange,
   vehicleId,
+  vehicleMileage,
+  vehicleMileageUnit,
   card,
 }: MaintenanceCardFormDialogProps) {
   const isEdit = !!card;
@@ -38,6 +42,8 @@ export function MaintenanceCardFormDialog({
   const [description, setDescription] = useState('');
   const [intervalMileage, setIntervalMileage] = useState('');
   const [intervalTimeMonths, setIntervalTimeMonths] = useState('');
+  const [nextDueMileage, setNextDueMileage] = useState('');
+  const [nextDueDate, setNextDueDate] = useState('');
 
   useEffect(() => {
     if (open) {
@@ -46,6 +52,8 @@ export function MaintenanceCardFormDialog({
       setDescription(card?.description ?? '');
       setIntervalMileage(card?.intervalMileage?.toString() ?? '');
       setIntervalTimeMonths(card?.intervalTimeMonths?.toString() ?? '');
+      setNextDueMileage(card?.nextDueMileage?.toString() ?? '');
+      setNextDueDate(card?.nextDueDate ?? '');
     }
   }, [open, card]);
 
@@ -60,6 +68,10 @@ export function MaintenanceCardFormDialog({
     const n = parseInt(intervalTimeMonths, 10);
     return intervalTimeMonths.trim() && !isNaN(n) ? n : null;
   })();
+  const parsedNextDueMileage = (() => {
+    const n = parseInt(nextDueMileage, 10);
+    return nextDueMileage.trim() && !isNaN(n) ? n : null;
+  })();
 
   const isValid =
     name.trim().length > 0 &&
@@ -70,12 +82,32 @@ export function MaintenanceCardFormDialog({
   const isPending = createMutation.isPending || patchMutation.isPending;
 
   const handleSave = () => {
+    const finalNextDueMileage =
+      parsedNextDueMileage !== null
+        ? parsedNextDueMileage
+        : parsedIntervalMileage !== null
+          ? vehicleMileage + parsedIntervalMileage
+          : null;
+
+    const finalNextDueDate =
+      nextDueDate.trim() ||
+      (() => {
+        if (parsedIntervalTimeMonths !== null) {
+          const d = new Date();
+          d.setMonth(d.getMonth() + parsedIntervalTimeMonths);
+          return d.toISOString().slice(0, 10);
+        }
+        return null;
+      })();
+
     const data = {
       type,
       name: name.trim(),
       description: description.trim() || null,
       intervalMileage: parsedIntervalMileage,
       intervalTimeMonths: parsedIntervalTimeMonths,
+      nextDueMileage: finalNextDueMileage,
+      nextDueDate: finalNextDueDate,
     };
 
     if (isEdit) {
@@ -154,7 +186,7 @@ export function MaintenanceCardFormDialog({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Every (km)
+              Every ({vehicleMileageUnit})
             </label>
             <input
               type="number"
@@ -181,6 +213,40 @@ export function MaintenanceCardFormDialog({
         </div>
         <p className="text-xs text-muted-foreground">
           At least one interval is required.
+        </p>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Next due ({vehicleMileageUnit})
+            </label>
+            <input
+              type="number"
+              min={1}
+              value={nextDueMileage}
+              onChange={(e) => setNextDueMileage(e.target.value)}
+              placeholder={
+                parsedIntervalMileage !== null
+                  ? String(vehicleMileage + parsedIntervalMileage)
+                  : 'Auto'
+              }
+              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Next due (date)
+            </label>
+            <input
+              type="date"
+              value={nextDueDate}
+              onChange={(e) => setNextDueDate(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Leave next due blank to auto-calculate from intervals.
         </p>
 
         <div className="flex justify-end gap-2">

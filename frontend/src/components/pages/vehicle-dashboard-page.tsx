@@ -151,6 +151,8 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
           }
         }}
         vehicleId={vehicleId}
+        vehicleMileage={vehicle.mileage}
+        vehicleMileageUnit={vehicle.mileageUnit}
         card={editingCard ?? undefined}
       />
 

@@ -365,6 +365,29 @@ describe('MaintenanceCardService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('passes nextDueMileage and nextDueDate to the repository', async () => {
+      mockMaintenanceCardRepository.create.mockResolvedValue(baseCard);
+
+      await service.createCard(vehicleId, userId, {
+        type: MAINTENANCE_CARD_TYPES.TASK,
+        name: 'CVT Cleaning',
+        description: null,
+        intervalMileage: 6000,
+        intervalTimeMonths: null,
+        nextDueMileage: 16000,
+        nextDueDate: new Date('2027-01-01'),
+      });
+
+      const call = mockMaintenanceCardRepository.create.mock.calls[0]?.[0] as {
+        creationData: {
+          nextDueMileage: number | null;
+          nextDueDate: Date | null;
+        };
+      };
+      expect(call.creationData.nextDueMileage).toBe(16000);
+      expect(call.creationData.nextDueDate).toEqual(new Date('2027-01-01'));
+    });
   });
 
   describe('#updateCard', () => {
@@ -417,6 +440,33 @@ describe('MaintenanceCardService', () => {
           ],
         },
       );
+    });
+
+    it('passes nextDueMileage and nextDueDate when updating', async () => {
+      const updated = {
+        ...baseCard,
+        nextDueMileage: 20000,
+        nextDueDate: new Date('2027-06-01'),
+      };
+      mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
+      mockMaintenanceCardRepository.updateWithSave.mockResolvedValue([updated]);
+
+      const result = await service.updateCard(cardId, vehicleId, userId, {
+        nextDueMileage: 20000,
+        nextDueDate: new Date('2027-06-01'),
+      });
+
+      expect(mockMaintenanceCardRepository.updateWithSave).toHaveBeenCalledWith(
+        {
+          dataArray: [
+            expect.objectContaining({
+              nextDueMileage: 20000,
+              nextDueDate: new Date('2027-06-01'),
+            }),
+          ],
+        },
+      );
+      expect(result).toEqual(updated);
     });
 
     it('throws BadRequestException when update would nullify both intervals', async () => {

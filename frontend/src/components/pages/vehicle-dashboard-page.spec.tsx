@@ -39,6 +39,8 @@ vi.mock('@/components/maintenance-cards/maintenance-card-form-dialog', () => ({
     open: boolean;
     onOpenChange: (v: boolean) => void;
     vehicleId: string;
+    vehicleMileage: number;
+    vehicleMileageUnit: string;
     card?: IMaintenanceCardResDTO;
   }) =>
     open ? (

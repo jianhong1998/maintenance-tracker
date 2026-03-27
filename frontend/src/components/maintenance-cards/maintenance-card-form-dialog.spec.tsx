@@ -53,6 +53,14 @@ const mockCard: IMaintenanceCardResDTO = {
 
 const mockMutate = vi.fn();
 
+const defaultProps = {
+  open: true,
+  onOpenChange: vi.fn(),
+  vehicleId: 'v1',
+  vehicleMileage: 50000,
+  vehicleMileageUnit: 'km',
+};
+
 describe('MaintenanceCardFormDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -67,13 +75,7 @@ describe('MaintenanceCardFormDialog', () => {
   });
 
   it('shows "New Maintenance Card" title in create mode', () => {
-    render(
-      <MaintenanceCardFormDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        vehicleId="v1"
-      />,
-    );
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
     expect(screen.getByRole('dialog')).toHaveAttribute(
       'aria-label',
       'New Maintenance Card',
@@ -83,9 +85,7 @@ describe('MaintenanceCardFormDialog', () => {
   it('shows "Edit Maintenance Card" title in edit mode', () => {
     render(
       <MaintenanceCardFormDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        vehicleId="v1"
+        {...defaultProps}
         card={mockCard}
       />,
     );
@@ -98,9 +98,7 @@ describe('MaintenanceCardFormDialog', () => {
   it('pre-fills all fields from card prop in edit mode', () => {
     render(
       <MaintenanceCardFormDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        vehicleId="v1"
+        {...defaultProps}
         card={mockCard}
       />,
     );
@@ -114,26 +112,28 @@ describe('MaintenanceCardFormDialog', () => {
     expect(screen.getByPlaceholderText('e.g. 6')).toHaveValue(12);
   });
 
-  it('disables Save when name is empty', () => {
+  it('pre-fills nextDueMileage and nextDueDate from card prop in edit mode', () => {
     render(
       <MaintenanceCardFormDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        vehicleId="v1"
+        {...defaultProps}
+        card={mockCard}
       />,
     );
+    // nextDueMileage input has placeholder 'Auto' when no intervalMileage typed
+    // In edit mode, the value is 60000
+    const nextDueMileageInput = screen.getByDisplayValue('60000');
+    expect(nextDueMileageInput).toBeInTheDocument();
+    expect(screen.getByDisplayValue('2027-01-01')).toBeInTheDocument();
+  });
+
+  it('disables Save when name is empty', () => {
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
     // No name, no intervals — Save is disabled
     expect(screen.getByRole('button', { name: /save/i })).toBeDisabled();
   });
 
   it('disables Save when name is filled but no interval is set', () => {
-    render(
-      <MaintenanceCardFormDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        vehicleId="v1"
-      />,
-    );
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
     fireEvent.change(screen.getByPlaceholderText('e.g. Oil Change'), {
       target: { value: 'My Card' },
     });
@@ -141,13 +141,7 @@ describe('MaintenanceCardFormDialog', () => {
   });
 
   it('enables Save when name and at least one interval are filled', () => {
-    render(
-      <MaintenanceCardFormDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        vehicleId="v1"
-      />,
-    );
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
     fireEvent.change(screen.getByPlaceholderText('e.g. Oil Change'), {
       target: { value: 'My Card' },
     });
@@ -158,13 +152,7 @@ describe('MaintenanceCardFormDialog', () => {
   });
 
   it('calls createMutation.mutate with correct data in create mode when Save is clicked', () => {
-    render(
-      <MaintenanceCardFormDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        vehicleId="v1"
-      />,
-    );
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
     fireEvent.change(screen.getByPlaceholderText('e.g. Oil Change'), {
       target: { value: 'Oil Change' },
     });
@@ -174,23 +162,58 @@ describe('MaintenanceCardFormDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: /save/i }));
 
     expect(mockMutate).toHaveBeenCalledWith(
-      {
+      expect.objectContaining({
         type: 'task',
         name: 'Oil Change',
         description: null,
         intervalMileage: 5000,
         intervalTimeMonths: null,
-      },
+        // auto-calculated: 50000 + 5000 = 55000
+        nextDueMileage: 55000,
+      }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
+  });
+
+  it('auto-calculates nextDueMileage from vehicleMileage + intervalMileage when left blank', () => {
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText('e.g. Oil Change'), {
+      target: { value: 'Oil Change' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('e.g. 5000'), {
+      target: { value: '5000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    const callArg = mockMutate.mock.calls[0]?.[0] as {
+      nextDueMileage: number | null;
+    };
+    expect(callArg.nextDueMileage).toBe(55000); // 50000 + 5000
+  });
+
+  it('uses explicit nextDueMileage over auto-calculation when provided', () => {
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText('e.g. Oil Change'), {
+      target: { value: 'Oil Change' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('e.g. 5000'), {
+      target: { value: '5000' },
+    });
+    // The next due mileage input placeholder shows the auto-calc value: vehicleMileage + intervalMileage
+    const nextDueMileageInput = screen.getByPlaceholderText('55000');
+    fireEvent.change(nextDueMileageInput, { target: { value: '60000' } });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    const callArg = mockMutate.mock.calls[0]?.[0] as {
+      nextDueMileage: number | null;
+    };
+    expect(callArg.nextDueMileage).toBe(60000);
   });
 
   it('calls patchMutation.mutate in edit mode when Save is clicked', () => {
     render(
       <MaintenanceCardFormDialog
-        open={true}
-        onOpenChange={vi.fn()}
-        vehicleId="v1"
+        {...defaultProps}
         card={mockCard}
       />,
     );
@@ -198,6 +221,24 @@ describe('MaintenanceCardFormDialog', () => {
 
     expect(mockMutate).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Tyre Rotation' }),
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  it('includes nextDueMileage and nextDueDate in the patch data', () => {
+    render(
+      <MaintenanceCardFormDialog
+        {...defaultProps}
+        card={mockCard}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nextDueMileage: 60000,
+        nextDueDate: '2027-01-01',
+      }),
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
   });
@@ -213,9 +254,8 @@ describe('MaintenanceCardFormDialog', () => {
 
     render(
       <MaintenanceCardFormDialog
-        open={true}
+        {...defaultProps}
         onOpenChange={onOpenChange}
-        vehicleId="v1"
       />,
     );
     fireEvent.change(screen.getByPlaceholderText('e.g. Oil Change'), {
@@ -241,9 +281,8 @@ describe('MaintenanceCardFormDialog', () => {
 
     render(
       <MaintenanceCardFormDialog
-        open={true}
+        {...defaultProps}
         onOpenChange={onOpenChange}
-        vehicleId="v1"
         card={mockCard}
       />,
     );

@@ -97,6 +97,8 @@ export class MaintenanceCardController {
       description: dto.description ?? null,
       intervalMileage: dto.intervalMileage ?? null,
       intervalTimeMonths: dto.intervalTimeMonths ?? null,
+      nextDueMileage: dto.nextDueMileage ?? null,
+      nextDueDate: dto.nextDueDate ? new Date(dto.nextDueDate) : null,
     });
     return toResDTO(card);
   }
@@ -108,7 +110,15 @@ export class MaintenanceCardController {
     @Body() dto: UpdateMaintenanceCardDto,
     @CurrentUser() user: IAuthUser,
   ): Promise<IMaintenanceCardResDTO> {
-    const card = await this.cardService.updateCard(id, vehicleId, user.id, dto);
+    const card = await this.cardService.updateCard(id, vehicleId, user.id, {
+      ...dto,
+      nextDueDate:
+        dto.nextDueDate !== undefined
+          ? dto.nextDueDate
+            ? new Date(dto.nextDueDate)
+            : null
+          : undefined,
+    });
     return toResDTO(card);
   }
 
