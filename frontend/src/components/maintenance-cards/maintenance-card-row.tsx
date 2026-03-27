@@ -95,21 +95,30 @@ export function MaintenanceCardRow({
             <div className="absolute right-0 top-7 z-10 min-w-[140px] rounded-lg border bg-background shadow-md">
               <button
                 type="button"
-                onClick={() => onMarkDone(card)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onMarkDone(card);
+                }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
               >
                 Mark Done
               </button>
               <button
                 type="button"
-                onClick={() => onEdit(card)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(card);
+                }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-accent"
               >
                 Edit
               </button>
               <button
                 type="button"
-                onClick={() => onDelete(card)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(card);
+                }}
                 className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-destructive hover:bg-accent"
               >
                 Delete
