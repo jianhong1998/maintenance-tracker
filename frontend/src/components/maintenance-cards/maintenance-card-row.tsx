@@ -84,6 +84,7 @@ export function MaintenanceCardRow({
             aria-label="actions"
             onClick={(e) => {
               e.stopPropagation();
+              e.nativeEvent.stopImmediatePropagation();
               onDropdownToggle(isDropdownOpen ? null : card.id);
             }}
             className="flex h-6 w-6 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-accent-foreground"
