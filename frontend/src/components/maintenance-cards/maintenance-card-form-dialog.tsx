@@ -52,12 +52,14 @@ export function MaintenanceCardFormDialog({
   const createMutation = useCreateMaintenanceCard(vehicleId);
   const patchMutation = usePatchMaintenanceCard(vehicleId, card?.id ?? '');
 
-  const parsedIntervalMileage = intervalMileage.trim()
-    ? parseInt(intervalMileage, 10)
-    : null;
-  const parsedIntervalTimeMonths = intervalTimeMonths.trim()
-    ? parseInt(intervalTimeMonths, 10)
-    : null;
+  const parsedIntervalMileage = (() => {
+    const n = parseInt(intervalMileage, 10);
+    return intervalMileage.trim() && !isNaN(n) ? n : null;
+  })();
+  const parsedIntervalTimeMonths = (() => {
+    const n = parseInt(intervalTimeMonths, 10);
+    return intervalTimeMonths.trim() && !isNaN(n) ? n : null;
+  })();
 
   const isValid =
     name.trim().length > 0 &&
