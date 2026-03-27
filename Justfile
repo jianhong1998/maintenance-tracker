@@ -81,10 +81,10 @@ install:
     @chmod +x ./scripts/reinstall.sh && \
         ./scripts/reinstall.sh
 
-# [group: 'test']
-# test-ui:
-# 	@cd frontend && \
-# 		pnpm run test
+[group: 'test']
+test-ui:
+	@cd frontend && \
+		pnpm run test
 
 [group: 'test']
 test-unit:
@@ -98,7 +98,7 @@ test-api:
 
 [group: 'test']
 check-implementation-frontend:
-  @just format lint build-frontend
+  @just format lint build-frontend test-ui
 
 [group: 'test']
 check-implementation-backend:
@@ -106,9 +106,7 @@ check-implementation-backend:
 
 [group: 'test']
 check-implementation:
-	@just format lint
-	@just build
-	@just test-unit
+	@just format lint build test-unit test-ui
 
 [group: 'test']
 check-implementation-backend-with-api-test:

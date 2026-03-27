@@ -63,7 +63,7 @@ describe('HomePage', () => {
 
   it('shows loading message when useVehicles is loading', () => {
     vi.mocked(useVehicles).mockReturnValue({
-      data: [],
+      data: undefined,
       isLoading: true,
     } as ReturnType<typeof useVehicles>);
 
@@ -74,7 +74,7 @@ describe('HomePage', () => {
 
   it('shows "No vehicles yet" message when vehicles array is empty', () => {
     vi.mocked(useVehicles).mockReturnValue({
-      data: [],
+      data: [] as IVehicleResDTO[],
       isLoading: false,
     } as ReturnType<typeof useVehicles>);
 
@@ -123,7 +123,7 @@ describe('HomePage', () => {
 
   it('renders inside AuthGuard', () => {
     vi.mocked(useVehicles).mockReturnValue({
-      data: [],
+      data: [] as IVehicleResDTO[],
       isLoading: false,
     } as ReturnType<typeof useVehicles>);
 
