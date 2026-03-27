@@ -142,19 +142,21 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
       </button>
 
       {/* Dialogs */}
-      <MaintenanceCardFormDialog
-        open={createOpen || !!editingCard}
-        onOpenChange={(open) => {
-          if (!open) {
-            setCreateOpen(false);
-            setEditingCard(null);
-          }
-        }}
-        vehicleId={vehicleId}
-        vehicleMileage={vehicle.mileage}
-        vehicleMileageUnit={vehicle.mileageUnit}
-        card={editingCard ?? undefined}
-      />
+      {(createOpen || !!editingCard) && (
+        <MaintenanceCardFormDialog
+          open={createOpen || !!editingCard}
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreateOpen(false);
+              setEditingCard(null);
+            }
+          }}
+          vehicleId={vehicleId}
+          vehicleMileage={vehicle.mileage}
+          vehicleMileageUnit={vehicle.mileageUnit}
+          card={editingCard ?? undefined}
+        />
+      )}
 
       {markingDoneCard && (
         <MarkDoneDialog

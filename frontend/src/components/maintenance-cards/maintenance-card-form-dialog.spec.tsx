@@ -9,7 +9,7 @@ vi.mock('@/hooks/mutations/maintenance-cards/useCreateMaintenanceCard', () => ({
 vi.mock('@/hooks/mutations/maintenance-cards/usePatchMaintenanceCard', () => ({
   usePatchMaintenanceCard: vi.fn(),
 }));
-vi.mock('sonner', () => ({ toast: { success: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({
     open,
@@ -290,5 +290,66 @@ describe('MaintenanceCardFormDialog', () => {
 
     expect(toast.success).toHaveBeenCalledWith('Card updated');
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('shows error toast when createMutation fails', () => {
+    vi.mocked(useCreateMaintenanceCard).mockReturnValue({
+      mutate: (_data: unknown, opts: { onError: (err: Error) => void }) =>
+        opts.onError(new Error('Network error')),
+      isPending: false,
+    } as ReturnType<typeof useCreateMaintenanceCard>);
+
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText('e.g. Oil Change'), {
+      target: { value: 'New Card' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('e.g. 5000'), {
+      target: { value: '3000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(toast.error).toHaveBeenCalledWith('Network error');
+  });
+
+  it('auto-calculates nextDueDate using local date (not UTC)', () => {
+    // Simulate a date where UTC and local date could diverge
+    // We stub Date to control what "now" is
+    const fakeNow = new Date(2025, 0, 15); // Jan 15 2025 in local time
+    vi.setSystemTime(fakeNow);
+
+    render(<MaintenanceCardFormDialog {...defaultProps} />);
+    fireEvent.change(screen.getByPlaceholderText('e.g. Oil Change'), {
+      target: { value: 'Oil Change' },
+    });
+    fireEvent.change(screen.getByPlaceholderText('e.g. 6'), {
+      target: { value: '3' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    const callArg = mockMutate.mock.calls[0]?.[0] as {
+      nextDueDate: string | null;
+    };
+    // 3 months from Jan 15 = Apr 15 in local time
+    expect(callArg.nextDueDate).toBe('2025-04-15');
+
+    vi.useRealTimers();
+  });
+
+  it('shows error toast when patchMutation fails', () => {
+    vi.mocked(usePatchMaintenanceCard).mockReturnValue({
+      mutate: (_data: unknown, opts: { onError: (err: Error) => void }) =>
+        opts.onError(new Error('Server error')),
+      isPending: false,
+    } as ReturnType<typeof usePatchMaintenanceCard>);
+
+    render(
+      <MaintenanceCardFormDialog
+        {...defaultProps}
+        card={mockCard}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /save/i }));
+
+    expect(toast.error).toHaveBeenCalledWith('Server error');
   });
 });

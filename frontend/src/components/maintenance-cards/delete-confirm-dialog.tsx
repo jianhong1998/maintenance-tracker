@@ -27,6 +27,9 @@ export function DeleteConfirmDialog({
         toast.success('Card deleted');
         onOpenChange(false);
       },
+      onError: (err) => {
+        toast.error(err.message ?? 'Something went wrong');
+      },
     });
   };
 

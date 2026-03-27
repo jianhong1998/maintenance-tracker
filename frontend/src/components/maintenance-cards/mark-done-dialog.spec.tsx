@@ -6,7 +6,7 @@ import type { IMaintenanceCardResDTO } from '@project/types';
 vi.mock('@/hooks/mutations/maintenance-cards/useMarkDone', () => ({
   useMarkDone: vi.fn(),
 }));
-vi.mock('sonner', () => ({ toast: { success: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({
     open,
@@ -153,6 +153,26 @@ describe('MarkDoneDialog', () => {
     );
   });
 
+  it('truncates decimal mileage input to integer', () => {
+    render(
+      <MarkDoneDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        card={cardWithMileage}
+        vehicleId="v1"
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
+      target: { value: '52000.7' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /done/i }));
+
+    expect(mockMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ doneAtMileage: 52000 }),
+      expect.any(Object),
+    );
+  });
+
   it('calls onOpenChange(false) and shows toast when onSuccess fires', () => {
     const onOpenChange = vi.fn();
 
@@ -174,5 +194,25 @@ describe('MarkDoneDialog', () => {
 
     expect(toast.success).toHaveBeenCalledWith('Marked as done');
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('shows error toast when markDone mutation fails', () => {
+    vi.mocked(useMarkDone).mockReturnValue({
+      mutate: (_data: unknown, opts: { onError: (err: Error) => void }) =>
+        opts.onError(new Error('Mark done failed')),
+      isPending: false,
+    } as ReturnType<typeof useMarkDone>);
+
+    render(
+      <MarkDoneDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        card={cardWithoutMileage}
+        vehicleId="v1"
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /done/i }));
+
+    expect(toast.error).toHaveBeenCalledWith('Mark done failed');
   });
 });

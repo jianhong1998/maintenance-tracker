@@ -32,7 +32,9 @@ export function MarkDoneDialog({
 
   const markDone = useMarkDone(vehicleId, card.id);
   const requiresMileage = card.intervalMileage !== null;
-  const parsedMileage = doneAtMileage.trim() ? parseFloat(doneAtMileage) : null;
+  const parsedMileage = doneAtMileage.trim()
+    ? parseInt(doneAtMileage, 10)
+    : null;
   const isValid =
     !requiresMileage || (parsedMileage !== null && parsedMileage > 0);
 
@@ -43,6 +45,9 @@ export function MarkDoneDialog({
         onSuccess: () => {
           toast.success('Marked as done');
           onOpenChange(false);
+        },
+        onError: (err) => {
+          toast.error(err.message ?? 'Something went wrong');
         },
       },
     );

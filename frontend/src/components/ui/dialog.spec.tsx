@@ -90,4 +90,22 @@ describe('Dialog', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(onOpenChange).not.toHaveBeenCalled();
   });
+
+  it('uses aria-labelledby pointing to the heading instead of aria-label', () => {
+    render(
+      <Dialog
+        open={true}
+        onOpenChange={vi.fn()}
+        title="My Dialog"
+      >
+        <p>content</p>
+      </Dialog>,
+    );
+    const dialog = screen.getByRole('dialog');
+    expect(dialog).toHaveAttribute('aria-labelledby', 'dialog-title');
+    expect(dialog).not.toHaveAttribute('aria-label');
+    expect(document.getElementById('dialog-title')).toHaveTextContent(
+      'My Dialog',
+    );
+  });
 });

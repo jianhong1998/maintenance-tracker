@@ -95,7 +95,8 @@ export function MaintenanceCardFormDialog({
         if (parsedIntervalTimeMonths !== null) {
           const d = new Date();
           d.setMonth(d.getMonth() + parsedIntervalTimeMonths);
-          return d.toISOString().slice(0, 10);
+          const pad = (n: number) => String(n).padStart(2, '0');
+          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
         }
         return null;
       })();
@@ -116,12 +117,18 @@ export function MaintenanceCardFormDialog({
           toast.success('Card updated');
           onOpenChange(false);
         },
+        onError: (err) => {
+          toast.error(err.message ?? 'Something went wrong');
+        },
       });
     } else {
       createMutation.mutate(data, {
         onSuccess: () => {
           toast.success('Card created');
           onOpenChange(false);
+        },
+        onError: (err) => {
+          toast.error(err.message ?? 'Something went wrong');
         },
       });
     }

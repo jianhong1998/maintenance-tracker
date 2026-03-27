@@ -6,7 +6,7 @@ import type { IMaintenanceCardResDTO } from '@project/types';
 vi.mock('@/hooks/mutations/maintenance-cards/useDeleteMaintenanceCard', () => ({
   useDeleteMaintenanceCard: vi.fn(),
 }));
-vi.mock('sonner', () => ({ toast: { success: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({
     open,
@@ -113,5 +113,25 @@ describe('DeleteConfirmDialog', () => {
 
     expect(toast.success).toHaveBeenCalledWith('Card deleted');
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('shows error toast when deleteMutation fails', () => {
+    vi.mocked(useDeleteMaintenanceCard).mockReturnValue({
+      mutate: (_cardId: string, opts: { onError: (err: Error) => void }) =>
+        opts.onError(new Error('Delete failed')),
+      isPending: false,
+    } as ReturnType<typeof useDeleteMaintenanceCard>);
+
+    render(
+      <DeleteConfirmDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        card={mockCard}
+        vehicleId="v1"
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+
+    expect(toast.error).toHaveBeenCalledWith('Delete failed');
   });
 });
