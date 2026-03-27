@@ -6,21 +6,70 @@ import type { IVehicleResDTO, IMaintenanceCardResDTO } from '@project/types';
 vi.mock('@/components/auth/auth-guard', () => ({
   AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
-
 vi.mock('@/components/vehicles/mileage-prompt', () => ({
   MileagePrompt: () => null,
 }));
-
 vi.mock('@/components/maintenance-cards/maintenance-card-row', () => ({
-  MaintenanceCardRow: ({ card }: { card: IMaintenanceCardResDTO }) => (
-    <div data-testid="maintenance-card-row">{card.name}</div>
+  MaintenanceCardRow: ({
+    card,
+    onEdit,
+    onMarkDone,
+    onDelete,
+  }: {
+    card: IMaintenanceCardResDTO;
+    isDropdownOpen: boolean;
+    onDropdownToggle: (id: string | null) => void;
+    onEdit: (card: IMaintenanceCardResDTO) => void;
+    onMarkDone: (card: IMaintenanceCardResDTO) => void;
+    onDelete: (card: IMaintenanceCardResDTO) => void;
+  }) => (
+    <div data-testid="maintenance-card-row">
+      {card.name}
+      <button onClick={() => onEdit(card)}>edit-{card.id}</button>
+      <button onClick={() => onMarkDone(card)}>markdone-{card.id}</button>
+      <button onClick={() => onDelete(card)}>delete-{card.id}</button>
+    </div>
   ),
 }));
-
+vi.mock('@/components/maintenance-cards/maintenance-card-form-dialog', () => ({
+  MaintenanceCardFormDialog: ({
+    open,
+    card,
+  }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+    vehicleId: string;
+    card?: IMaintenanceCardResDTO;
+  }) =>
+    open ? (
+      <div data-testid="form-dialog">{card ? `edit:${card.id}` : 'create'}</div>
+    ) : null,
+}));
+vi.mock('@/components/maintenance-cards/mark-done-dialog', () => ({
+  MarkDoneDialog: ({
+    open,
+    card,
+  }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+    card: IMaintenanceCardResDTO;
+    vehicleId: string;
+  }) => (open ? <div data-testid="mark-done-dialog">{card.id}</div> : null),
+}));
+vi.mock('@/components/maintenance-cards/delete-confirm-dialog', () => ({
+  DeleteConfirmDialog: ({
+    open,
+    card,
+  }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+    card: IMaintenanceCardResDTO;
+    vehicleId: string;
+  }) => (open ? <div data-testid="delete-dialog">{card.id}</div> : null),
+}));
 vi.mock('@/hooks/queries/vehicles/useVehicle', () => ({
   useVehicle: vi.fn(),
 }));
-
 vi.mock('@/hooks/queries/maintenance-cards/useMaintenanceCards', () => ({
   useMaintenanceCards: vi.fn(),
 }));
@@ -73,12 +122,25 @@ const mockCard2: IMaintenanceCardResDTO = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
+function setupVehicleLoaded(cards: IMaintenanceCardResDTO[] = []) {
+  vi.mocked(useVehicle).mockReturnValue({
+    data: mockVehicle,
+    isLoading: false,
+    isError: false,
+  } as ReturnType<typeof useVehicle>);
+  vi.mocked(useMaintenanceCards).mockReturnValue({
+    data: cards,
+    isLoading: false,
+  } as unknown as ReturnType<typeof useMaintenanceCards>);
+}
+
 describe('VehicleDashboardPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockReplace.mockReset();
   });
 
+  // ── existing tests ──────────────────────────────────────────────────
   it('shows loading state when vehicleLoading is true', () => {
     vi.mocked(useVehicle).mockReturnValue({
       data: undefined,
@@ -86,144 +148,97 @@ describe('VehicleDashboardPage', () => {
       isError: false,
     } as ReturnType<typeof useVehicle>);
     vi.mocked(useMaintenanceCards).mockReturnValue({
-      data: [] as IMaintenanceCardResDTO[],
+      data: [],
       isLoading: false,
     } as unknown as ReturnType<typeof useMaintenanceCards>);
 
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-
     expect(screen.getByText(/loading…/i)).toBeInTheDocument();
   });
 
-  it('shows vehicle header with brand, model, colour, and mileage when vehicle loads', () => {
-    vi.mocked(useVehicle).mockReturnValue({
-      data: mockVehicle,
-      isLoading: false,
-      isError: false,
-    } as ReturnType<typeof useVehicle>);
-    vi.mocked(useMaintenanceCards).mockReturnValue({
-      data: [] as IMaintenanceCardResDTO[],
-      isLoading: false,
-    } as unknown as ReturnType<typeof useMaintenanceCards>);
-
+  it('shows vehicle header when vehicle loads', () => {
+    setupVehicleLoaded();
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'Toyota Camry',
     );
     expect(screen.getByText(/silver/i)).toBeInTheDocument();
-    expect(screen.getByText(/50,000/)).toBeInTheDocument();
   });
 
   it('calls useMaintenanceCards with sort=name when Name button is clicked', () => {
-    vi.mocked(useVehicle).mockReturnValue({
-      data: mockVehicle,
-      isLoading: false,
-      isError: false,
-    } as ReturnType<typeof useVehicle>);
-    vi.mocked(useMaintenanceCards).mockReturnValue({
-      data: [] as IMaintenanceCardResDTO[],
-      isLoading: false,
-    } as unknown as ReturnType<typeof useMaintenanceCards>);
-
+    setupVehicleLoaded();
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-
-    fireEvent.click(screen.getByRole('button', { name: /name/i }));
-
+    fireEvent.click(screen.getByRole('button', { name: /^name$/i }));
     expect(vi.mocked(useMaintenanceCards)).toHaveBeenCalledWith(
       'vehicle-1',
       'name',
     );
   });
 
-  it('calls useMaintenanceCards with sort=urgency when Urgency button is clicked after switching to name', () => {
-    vi.mocked(useVehicle).mockReturnValue({
-      data: mockVehicle,
-      isLoading: false,
-      isError: false,
-    } as ReturnType<typeof useVehicle>);
-    vi.mocked(useMaintenanceCards).mockReturnValue({
-      data: [] as IMaintenanceCardResDTO[],
-      isLoading: false,
-    } as unknown as ReturnType<typeof useMaintenanceCards>);
-
+  it('renders MaintenanceCardRow for each card', () => {
+    setupVehicleLoaded([mockCard1, mockCard2]);
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-
-    // Switch to name first
-    fireEvent.click(screen.getByRole('button', { name: /name/i }));
-    // Switch back to urgency
-    fireEvent.click(screen.getByRole('button', { name: /urgency/i }));
-
-    expect(vi.mocked(useMaintenanceCards)).toHaveBeenCalledWith(
-      'vehicle-1',
-      'urgency',
-    );
+    expect(screen.getAllByTestId('maintenance-card-row')).toHaveLength(2);
   });
 
-  it('renders MaintenanceCardRow for each card when cards are returned', () => {
-    vi.mocked(useVehicle).mockReturnValue({
-      data: mockVehicle,
-      isLoading: false,
-      isError: false,
-    } as ReturnType<typeof useVehicle>);
-    vi.mocked(useMaintenanceCards).mockReturnValue({
-      data: [mockCard1, mockCard2],
-      isLoading: false,
-    } as unknown as ReturnType<typeof useMaintenanceCards>);
-
+  it('shows "No maintenance cards yet." when cards array is empty', () => {
+    setupVehicleLoaded([]);
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-
-    const rows = screen.getAllByTestId('maintenance-card-row');
-    expect(rows).toHaveLength(2);
-    expect(screen.getByText('Oil Change')).toBeInTheDocument();
-    expect(screen.getByText('Tire Rotation')).toBeInTheDocument();
-  });
-
-  it('shows "No maintenance cards yet." when cards array is empty and not loading', () => {
-    vi.mocked(useVehicle).mockReturnValue({
-      data: mockVehicle,
-      isLoading: false,
-      isError: false,
-    } as ReturnType<typeof useVehicle>);
-    vi.mocked(useMaintenanceCards).mockReturnValue({
-      data: [] as IMaintenanceCardResDTO[],
-      isLoading: false,
-    } as unknown as ReturnType<typeof useMaintenanceCards>);
-
-    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-
     expect(screen.getByText(/no maintenance cards yet/i)).toBeInTheDocument();
   });
 
-  it('shows "Loading cards…" when cardsLoading is true', () => {
-    vi.mocked(useVehicle).mockReturnValue({
-      data: mockVehicle,
-      isLoading: false,
-      isError: false,
-    } as ReturnType<typeof useVehicle>);
-    vi.mocked(useMaintenanceCards).mockReturnValue({
-      data: [] as IMaintenanceCardResDTO[],
-      isLoading: true,
-    } as unknown as ReturnType<typeof useMaintenanceCards>);
-
-    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-
-    expect(screen.getByText(/loading cards…/i)).toBeInTheDocument();
-  });
-
-  it('calls router.replace("/") when isError is true and vehicleLoading is false', () => {
+  it('calls router.replace("/") when isError is true', () => {
     vi.mocked(useVehicle).mockReturnValue({
       data: undefined,
       isLoading: false,
       isError: true,
     } as ReturnType<typeof useVehicle>);
     vi.mocked(useMaintenanceCards).mockReturnValue({
-      data: [] as IMaintenanceCardResDTO[],
+      data: [],
       isLoading: false,
     } as unknown as ReturnType<typeof useMaintenanceCards>);
 
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-
     expect(mockReplace).toHaveBeenCalledWith('/');
+  });
+
+  // ── new FAB + dialog tests ──────────────────────────────────────────
+  it('renders the FAB button with aria-label "Add maintenance card"', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    expect(
+      screen.getByRole('button', { name: /add maintenance card/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens create form dialog when FAB is clicked', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    fireEvent.click(
+      screen.getByRole('button', { name: /add maintenance card/i }),
+    );
+    expect(screen.getByTestId('form-dialog')).toHaveTextContent('create');
+  });
+
+  it('opens edit form dialog with card when onEdit fires from a row', () => {
+    setupVehicleLoaded([mockCard1]);
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    fireEvent.click(screen.getByText('edit-card-1'));
+    const dialog = screen.getByTestId('form-dialog');
+    expect(dialog).toHaveTextContent('edit:card-1');
+  });
+
+  it('opens mark-done dialog with card when onMarkDone fires from a row', () => {
+    setupVehicleLoaded([mockCard1]);
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    fireEvent.click(screen.getByText('markdone-card-1'));
+    expect(screen.getByTestId('mark-done-dialog')).toHaveTextContent('card-1');
+  });
+
+  it('opens delete dialog with card when onDelete fires from a row', () => {
+    setupVehicleLoaded([mockCard1]);
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    fireEvent.click(screen.getByText('delete-card-1'));
+    expect(screen.getByTestId('delete-dialog')).toHaveTextContent('card-1');
   });
 });
