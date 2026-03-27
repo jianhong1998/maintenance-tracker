@@ -48,6 +48,7 @@ describe('usePatchMaintenanceCard', () => {
       '/vehicles/v1/maintenance-cards/card-1',
       patchData,
     );
+    expect(apiClient.patch).toHaveBeenCalledTimes(1);
   });
 
   it('invalidates [MAINTENANCE_CARDS, vehicleId] on success', async () => {
