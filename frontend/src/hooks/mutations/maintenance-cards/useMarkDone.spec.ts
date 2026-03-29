@@ -60,7 +60,7 @@ describe('useMarkDone', () => {
     });
   });
 
-  it('invalidates [VEHICLES, vehicleId] with exact:true on success', async () => {
+  it('invalidates all [VEHICLES] queries on success', async () => {
     vi.mocked(apiClient.post).mockResolvedValue(mockHistory);
     const { wrapper, queryClient } = createWrapperWithClient();
     const spy = vi.spyOn(queryClient, 'invalidateQueries');
@@ -74,8 +74,7 @@ describe('useMarkDone', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(spy).toHaveBeenCalledWith({
-      queryKey: [QueryGroup.VEHICLES, 'v1'],
-      exact: true,
+      queryKey: [QueryGroup.VEHICLES],
     });
   });
 

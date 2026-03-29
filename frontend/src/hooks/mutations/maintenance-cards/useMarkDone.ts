@@ -20,8 +20,7 @@ export const useMarkDone = (vehicleId: string, cardId: string) => {
         queryKey: [QueryGroup.MAINTENANCE_CARDS, vehicleId],
       });
       void queryClient.invalidateQueries({
-        queryKey: [QueryGroup.VEHICLES, vehicleId],
-        exact: true,
+        queryKey: [QueryGroup.VEHICLES],
       });
     },
   });

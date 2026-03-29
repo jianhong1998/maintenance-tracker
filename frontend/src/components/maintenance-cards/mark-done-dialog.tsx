@@ -36,7 +36,8 @@ export function MarkDoneDialog({
     ? parseInt(doneAtMileage, 10)
     : null;
   const isValid =
-    !requiresMileage || (parsedMileage !== null && parsedMileage > 0);
+    !requiresMileage ||
+    (parsedMileage !== null && !isNaN(parsedMileage) && parsedMileage > 0);
 
   const handleDone = () => {
     markDone.mutate(

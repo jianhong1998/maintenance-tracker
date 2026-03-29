@@ -21,8 +21,9 @@ vi.mock('@/components/ui/dialog', () => ({
     open ? (
       <div
         role="dialog"
-        aria-label={title}
+        aria-labelledby="dialog-title"
       >
+        <h2 id="dialog-title">{title}</h2>
         {children}
       </div>
     ) : null,
@@ -151,6 +152,21 @@ describe('MarkDoneDialog', () => {
       { doneAtMileage: 52000, notes: 'Used synthetic oil' },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
+  });
+
+  it('disables Done button when mileage input is non-numeric (NaN)', () => {
+    render(
+      <MarkDoneDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        card={cardWithMileage}
+        vehicleId="v1"
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
+      target: { value: 'abc' },
+    });
+    expect(screen.getByRole('button', { name: /done/i })).toBeDisabled();
   });
 
   it('truncates decimal mileage input to integer', () => {

@@ -24,9 +24,9 @@ vi.mock('@/components/ui/dialog', () => ({
     open ? (
       <div
         role="dialog"
-        aria-label={title}
+        aria-labelledby="dialog-title"
       >
-        <h2>{title}</h2>
+        <h2 id="dialog-title">{title}</h2>
         {children}
       </div>
     ) : null,
@@ -76,10 +76,9 @@ describe('MaintenanceCardFormDialog', () => {
 
   it('shows "New Maintenance Card" title in create mode', () => {
     render(<MaintenanceCardFormDialog {...defaultProps} />);
-    expect(screen.getByRole('dialog')).toHaveAttribute(
-      'aria-label',
-      'New Maintenance Card',
-    );
+    expect(
+      screen.getByRole('heading', { name: 'New Maintenance Card' }),
+    ).toBeInTheDocument();
   });
 
   it('shows "Edit Maintenance Card" title in edit mode', () => {
@@ -89,10 +88,9 @@ describe('MaintenanceCardFormDialog', () => {
         card={mockCard}
       />,
     );
-    expect(screen.getByRole('dialog')).toHaveAttribute(
-      'aria-label',
-      'Edit Maintenance Card',
-    );
+    expect(
+      screen.getByRole('heading', { name: 'Edit Maintenance Card' }),
+    ).toBeInTheDocument();
   });
 
   it('pre-fills all fields from card prop in edit mode', () => {
