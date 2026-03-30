@@ -6,6 +6,7 @@ import type { IMaintenanceCardResDTO } from '@project/types';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useMarkDone } from '@/hooks/mutations/maintenance-cards/useMarkDone';
+import { parsePositiveInteger } from '@/lib/utils';
 
 interface MarkDoneDialogProps {
   open: boolean;
@@ -32,12 +33,9 @@ export function MarkDoneDialog({
 
   const markDone = useMarkDone(vehicleId, card.id);
   const requiresMileage = card.intervalMileage !== null;
-  const parsedMileage = doneAtMileage.trim()
-    ? parseInt(doneAtMileage, 10)
-    : null;
+  const parsedMileage = parsePositiveInteger(doneAtMileage);
   const isValid =
-    !requiresMileage ||
-    (parsedMileage !== null && !isNaN(parsedMileage) && parsedMileage > 0);
+    !requiresMileage || (parsedMileage !== null && parsedMileage > 0);
 
   const handleDone = () => {
     markDone.mutate(

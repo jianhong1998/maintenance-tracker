@@ -10,13 +10,23 @@ vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock('@/components/ui/dialog', () => ({
   Dialog: ({
     open,
+    title,
     children,
   }: {
     open: boolean;
     onOpenChange: (v: boolean) => void;
     title: string;
     children: React.ReactNode;
-  }) => (open ? <div role="dialog">{children}</div> : null),
+  }) =>
+    open ? (
+      <div
+        role="dialog"
+        aria-labelledby="dialog-title"
+      >
+        <h2 id="dialog-title">{title}</h2>
+        {children}
+      </div>
+    ) : null,
 }));
 
 import { useDeleteMaintenanceCard } from '@/hooks/mutations/maintenance-cards/useDeleteMaintenanceCard';

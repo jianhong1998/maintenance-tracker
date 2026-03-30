@@ -8,7 +8,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useCreateMaintenanceCard } from '@/hooks/mutations/maintenance-cards/useCreateMaintenanceCard';
 import { usePatchMaintenanceCard } from '@/hooks/mutations/maintenance-cards/usePatchMaintenanceCard';
-import { cn } from '@/lib/utils';
+import { cn, parsePositiveInteger } from '@/lib/utils';
 
 interface MaintenanceCardFormDialogProps {
   open: boolean;
@@ -60,18 +60,9 @@ export function MaintenanceCardFormDialog({
   const createMutation = useCreateMaintenanceCard(vehicleId);
   const patchMutation = usePatchMaintenanceCard(vehicleId, card?.id ?? '');
 
-  const parsedIntervalMileage = (() => {
-    const n = parseInt(intervalMileage, 10);
-    return intervalMileage.trim() && !isNaN(n) ? n : null;
-  })();
-  const parsedIntervalTimeMonths = (() => {
-    const n = parseInt(intervalTimeMonths, 10);
-    return intervalTimeMonths.trim() && !isNaN(n) ? n : null;
-  })();
-  const parsedNextDueMileage = (() => {
-    const n = parseInt(nextDueMileage, 10);
-    return nextDueMileage.trim() && !isNaN(n) ? n : null;
-  })();
+  const parsedIntervalMileage = parsePositiveInteger(intervalMileage);
+  const parsedIntervalTimeMonths = parsePositiveInteger(intervalTimeMonths);
+  const parsedNextDueMileage = parsePositiveInteger(nextDueMileage);
 
   const isValid =
     name.trim().length > 0 &&
