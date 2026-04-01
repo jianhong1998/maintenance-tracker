@@ -1,10 +1,11 @@
-import { IsNumber, IsOptional, IsString, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import type { IMarkDoneReqDTO } from '@project/types';
 
 export class MarkDoneDto implements IMarkDoneReqDTO {
   @IsOptional()
-  @IsNumber()
+  @IsInt()
   @Min(1)
+  @Max(1_000_000)
   doneAtMileage?: number | null;
 
   @IsOptional()

@@ -78,7 +78,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
   };
 
   return (
-    <main className="relative flex flex-col gap-6 p-6">
+    <main className="flex flex-col gap-6 p-6">
       <div>
         <h1 className="text-xl font-semibold">
           {vehicle.brand} {vehicle.model}
@@ -108,15 +108,24 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
         </Button>
       </div>
 
-      {cardsLoading ? (
-        <p className="text-muted-foreground text-sm">Loading cards…</p>
-      ) : cards.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No maintenance cards yet.
-        </p>
-      ) : (
-        <div className="flex flex-col gap-2">
-          {cards.map((card) => (
+      <div className="flex flex-col gap-2">
+        <button
+          type="button"
+          aria-label="Add maintenance card"
+          onClick={() => setCreateOpen(true)}
+          className="flex w-full items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/30 py-4 text-muted-foreground hover:bg-muted"
+        >
+          <span className="text-2xl font-light leading-none">+</span>
+        </button>
+
+        {cardsLoading ? (
+          <p className="text-muted-foreground text-sm">Loading cards…</p>
+        ) : cards.length === 0 ? (
+          <p className="text-muted-foreground text-sm">
+            No maintenance cards yet.
+          </p>
+        ) : (
+          cards.map((card) => (
             <MaintenanceCardRow
               key={card.id}
               card={card}
@@ -127,19 +136,9 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
               onMarkDone={handleMarkDone}
               onDelete={handleDelete}
             />
-          ))}
-        </div>
-      )}
-
-      {/* FAB */}
-      <button
-        type="button"
-        aria-label="Add maintenance card"
-        onClick={() => setCreateOpen(true)}
-        className="fixed bottom-6 right-6 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:bg-primary/90"
-      >
-        <span className="text-2xl font-light leading-none">+</span>
-      </button>
+          ))
+        )}
+      </div>
 
       {/* Dialogs */}
       <MaintenanceCardFormDialog

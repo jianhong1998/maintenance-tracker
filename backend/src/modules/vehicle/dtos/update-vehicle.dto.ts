@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 import { MILEAGE_UNITS } from '@project/types';
@@ -28,6 +29,7 @@ export class UpdateVehicleDto implements IUpdateVehicleReqDTO {
   @IsOptional()
   @IsNumber()
   @Min(0)
+  @Max(1_000_000)
   mileage?: number;
 
   @IsOptional()

@@ -11,7 +11,6 @@ import {
 import type { MaintenanceCardType } from '@project/types';
 import { MAINTENANCE_CARD_TYPES } from '@project/types';
 import { VehicleEntity } from './vehicle.entity';
-import { decimalTransformer } from '../transformers/decimal.transformer';
 import { dateTransformer } from '../transformers/date.transformer';
 import { UuidV7BaseEntity } from './base.entity';
 
@@ -40,14 +39,7 @@ export class MaintenanceCardEntity extends UuidV7BaseEntity {
   @Column({ type: 'int', nullable: true, name: 'interval_time_months' })
   intervalTimeMonths: number | null;
 
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    nullable: true,
-    name: 'next_due_mileage',
-    transformer: decimalTransformer,
-  })
+  @Column({ type: 'int', nullable: true, name: 'next_due_mileage' })
   nextDueMileage: number | null;
 
   @Column({

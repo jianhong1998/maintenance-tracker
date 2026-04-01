@@ -44,6 +44,13 @@ describe('UpdateVehicleDto', () => {
       expect(mileageErrors).toBeDefined();
     });
 
+    it('rejects a value above 1_000_000', async () => {
+      const dto = plainToInstance(UpdateVehicleDto, { mileage: 1_000_001 });
+      const errors = await validate(dto);
+      const mileageErrors = errors.find((e) => e.property === 'mileage');
+      expect(mileageErrors).toBeDefined();
+    });
+
     it('accepts zero mileage', async () => {
       const dto = plainToInstance(UpdateVehicleDto, { mileage: 0 });
       const errors = await validate(dto);
