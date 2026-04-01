@@ -36,19 +36,14 @@ export function Dialog({
       <div
         role="dialog"
         aria-modal="true"
-        aria-labelledby="dialog-title"
+        aria-label={title}
         className={cn(
           'w-full max-w-sm rounded-xl bg-background p-6 shadow-xl',
           className,
         )}
         onClick={(e) => e.stopPropagation()}
       >
-        <h2
-          id="dialog-title"
-          className="mb-4 text-base font-semibold"
-        >
-          {title}
-        </h2>
+        <h2 className="mb-4 text-base font-semibold">{title}</h2>
         {children}
       </div>
     </div>

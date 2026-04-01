@@ -144,7 +144,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
       {/* Dialogs */}
       {(createOpen || !!editingCard) && (
         <MaintenanceCardFormDialog
-          open={createOpen || !!editingCard}
+          open={true}
           onOpenChange={(open) => {
             if (!open) {
               setCreateOpen(false);

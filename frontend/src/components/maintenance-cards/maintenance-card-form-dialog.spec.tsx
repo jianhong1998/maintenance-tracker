@@ -24,9 +24,9 @@ vi.mock('@/components/ui/dialog', () => ({
     open ? (
       <div
         role="dialog"
-        aria-labelledby="dialog-title"
+        aria-label={title}
       >
-        <h2 id="dialog-title">{title}</h2>
+        <h2>{title}</h2>
         {children}
       </div>
     ) : null,

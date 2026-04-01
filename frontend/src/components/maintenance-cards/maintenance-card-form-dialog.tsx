@@ -19,6 +19,17 @@ interface MaintenanceCardFormDialogProps {
   card?: IMaintenanceCardResDTO;
 }
 
+function calcAutoNextDueDate(months: number | null): string | null {
+  if (months === null) return null;
+  const d = new Date();
+  d.setMonth(d.getMonth() + months);
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 const TYPES = [
   { value: MAINTENANCE_CARD_TYPES.TASK, label: 'Task' },
   { value: MAINTENANCE_CARD_TYPES.PART, label: 'Part' },
@@ -66,9 +77,7 @@ export function MaintenanceCardFormDialog({
 
   const isValid =
     name.trim().length > 0 &&
-    (parsedIntervalMileage !== null || parsedIntervalTimeMonths !== null) &&
-    (parsedIntervalMileage === null || parsedIntervalMileage > 0) &&
-    (parsedIntervalTimeMonths === null || parsedIntervalTimeMonths > 0);
+    (parsedIntervalMileage !== null || parsedIntervalTimeMonths !== null);
 
   const isPending = createMutation.isPending || patchMutation.isPending;
 
@@ -81,16 +90,7 @@ export function MaintenanceCardFormDialog({
           : null;
 
     const finalNextDueDate =
-      nextDueDate.trim() ||
-      (() => {
-        if (parsedIntervalTimeMonths !== null) {
-          const d = new Date();
-          d.setMonth(d.getMonth() + parsedIntervalTimeMonths);
-          const pad = (n: number) => String(n).padStart(2, '0');
-          return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-        }
-        return null;
-      })();
+      nextDueDate.trim() || calcAutoNextDueDate(parsedIntervalTimeMonths);
 
     const data = {
       type,

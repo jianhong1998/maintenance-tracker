@@ -25,6 +25,13 @@ import { CreateMaintenanceCardDto } from '../dtos/create-maintenance-card.dto';
 import { UpdateMaintenanceCardDto } from '../dtos/update-maintenance-card.dto';
 import { MarkDoneDto } from '../dtos/mark-done.dto';
 
+function toOptionalDate(
+  value: string | null | undefined,
+): Date | null | undefined {
+  if (value === undefined) return undefined;
+  return value ? new Date(value) : null;
+}
+
 function toResDTO(card: MaintenanceCardEntity): IMaintenanceCardResDTO {
   return {
     id: card.id,
@@ -98,7 +105,7 @@ export class MaintenanceCardController {
       intervalMileage: dto.intervalMileage ?? null,
       intervalTimeMonths: dto.intervalTimeMonths ?? null,
       nextDueMileage: dto.nextDueMileage ?? null,
-      nextDueDate: dto.nextDueDate ? new Date(dto.nextDueDate) : null,
+      nextDueDate: toOptionalDate(dto.nextDueDate) ?? null,
     });
     return toResDTO(card);
   }
@@ -112,12 +119,7 @@ export class MaintenanceCardController {
   ): Promise<IMaintenanceCardResDTO> {
     const card = await this.cardService.updateCard(id, vehicleId, user.id, {
       ...dto,
-      nextDueDate:
-        dto.nextDueDate !== undefined
-          ? dto.nextDueDate
-            ? new Date(dto.nextDueDate)
-            : null
-          : undefined,
+      nextDueDate: toOptionalDate(dto.nextDueDate),
     });
     return toResDTO(card);
   }

@@ -91,7 +91,7 @@ describe('Dialog', () => {
     expect(onOpenChange).not.toHaveBeenCalled();
   });
 
-  it('uses aria-labelledby pointing to the heading instead of aria-label', () => {
+  it('uses aria-label on the dialog element so multiple dialogs never share an ID', () => {
     render(
       <Dialog
         open={true}
@@ -102,10 +102,7 @@ describe('Dialog', () => {
       </Dialog>,
     );
     const dialog = screen.getByRole('dialog');
-    expect(dialog).toHaveAttribute('aria-labelledby', 'dialog-title');
-    expect(dialog).not.toHaveAttribute('aria-label');
-    expect(document.getElementById('dialog-title')).toHaveTextContent(
-      'My Dialog',
-    );
+    expect(dialog).toHaveAttribute('aria-label', 'My Dialog');
+    expect(dialog).not.toHaveAttribute('aria-labelledby');
   });
 });
