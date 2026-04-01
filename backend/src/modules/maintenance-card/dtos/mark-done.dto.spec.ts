@@ -13,5 +13,12 @@ describe('MarkDoneDto', () => {
       const fieldErrors = errors.find((e) => e.property === 'doneAtMileage');
       expect(fieldErrors).toBeDefined();
     });
+
+    it('rejects a float value', async () => {
+      const dto = plainToInstance(MarkDoneDto, { doneAtMileage: 1.5 });
+      const errors = await validate(dto);
+      const fieldErrors = errors.find((e) => e.property === 'doneAtMileage');
+      expect(fieldErrors).toBeDefined();
+    });
   });
 });

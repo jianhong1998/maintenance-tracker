@@ -113,7 +113,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
           type="button"
           aria-label="Add maintenance card"
           onClick={() => setCreateOpen(true)}
-          className="flex w-full items-center justify-center rounded-md border-2 border-dashed border-gray-300 py-4 text-gray-400 hover:bg-gray-50"
+          className="flex w-full items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/30 py-4 text-muted-foreground hover:bg-muted"
         >
           <span className="text-2xl font-light leading-none">+</span>
         </button>
