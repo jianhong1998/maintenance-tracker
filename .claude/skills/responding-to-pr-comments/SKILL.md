@@ -26,30 +26,15 @@ This prevents "fixing" things that were intentionally done a certain way.
 
 **Step 2 — Fetch all PR comments**
 
-> **Warning:** `gh pr view --comments` uses GraphQL and fails with a deprecation error related to Projects (classic). Do NOT use it. Use the REST API directly instead.
->
-> **Warning:** `gh api .../pulls/<PR>/comments` returns *inline diff comments only* (usually empty). The discussion thread lives under the issues endpoint.
+Use the built-in `/pr-comments` slash command. It auto-detects the PR for the current branch, or you can pass a PR number or URL:
 
-```bash
-# Get PR number
-gh pr view --json number --jq '.number'
-
-# Get the most recent comments (avoid large output by filtering to last 5)
-REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
-gh api repos/$REPO/issues/<PR_NUMBER>/comments | python3 -c "
-import json, sys
-comments = json.load(sys.stdin)
-for c in comments[-5:]:
-    print(f'=== {c[\"id\"]} by {c[\"user\"][\"login\"]} at {c[\"created_at\"]} ===')
-    print(c['body'][:3000])
-    print()
-"
+```
+/pr-comments              # auto-detect PR for current branch
+/pr-comments 123          # by PR number
+/pr-comments <URL>        # by full PR URL
 ```
 
-This approach is reliable because:
-- Uses the REST issues API (not GraphQL) — no deprecation errors
-- Filters to the last 5 comments — avoids output-size failures on PRs with many bot review messages
-- Truncates body at 3000 chars per comment — enough to read the review, avoids context overflow
+This requires `gh` CLI to be installed and authenticated. The command fetches and injects all PR comments into context.
 
 **Step 3 — Evaluate validity for EACH comment**
 
@@ -121,6 +106,7 @@ This is a **summary comment**, not individual replies. One comment, complete pic
 
 | Mistake | Fix |
 |---------|-----|
+| Using `gh pr view --comments` or raw REST API | Use `/pr-comments` instead — it handles auth and formatting |
 | Reading comments before reading PR description + commit history | Always read context first |
 | "Fixing" something the reviewer flagged without checking if it was intentional | Check git log for the rationale |
 | Writing tests after the fix | Write the failing test first, always |
