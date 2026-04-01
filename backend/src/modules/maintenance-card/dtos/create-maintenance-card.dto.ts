@@ -5,6 +5,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Max,
   Min,
 } from 'class-validator';
 import type {
@@ -30,6 +31,7 @@ export class CreateMaintenanceCardDto implements ICreateMaintenanceCardReqDTO {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(1_000_000)
   intervalMileage?: number | null;
 
   @IsOptional()
@@ -40,6 +42,7 @@ export class CreateMaintenanceCardDto implements ICreateMaintenanceCardReqDTO {
   @IsOptional()
   @IsInt()
   @Min(1)
+  @Max(1_000_000)
   nextDueMileage?: number | null;
 
   @IsOptional()

@@ -264,6 +264,23 @@ describe('#MaintenanceCards', () => {
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
+
+    it('accepts nextDueMileage at the maximum valid mileage without numeric overflow (next_due_mileage column type fix)', async () => {
+      const res = await axiosInstance.post<IMaintenanceCardResDTO>(
+        `/vehicles/${vehicleId}/maintenance-cards`,
+        {
+          type: 'task',
+          name: 'High-mileage Card',
+          intervalMileage: 1000000,
+          nextDueMileage: 1000000,
+        },
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(201);
+      expect(res.data.intervalMileage).toBe(1000000);
+      expect(res.data.nextDueMileage).toBe(1000000);
+    });
   });
 
   // ─── GET list ─────────────────────────────────────────────────────────────

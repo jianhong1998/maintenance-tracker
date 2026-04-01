@@ -64,6 +64,18 @@ describe('CreateMaintenanceCardDto', () => {
       expect(mileageErrors).toBeDefined();
     });
 
+    it('rejects a value above 1_000_000', async () => {
+      const dto = plainToInstance(CreateMaintenanceCardDto, {
+        ...validPayload,
+        intervalMileage: 1_000_001,
+      });
+      const errors = await validate(dto);
+      const mileageErrors = errors.find(
+        (e) => e.property === 'intervalMileage',
+      );
+      expect(mileageErrors).toBeDefined();
+    });
+
     it('accepts null when intervalTimeMonths is set', async () => {
       const dto = plainToInstance(CreateMaintenanceCardDto, {
         ...validPayload,
@@ -134,6 +146,16 @@ describe('CreateMaintenanceCardDto', () => {
       const dto = plainToInstance(CreateMaintenanceCardDto, {
         ...validPayload,
         nextDueMileage: 0,
+      });
+      const errors = await validate(dto);
+      const fieldErrors = errors.find((e) => e.property === 'nextDueMileage');
+      expect(fieldErrors).toBeDefined();
+    });
+
+    it('rejects a value above 1_000_000', async () => {
+      const dto = plainToInstance(CreateMaintenanceCardDto, {
+        ...validPayload,
+        nextDueMileage: 1_000_001,
       });
       const errors = await validate(dto);
       const fieldErrors = errors.find((e) => e.property === 'nextDueMileage');
