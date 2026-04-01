@@ -26,11 +26,30 @@ This prevents "fixing" things that were intentionally done a certain way.
 
 **Step 2 — Fetch all PR comments**
 
+> **Warning:** `gh pr view --comments` uses GraphQL and fails with a deprecation error related to Projects (classic). Do NOT use it. Use the REST API directly instead.
+>
+> **Warning:** `gh api .../pulls/<PR>/comments` returns *inline diff comments only* (usually empty). The discussion thread lives under the issues endpoint.
+
 ```bash
-gh pr view --json number --jq '.number'       # Get PR number
-gh pr view <PR_NUMBER> --comments             # Review comments
-gh api repos/{owner}/{repo}/pulls/<PR_NUMBER>/reviews  # Formal reviews
+# Get PR number
+gh pr view --json number --jq '.number'
+
+# Get the most recent comments (avoid large output by filtering to last 5)
+REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner')
+gh api repos/$REPO/issues/<PR_NUMBER>/comments | python3 -c "
+import json, sys
+comments = json.load(sys.stdin)
+for c in comments[-5:]:
+    print(f'=== {c[\"id\"]} by {c[\"user\"][\"login\"]} at {c[\"created_at\"]} ===')
+    print(c['body'][:3000])
+    print()
+"
 ```
+
+This approach is reliable because:
+- Uses the REST issues API (not GraphQL) — no deprecation errors
+- Filters to the last 5 comments — avoids output-size failures on PRs with many bot review messages
+- Truncates body at 3000 chars per comment — enough to read the review, avoids context overflow
 
 **Step 3 — Evaluate validity for EACH comment**
 
