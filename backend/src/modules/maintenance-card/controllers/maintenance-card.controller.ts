@@ -25,6 +25,14 @@ import { CreateMaintenanceCardDto } from '../dtos/create-maintenance-card.dto';
 import { UpdateMaintenanceCardDto } from '../dtos/update-maintenance-card.dto';
 import { MarkDoneDto } from '../dtos/mark-done.dto';
 
+function formatLocalDate(date: Date): string {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
 function toOptionalDate(
   value: string | null | undefined,
 ): Date | null | undefined {
@@ -42,9 +50,7 @@ function toResDTO(card: MaintenanceCardEntity): IMaintenanceCardResDTO {
     intervalMileage: card.intervalMileage,
     intervalTimeMonths: card.intervalTimeMonths,
     nextDueMileage: card.nextDueMileage,
-    nextDueDate: card.nextDueDate
-      ? new Date(card.nextDueDate).toISOString().slice(0, 10)
-      : null,
+    nextDueDate: card.nextDueDate ? formatLocalDate(card.nextDueDate) : null,
     createdAt: card.createdAt.toISOString(),
     updatedAt: card.updatedAt.toISOString(),
   };
@@ -57,7 +63,7 @@ function historyToResDTO(
     id: history.id,
     maintenanceCardId: history.maintenanceCardId,
     doneAtMileage: history.doneAtMileage,
-    doneAtDate: new Date(history.doneAtDate).toISOString().slice(0, 10),
+    doneAtDate: formatLocalDate(history.doneAtDate),
     notes: history.notes,
     createdAt: history.createdAt.toISOString(),
   };
