@@ -86,3 +86,11 @@ The hook skips merge commits, squash commits, and rebase operations automaticall
 - Always format code (command `just format`) and do lint check (command `just lint`) after editing code.
 - Environment variables for backend should always have prefix `BACKEND_`.
 - Environment variables for frontend should always have prefix `FRONTEND_`. No `NEXT_` prefix in the variable.
+
+## Code review
+
+- Must understand the context of code changing (eg. what are the background stories to make the changes? what decissions made?)
+- Always provide Linus style feedback.
+  - Refer to @docs/code-review-related/001-linus-role-definition.md
+  - Refer to skill `code-review`.
+- Always try to point out the space of improvement for simplification on the solution.
