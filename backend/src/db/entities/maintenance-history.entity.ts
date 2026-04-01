@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { MaintenanceCardEntity } from './maintenance-card.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
+import { dateTransformer } from '../transformers/date.transformer';
 import { UuidV7BaseEntity } from './base.entity';
 
 @Entity('maintenance_histories')
@@ -31,7 +32,7 @@ export class MaintenanceHistoryEntity extends UuidV7BaseEntity {
   })
   doneAtMileage: number | null;
 
-  @Column({ type: 'date', name: 'done_at_date' })
+  @Column({ type: 'date', name: 'done_at_date', transformer: dateTransformer })
   doneAtDate: Date;
 
   @Column({ type: 'text', nullable: true })
