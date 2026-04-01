@@ -19,10 +19,19 @@ interface MaintenanceCardFormDialogProps {
   card?: IMaintenanceCardResDTO;
 }
 
-function calcAutoNextDueDate(months: number | null): string | null {
+export function calcAutoNextDueDate(months: number | null): string | null {
   if (months === null) return null;
-  const d = new Date();
-  d.setMonth(d.getMonth() + months);
+  const today = new Date();
+  const targetDay = today.getDate();
+  // Pin to 1st to avoid setMonth overflow (e.g. Jan 31 + 1 month → Mar 3)
+  const d = new Date(today.getFullYear(), today.getMonth() + months, 1);
+  // Clamp to last valid day of target month
+  const lastDayOfMonth = new Date(
+    d.getFullYear(),
+    d.getMonth() + 1,
+    0,
+  ).getDate();
+  d.setDate(Math.min(targetDay, lastDayOfMonth));
   return [
     d.getFullYear(),
     String(d.getMonth() + 1).padStart(2, '0'),

@@ -35,7 +35,10 @@ vi.mock('@/components/ui/dialog', () => ({
 import { toast } from 'sonner';
 import { useCreateMaintenanceCard } from '@/hooks/mutations/maintenance-cards/useCreateMaintenanceCard';
 import { usePatchMaintenanceCard } from '@/hooks/mutations/maintenance-cards/usePatchMaintenanceCard';
-import { MaintenanceCardFormDialog } from './maintenance-card-form-dialog';
+import {
+  MaintenanceCardFormDialog,
+  calcAutoNextDueDate,
+} from './maintenance-card-form-dialog';
 
 const mockCard: IMaintenanceCardResDTO = {
   id: 'card-1',
@@ -60,6 +63,27 @@ const defaultProps = {
   vehicleMileage: 50000,
   vehicleMileageUnit: 'km',
 };
+
+describe('calcAutoNextDueDate', () => {
+  it('returns null when months is null', () => {
+    expect(calcAutoNextDueDate(null)).toBeNull();
+  });
+
+  it('clamps to last valid day when target month is shorter than current day', () => {
+    // January 31 + 1 month: setMonth overflows to March 3 in 2026; should clamp to Feb 28
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 31)); // Jan 31, 2026
+    expect(calcAutoNextDueDate(1)).toBe('2026-02-28');
+    vi.useRealTimers();
+  });
+
+  it('preserves day when target month has enough days', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 0, 15)); // Jan 15, 2026
+    expect(calcAutoNextDueDate(1)).toBe('2026-02-15');
+    vi.useRealTimers();
+  });
+});
 
 describe('MaintenanceCardFormDialog', () => {
   beforeEach(() => {
