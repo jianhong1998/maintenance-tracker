@@ -204,14 +204,8 @@ describe('VehicleDashboardPage', () => {
     expect(mockReplace).toHaveBeenCalledWith('/');
   });
 
-  // ── new FAB + dialog tests ──────────────────────────────────────────
-  it('form dialog is not visible on initial render', () => {
-    setupVehicleLoaded();
-    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-    expect(screen.queryByTestId('form-dialog')).not.toBeInTheDocument();
-  });
-
-  it('renders the FAB button with aria-label "Add maintenance card"', () => {
+  // ── add-card box tests ──────────────────────────────────────────────
+  it('renders the add-card box with aria-label "Add maintenance card"', () => {
     setupVehicleLoaded();
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
     expect(
@@ -219,7 +213,42 @@ describe('VehicleDashboardPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('opens create form dialog when FAB is clicked', () => {
+  it('renders the add-card box even when there are no cards', () => {
+    setupVehicleLoaded([]);
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    expect(
+      screen.getByRole('button', { name: /add maintenance card/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/no maintenance cards yet/i)).toBeInTheDocument();
+  });
+
+  it('renders the add-card box before the empty-state message', () => {
+    setupVehicleLoaded([]);
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    const addBox = screen.getByRole('button', {
+      name: /add maintenance card/i,
+    });
+    const emptyMsg = screen.getByText(/no maintenance cards yet/i);
+    expect(
+      addBox.compareDocumentPosition(emptyMsg) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('renders the add-card box before card rows', () => {
+    setupVehicleLoaded([mockCard1]);
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    const addBox = screen.getByRole('button', {
+      name: /add maintenance card/i,
+    });
+    const firstRow = screen.getByTestId('maintenance-card-row');
+    expect(
+      addBox.compareDocumentPosition(firstRow) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  it('opens create form dialog when add-card box is clicked', () => {
     setupVehicleLoaded();
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
     fireEvent.click(
