@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+**Status:** COMPLETED (2026-03-27)
+
 **Goal:** Add create, edit, delete, and mark-done entry points for maintenance cards on the vehicle dashboard.
 
 **Architecture:** Four mutation hooks feed three new dialog components (`MaintenanceCardFormDialog`, `MarkDoneDialog`, `DeleteConfirmDialog`) and a shared `Dialog` UI primitive. `MaintenanceCardRow` gains a ⋮ context-menu dropdown. `VehicleDashboardPage` owns all dialog/dropdown state and a FAB "+" button for creating cards.

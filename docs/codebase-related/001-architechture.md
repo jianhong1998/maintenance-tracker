@@ -241,11 +241,13 @@ frontend/src/
 │   ├── login/              # /login
 │   └── vehicles/[id]/      # /vehicles/:id (dashboard)
 ├── components/
-│   ├── ui/                 # shadcn/ui style primitives
+│   ├── ui/                 # shadcn/ui style primitives (Dialog, Button, …)
+│   ├── maintenance-cards/  # Maintenance card row and CRUD dialogs
 │   ├── pages/              # Page-level components
 │   └── providers/          # ReactQueryProvider, etc.
 ├── hooks/
-│   └── queries/            # TanStack Query hooks (per feature)
+│   ├── queries/            # TanStack Query read hooks (per feature)
+│   └── mutations/          # TanStack Query mutation hooks (per feature)
 ├── lib/
 │   ├── api-client.ts       # Centralised API calls
 │   ├── query-client.ts     # TanStack Query client config

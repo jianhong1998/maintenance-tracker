@@ -43,7 +43,7 @@ This is a **TurboRepo monorepo** with pnpm workspaces. Build order matters: `pac
 
 - **`packages/types`** — Shared TypeScript types/DTOs (`@project/types`). Both backend and frontend import from here. Always update types here when the API contract changes.
 - **`backend/`** — NestJS app on port 3001. TypeORM + PostgreSQL. Feature code lives in `src/modules/`. New features = new module folder with controller/service/spec. Config bootstrapped via `AppConfig` in `src/configs/app.config.ts`.
-- **`frontend/`** — Next.js 15 (App Router) on port 3000. TanStack Query for server state (`src/hooks/queries/`). API calls go through `src/lib/api-client.ts`. UI components in `src/components/ui/` (shadcn/ui style).
+- **`frontend/`** — Next.js 15 (App Router) on port 3000. TanStack Query for server state (`src/hooks/queries/`) and mutations (`src/hooks/mutations/`). API calls go through `src/lib/api-client.ts`. UI components in `src/components/ui/` (shadcn/ui style). Feature-specific components live in `src/components/<feature>/` (e.g. `src/components/maintenance-cards/`).
 - **`api-test/`** — Vitest-based API/integration tests that hit the running backend. Runs separately from unit tests.
 
 ## Key conventions
@@ -86,3 +86,11 @@ The hook skips merge commits, squash commits, and rebase operations automaticall
 - Always format code (command `just format`) and do lint check (command `just lint`) after editing code.
 - Environment variables for backend should always have prefix `BACKEND_`.
 - Environment variables for frontend should always have prefix `FRONTEND_`. No `NEXT_` prefix in the variable.
+
+## Code review
+
+- Must understand the context of code changing (eg. what are the background stories to make the changes? what decissions made?)
+- Always provide Linus style feedback.
+  - Refer to @docs/code-review-related/001-linus-role-definition.md
+  - Refer to skill `code-review`.
+- Always try to point out the space of improvement for simplification on the solution.

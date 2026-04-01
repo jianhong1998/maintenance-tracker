@@ -187,8 +187,16 @@ export class MaintenanceCardService {
       card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
     }
     if (card.intervalTimeMonths !== null) {
+      const targetDay = today.getDate();
       const nextDue = new Date(today);
-      nextDue.setMonth(nextDue.getMonth() + card.intervalTimeMonths);
+      nextDue.setDate(1);
+      nextDue.setMonth(today.getMonth() + card.intervalTimeMonths);
+      const lastDayOfMonth = new Date(
+        nextDue.getFullYear(),
+        nextDue.getMonth() + 1,
+        0,
+      ).getDate();
+      nextDue.setDate(Math.min(targetDay, lastDayOfMonth));
       card.nextDueDate = nextDue;
     }
 

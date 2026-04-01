@@ -30,7 +30,7 @@ const baseCard = {
   intervalMileage: 6000,
   intervalTimeMonths: 6,
   nextDueMileage: 12000,
-  nextDueDate: new Date('2026-09-01'),
+  nextDueDate: new Date('2026-09-01T00:00:00'),
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
@@ -40,7 +40,7 @@ const baseHistory = {
   id: 'history-1',
   maintenanceCardId: 'card-1',
   doneAtMileage: 12500,
-  doneAtDate: new Date('2026-03-15'),
+  doneAtDate: new Date('2026-03-15T00:00:00'),
   notes: null,
   createdAt: new Date(),
 };
@@ -120,10 +120,13 @@ describe('MaintenanceCardController', () => {
     expect(result.name).toBe('Updated');
   });
 
-  it('serialises nextDueDate as a date-only string (YYYY-MM-DD)', async () => {
+  it('serialises nextDueDate as a local date-only string (YYYY-MM-DD), not UTC', async () => {
+    // dateTransformer produces local-time Dates (new Date('…T00:00:00'), no Z).
+    // formatLocalDate must use local getters (getDate etc.) so UTC conversion
+    // via toISOString() cannot shift the date by the server's UTC offset.
     mockMaintenanceCardService.getCard.mockResolvedValue({
       ...baseCard,
-      nextDueDate: new Date('2026-09-01'),
+      nextDueDate: new Date('2026-09-01T00:00:00'),
     });
     const result = await controller.getOne('vehicle-1', 'card-1', authUser);
     expect(result.nextDueDate).toBe('2026-09-01');

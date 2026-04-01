@@ -12,6 +12,7 @@ import type { MaintenanceCardType } from '@project/types';
 import { MAINTENANCE_CARD_TYPES } from '@project/types';
 import { VehicleEntity } from './vehicle.entity';
 import { decimalTransformer } from '../transformers/decimal.transformer';
+import { dateTransformer } from '../transformers/date.transformer';
 import { UuidV7BaseEntity } from './base.entity';
 
 @Entity('maintenance_cards')
@@ -49,7 +50,12 @@ export class MaintenanceCardEntity extends UuidV7BaseEntity {
   })
   nextDueMileage: number | null;
 
-  @Column({ type: 'date', nullable: true, name: 'next_due_date' })
+  @Column({
+    type: 'date',
+    nullable: true,
+    name: 'next_due_date',
+    transformer: dateTransformer,
+  })
   nextDueDate: Date | null;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

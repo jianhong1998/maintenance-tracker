@@ -1,4 +1,5 @@
 import {
+  IsDateString,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -37,4 +38,13 @@ export class UpdateMaintenanceCardDto implements IUpdateMaintenanceCardReqDTO {
   @IsInt()
   @Min(1)
   intervalTimeMonths?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  nextDueMileage?: number | null;
+
+  @IsOptional()
+  @IsDateString()
+  nextDueDate?: string | null;
 }

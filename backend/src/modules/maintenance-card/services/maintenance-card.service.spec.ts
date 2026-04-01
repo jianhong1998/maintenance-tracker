@@ -365,6 +365,29 @@ describe('MaintenanceCardService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('passes nextDueMileage and nextDueDate to the repository', async () => {
+      mockMaintenanceCardRepository.create.mockResolvedValue(baseCard);
+
+      await service.createCard(vehicleId, userId, {
+        type: MAINTENANCE_CARD_TYPES.TASK,
+        name: 'CVT Cleaning',
+        description: null,
+        intervalMileage: 6000,
+        intervalTimeMonths: null,
+        nextDueMileage: 16000,
+        nextDueDate: new Date('2027-01-01'),
+      });
+
+      const call = mockMaintenanceCardRepository.create.mock.calls[0]?.[0] as {
+        creationData: {
+          nextDueMileage: number | null;
+          nextDueDate: Date | null;
+        };
+      };
+      expect(call.creationData.nextDueMileage).toBe(16000);
+      expect(call.creationData.nextDueDate).toEqual(new Date('2027-01-01'));
+    });
   });
 
   describe('#updateCard', () => {
@@ -417,6 +440,33 @@ describe('MaintenanceCardService', () => {
           ],
         },
       );
+    });
+
+    it('passes nextDueMileage and nextDueDate when updating', async () => {
+      const updated = {
+        ...baseCard,
+        nextDueMileage: 20000,
+        nextDueDate: new Date('2027-06-01'),
+      };
+      mockMaintenanceCardRepository.getOne.mockResolvedValue(baseCard);
+      mockMaintenanceCardRepository.updateWithSave.mockResolvedValue([updated]);
+
+      const result = await service.updateCard(cardId, vehicleId, userId, {
+        nextDueMileage: 20000,
+        nextDueDate: new Date('2027-06-01'),
+      });
+
+      expect(mockMaintenanceCardRepository.updateWithSave).toHaveBeenCalledWith(
+        {
+          dataArray: [
+            expect.objectContaining({
+              nextDueMileage: 20000,
+              nextDueDate: new Date('2027-06-01'),
+            }),
+          ],
+        },
+      );
+      expect(result).toEqual(updated);
     });
 
     it('throws BadRequestException when update would nullify both intervals', async () => {
@@ -544,7 +594,10 @@ describe('MaintenanceCardService', () => {
       expect(savedCard.nextDueMileage).toBe(18500); // 12500 + 6000
     });
 
-    it('resets nextDueDate when intervalTimeMonths is set', async () => {
+    it('resets nextDueDate to exactly 6 months later when intervalTimeMonths is 6', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-03-15T12:00:00'));
+
       await service.markDone(cardId, vehicleId, userId, {
         doneAtMileage: 12500,
       });
@@ -554,8 +607,33 @@ describe('MaintenanceCardService', () => {
           dataArray: Array<{ nextDueDate: Date | null }>;
         }
       ).dataArray[0];
-      expect(savedCard.nextDueDate).toBeDefined();
-      expect(savedCard.nextDueDate).not.toBeNull();
+      expect(savedCard.nextDueDate).toEqual(new Date('2026-09-15T12:00:00'));
+
+      vi.useRealTimers();
+    });
+
+    it('clamps nextDueDate to last day of month when month-end overflow occurs', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-01-31T12:00:00'));
+
+      mockMaintenanceCardRepository.getOne.mockResolvedValue({
+        ...baseCard,
+        intervalMileage: null,
+        intervalTimeMonths: 1,
+        nextDueMileage: null,
+        nextDueDate: null,
+      });
+
+      await service.markDone(cardId, vehicleId, userId, {});
+
+      const savedCard = (
+        mockMaintenanceCardRepository.updateWithSave.mock.calls[0]?.[0] as {
+          dataArray: Array<{ nextDueDate: Date | null }>;
+        }
+      ).dataArray[0];
+      expect(savedCard.nextDueDate).toEqual(new Date('2026-02-28T12:00:00'));
+
+      vi.useRealTimers();
     });
 
     it('auto-updates vehicle mileage when doneAtMileage > vehicle.mileage', async () => {

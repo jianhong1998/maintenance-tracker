@@ -12,6 +12,8 @@ export interface ICreateMaintenanceCardReqDTO {
   description?: string | null;
   intervalMileage?: number | null;
   intervalTimeMonths?: number | null;
+  nextDueMileage?: number | null;
+  nextDueDate?: string | null;
 }
 
 export interface IUpdateMaintenanceCardReqDTO {
@@ -20,6 +22,8 @@ export interface IUpdateMaintenanceCardReqDTO {
   description?: string | null;
   intervalMileage?: number | null;
   intervalTimeMonths?: number | null;
+  nextDueMileage?: number | null;
+  nextDueDate?: string | null;
 }
 
 export interface IMaintenanceCardResDTO {

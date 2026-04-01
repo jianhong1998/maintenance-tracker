@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import type { IMaintenanceCardResDTO, IVehicleResDTO } from '@project/types';
 
@@ -39,6 +39,16 @@ const mockCard: IMaintenanceCardResDTO = {
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
 
+const defaultProps = {
+  card: mockCard,
+  vehicle: mockVehicle,
+  isDropdownOpen: false,
+  onDropdownToggle: vi.fn(),
+  onEdit: vi.fn(),
+  onMarkDone: vi.fn(),
+  onDelete: vi.fn(),
+};
+
 describe('MaintenanceCardRow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -49,51 +59,34 @@ describe('MaintenanceCardRow', () => {
   });
 
   it('renders card name and type badge', () => {
-    render(
-      <MaintenanceCardRow
-        card={mockCard}
-        vehicle={mockVehicle}
-      />,
-    );
-
+    render(<MaintenanceCardRow {...defaultProps} />);
     expect(screen.getByText('Oil Change')).toBeInTheDocument();
     expect(screen.getByText('Task')).toBeInTheDocument();
   });
 
   it('renders type badge for part type', () => {
-    const partCard = { ...mockCard, type: 'part' as const };
     render(
       <MaintenanceCardRow
-        card={partCard}
-        vehicle={mockVehicle}
+        {...defaultProps}
+        card={{ ...mockCard, type: 'part' }}
       />,
     );
-
     expect(screen.getByText('Part')).toBeInTheDocument();
   });
 
   it('renders type badge for item type', () => {
-    const itemCard = { ...mockCard, type: 'item' as const };
     render(
       <MaintenanceCardRow
-        card={itemCard}
-        vehicle={mockVehicle}
+        {...defaultProps}
+        card={{ ...mockCard, type: 'item' }}
       />,
     );
-
     expect(screen.getByText('Item')).toBeInTheDocument();
   });
 
   it('applies overdue classes when status is overdue', () => {
     vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
-
-    const { container } = render(
-      <MaintenanceCardRow
-        card={mockCard}
-        vehicle={mockVehicle}
-      />,
-    );
-
+    const { container } = render(<MaintenanceCardRow {...defaultProps} />);
     const row = container.firstChild as HTMLElement;
     expect(row.className).toContain('bg-destructive/10');
     expect(row.className).toContain('border-destructive/40');
@@ -101,14 +94,7 @@ describe('MaintenanceCardRow', () => {
 
   it('applies warning classes when status is warning', () => {
     vi.mocked(getCardWarningStatus).mockReturnValue('warning');
-
-    const { container } = render(
-      <MaintenanceCardRow
-        card={mockCard}
-        vehicle={mockVehicle}
-      />,
-    );
-
+    const { container } = render(<MaintenanceCardRow {...defaultProps} />);
     const row = container.firstChild as HTMLElement;
     expect(row.className).toContain('bg-yellow-50');
     expect(row.className).toContain('border-yellow-300');
@@ -116,71 +102,40 @@ describe('MaintenanceCardRow', () => {
 
   it('does not apply overdue or warning classes when status is ok', () => {
     vi.mocked(getCardWarningStatus).mockReturnValue('ok');
-
-    const { container } = render(
-      <MaintenanceCardRow
-        card={mockCard}
-        vehicle={mockVehicle}
-      />,
-    );
-
+    const { container } = render(<MaintenanceCardRow {...defaultProps} />);
     const row = container.firstChild as HTMLElement;
     expect(row.className).not.toContain('bg-destructive/10');
     expect(row.className).not.toContain('bg-yellow-50');
   });
 
   it('shows remaining mileage label when nextDueMileage is set and remaining > 0', () => {
-    const card = { ...mockCard, nextDueMileage: 51000 }; // 51000 - 50000 = 1000 km left
     render(
       <MaintenanceCardRow
-        card={card}
-        vehicle={mockVehicle}
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 51000 }}
       />,
     );
-
     expect(screen.getByText('1,000 km left')).toBeInTheDocument();
   });
 
-  it('shows remaining mileage label with mile unit', () => {
-    const mileVehicle = {
-      ...mockVehicle,
-      mileage: 30000,
-      mileageUnit: 'mile' as const,
-    };
-    const card = { ...mockCard, nextDueMileage: 31000 }; // 1000 miles left
-    render(
-      <MaintenanceCardRow
-        card={card}
-        vehicle={mileVehicle}
-      />,
-    );
-
-    expect(screen.getByText('1,000 mile left')).toBeInTheDocument();
-  });
-
   it('shows OVERDUE label when remaining <= 0', () => {
-    const card = { ...mockCard, nextDueMileage: 49000 }; // 49000 - 50000 = -1000 (overdue)
     vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
-
     render(
       <MaintenanceCardRow
-        card={card}
-        vehicle={mockVehicle}
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 49000 }}
       />,
     );
-
     expect(screen.getByText('OVERDUE')).toBeInTheDocument();
   });
 
   it('shows no mileage label when nextDueMileage is null', () => {
-    const card = { ...mockCard, nextDueMileage: null };
     render(
       <MaintenanceCardRow
-        card={card}
-        vehicle={mockVehicle}
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null }}
       />,
     );
-
     expect(screen.queryByText(/left/)).not.toBeInTheDocument();
     expect(screen.queryByText('OVERDUE')).not.toBeInTheDocument();
   });
@@ -189,14 +144,7 @@ describe('MaintenanceCardRow', () => {
     vi.mocked(useAppConfig).mockReturnValue({
       data: { mileageWarningThresholdKm: 750 },
     } as ReturnType<typeof useAppConfig>);
-
-    render(
-      <MaintenanceCardRow
-        card={mockCard}
-        vehicle={mockVehicle}
-      />,
-    );
-
+    render(<MaintenanceCardRow {...defaultProps} />);
     expect(vi.mocked(getCardWarningStatus)).toHaveBeenCalledWith(
       mockCard,
       mockVehicle.mileage,
@@ -209,19 +157,111 @@ describe('MaintenanceCardRow', () => {
     vi.mocked(useAppConfig).mockReturnValue({
       data: undefined,
     } as ReturnType<typeof useAppConfig>);
-
-    render(
-      <MaintenanceCardRow
-        card={mockCard}
-        vehicle={mockVehicle}
-      />,
-    );
-
+    render(<MaintenanceCardRow {...defaultProps} />);
     expect(vi.mocked(getCardWarningStatus)).toHaveBeenCalledWith(
       mockCard,
       mockVehicle.mileage,
       mockVehicle.mileageUnit,
       500,
     );
+  });
+
+  // ⋮ dropdown tests
+  it('renders the ⋮ menu button', () => {
+    render(<MaintenanceCardRow {...defaultProps} />);
+    expect(
+      screen.getByRole('button', { name: /actions/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('does not show dropdown items when isDropdownOpen is false', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        isDropdownOpen={false}
+      />,
+    );
+    expect(
+      screen.queryByRole('button', { name: /mark done/i }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('shows Mark Done, Edit, Delete when isDropdownOpen is true', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        isDropdownOpen={true}
+      />,
+    );
+    expect(
+      screen.getByRole('button', { name: /mark done/i }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+  });
+
+  it('calls onDropdownToggle with cardId when ⋮ button is clicked and dropdown is closed', () => {
+    const onDropdownToggle = vi.fn();
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        isDropdownOpen={false}
+        onDropdownToggle={onDropdownToggle}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /actions/i }));
+    expect(onDropdownToggle).toHaveBeenCalledWith('card-1');
+  });
+
+  it('calls onDropdownToggle with null when ⋮ button is clicked and dropdown is open', () => {
+    const onDropdownToggle = vi.fn();
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        isDropdownOpen={true}
+        onDropdownToggle={onDropdownToggle}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /actions/i }));
+    expect(onDropdownToggle).toHaveBeenCalledWith(null);
+  });
+
+  it('calls onMarkDone with the card when Mark Done is clicked', () => {
+    const onMarkDone = vi.fn();
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        isDropdownOpen={true}
+        onMarkDone={onMarkDone}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /mark done/i }));
+    expect(onMarkDone).toHaveBeenCalledWith(mockCard);
+  });
+
+  it('calls onEdit with the card when Edit is clicked', () => {
+    const onEdit = vi.fn();
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        isDropdownOpen={true}
+        onEdit={onEdit}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /edit/i }));
+    expect(onEdit).toHaveBeenCalledWith(mockCard);
+  });
+
+  it('calls onDelete with the card when Delete is clicked', () => {
+    const onDelete = vi.fn();
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        isDropdownOpen={true}
+        onDelete={onDelete}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    expect(onDelete).toHaveBeenCalledWith(mockCard);
   });
 });

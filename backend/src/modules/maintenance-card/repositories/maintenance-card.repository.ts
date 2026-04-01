@@ -12,6 +12,8 @@ export type CreateMaintenanceCardData = {
   description: string | null;
   intervalMileage: number | null;
   intervalTimeMonths: number | null;
+  nextDueMileage: number | null;
+  nextDueDate: Date | null;
 };
 
 @Injectable()
