@@ -34,8 +34,7 @@ export function MarkDoneDialog({
   const markDone = useMarkDone(vehicleId, card.id);
   const requiresMileage = card.intervalMileage !== null;
   const parsedMileage = parsePositiveInteger(doneAtMileage);
-  const isValid =
-    !requiresMileage || (parsedMileage !== null && parsedMileage > 0);
+  const isValid = !requiresMileage || parsedMileage !== null;
 
   const handleDone = () => {
     markDone.mutate(

@@ -27,6 +27,6 @@ describe('parsePositiveInteger', () => {
   });
 
   it('parses an integer from a float-like string (truncates)', () => {
-    expect(parsePositiveInteger('5000')).toBe(5000);
+    expect(parsePositiveInteger('5000.9')).toBe(5000);
   });
 });
