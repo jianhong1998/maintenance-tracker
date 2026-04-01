@@ -337,6 +337,7 @@ describe('MaintenanceCardFormDialog', () => {
     // Simulate a date where UTC and local date could diverge
     // We stub Date to control what "now" is
     const fakeNow = new Date(2025, 0, 15); // Jan 15 2025 in local time
+    vi.useFakeTimers();
     vi.setSystemTime(fakeNow);
 
     render(<MaintenanceCardFormDialog {...defaultProps} />);

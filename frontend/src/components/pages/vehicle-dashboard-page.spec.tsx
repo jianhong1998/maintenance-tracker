@@ -205,6 +205,12 @@ describe('VehicleDashboardPage', () => {
   });
 
   // ── new FAB + dialog tests ──────────────────────────────────────────
+  it('form dialog is not visible on initial render', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    expect(screen.queryByTestId('form-dialog')).not.toBeInTheDocument();
+  });
+
   it('renders the FAB button with aria-label "Add maintenance card"', () => {
     setupVehicleLoaded();
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
