@@ -306,29 +306,30 @@ describe('VehicleDashboardPage', () => {
     expect(screen.getByTestId('delete-dialog')).toHaveTextContent('card-1');
   });
 
-  it('renders the ⋮ vehicle actions button', () => {
+  it('renders Edit and Delete vehicle action buttons', () => {
     setupVehicleLoaded();
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
     expect(
-      screen.getByRole('button', { name: /vehicle actions/i }),
+      screen.getByRole('button', { name: /edit vehicle/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /delete vehicle/i }),
     ).toBeInTheDocument();
   });
 
-  it('opens vehicle edit dialog when Edit is clicked in the ⋮ dropdown', () => {
+  it('opens vehicle edit dialog when Edit button is clicked', () => {
     setupVehicleLoaded();
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-    fireEvent.click(screen.getByRole('button', { name: /vehicle actions/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit vehicle/i }));
     expect(screen.getByTestId('vehicle-form-dialog')).toHaveTextContent(
       'edit:vehicle-1',
     );
   });
 
-  it('opens vehicle delete dialog when Delete is clicked in the ⋮ dropdown', () => {
+  it('opens vehicle delete dialog when Delete button is clicked', () => {
     setupVehicleLoaded();
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-    fireEvent.click(screen.getByRole('button', { name: /vehicle actions/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /delete vehicle/i }));
     expect(screen.getByTestId('vehicle-delete-dialog')).toHaveTextContent(
       'vehicle-1',
     );

@@ -22,7 +22,6 @@ interface VehicleDashboardPageProps {
 function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
   const [sort, setSort] = useState<'urgency' | 'name'>('urgency');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [vehicleDropdownOpen, setVehicleDropdownOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<IMaintenanceCardResDTO | null>(
     null,
@@ -47,10 +46,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
   );
 
   useEffect(() => {
-    const close = () => {
-      setActiveDropdownId(null);
-      setVehicleDropdownOpen(false);
-    };
+    const close = () => setActiveDropdownId(null);
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, []);
@@ -96,45 +92,23 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
             {vehicle.mileageUnit}
           </p>
         </div>
-        <div className="relative">
+        <div className="flex gap-2">
           <button
             type="button"
-            aria-label="Vehicle actions"
-            onClick={(e) => {
-              e.stopPropagation();
-              e.nativeEvent.stopImmediatePropagation();
-              setVehicleDropdownOpen((prev) => !prev);
-            }}
+            aria-label="Edit vehicle"
+            onClick={() => setEditVehicleOpen(true)}
             className="rounded-md border border-input bg-background px-2 py-1 text-sm hover:bg-accent"
           >
-            ⋮
+            Edit
           </button>
-          {vehicleDropdownOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[100px] rounded-md border bg-background shadow-md">
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVehicleDropdownOpen(false);
-                  setEditVehicleOpen(true);
-                }}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm text-destructive hover:bg-accent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVehicleDropdownOpen(false);
-                  setDeleteVehicleOpen(true);
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          )}
+          <button
+            type="button"
+            aria-label="Delete vehicle"
+            onClick={() => setDeleteVehicleOpen(true)}
+            className="rounded-md border border-input bg-background px-2 py-1 text-sm text-destructive hover:bg-accent"
+          >
+            Delete
+          </button>
         </div>
       </div>
 

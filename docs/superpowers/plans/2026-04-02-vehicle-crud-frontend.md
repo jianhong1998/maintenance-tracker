@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Add create, edit, and delete vehicle UI to the frontend — "Add Vehicle" button on the home page, and a ⋮ dropdown on the vehicle dashboard for edit/delete.
+**Goal:** Add create, edit, and delete vehicle UI to the frontend — "Add Vehicle" button on the home page, and direct Edit/Delete buttons on the vehicle dashboard header.
 
 **Architecture:** Two new mutation hooks (`useCreateVehicle`, `useDeleteVehicle`), two new dialog components (`VehicleFormDialog`, `VehicleDeleteConfirmDialog`), and targeted modifications to `home-page.tsx` and `vehicle-dashboard-page.tsx`. All state lifted to page level following the existing pattern in `VehicleDashboardPage`. TDD throughout.
 
@@ -1241,17 +1241,17 @@ git commit -m "add Add Vehicle button and create dialog to home page"
 
 ---
 
-## Task 6: Update `vehicle-dashboard-page.tsx` — ⋮ dropdown and vehicle edit/delete dialogs
+## Task 6: Update `vehicle-dashboard-page.tsx` — direct Edit/Delete buttons and vehicle edit/delete dialogs
 
 **Files:**
 - Modify: `frontend/src/components/pages/vehicle-dashboard-page.tsx`
 - Modify: `frontend/src/components/pages/vehicle-dashboard-page.spec.tsx`
 
 **What changes:**
-- Add `vehicleDropdownOpen`, `editVehicleOpen`, `deleteVehicleOpen` state to `DashboardContent`.
-- Wrap the vehicle header `<div>` in a flex row with the ⋮ dropdown on the right.
-- Extend the existing document click handler to also close `vehicleDropdownOpen`.
+- Add `editVehicleOpen`, `deleteVehicleOpen` state to `DashboardContent`.
+- Place direct `Edit` (aria-label="Edit vehicle") and `Delete` (aria-label="Delete vehicle") buttons to the right of the vehicle header — no dropdown.
 - Render `VehicleFormDialog` (edit mode) and `VehicleDeleteConfirmDialog` at the bottom of `DashboardContent`.
+- _Changed from ⋮ dropdown design after tester feedback (extra click was redundant)._
 
 - [x] **Step 1: Write the failing tests**
 
@@ -1292,29 +1292,30 @@ vi.mock('@/components/vehicles/vehicle-delete-confirm-dialog', () => ({
 Add these test cases inside the existing `describe('VehicleDashboardPage', ...)` block:
 
 ```typescript
-it('renders the ⋮ vehicle actions button', () => {
+it('renders Edit and Delete vehicle action buttons', () => {
   setupVehicleLoaded();
   render(<VehicleDashboardPage vehicleId="vehicle-1" />);
   expect(
-    screen.getByRole('button', { name: /vehicle actions/i }),
+    screen.getByRole('button', { name: /edit vehicle/i }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: /delete vehicle/i }),
   ).toBeInTheDocument();
 });
 
-it('opens vehicle edit dialog when Edit is clicked in the ⋮ dropdown', () => {
+it('opens vehicle edit dialog when Edit button is clicked', () => {
   setupVehicleLoaded();
   render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-  fireEvent.click(screen.getByRole('button', { name: /vehicle actions/i }));
-  fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+  fireEvent.click(screen.getByRole('button', { name: /edit vehicle/i }));
   expect(screen.getByTestId('vehicle-form-dialog')).toHaveTextContent(
     'edit:vehicle-1',
   );
 });
 
-it('opens vehicle delete dialog when Delete is clicked in the ⋮ dropdown', () => {
+it('opens vehicle delete dialog when Delete button is clicked', () => {
   setupVehicleLoaded();
   render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-  fireEvent.click(screen.getByRole('button', { name: /vehicle actions/i }));
-  fireEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+  fireEvent.click(screen.getByRole('button', { name: /delete vehicle/i }));
   expect(screen.getByTestId('vehicle-delete-dialog')).toHaveTextContent(
     'vehicle-1',
   );
@@ -1327,7 +1328,7 @@ it('opens vehicle delete dialog when Delete is clicked in the ⋮ dropdown', () 
 cd frontend && pnpm exec vitest run src/components/pages/vehicle-dashboard-page.spec.tsx
 ```
 
-Expected: The 3 new tests FAIL (no ⋮ button or vehicle dialogs yet). Existing tests still pass.
+Expected: The 3 new tests FAIL (no Edit/Delete buttons or vehicle dialogs yet). Existing tests still pass.
 
 - [x] **Step 3: Update `vehicle-dashboard-page.tsx`**
 
@@ -1359,7 +1360,6 @@ interface VehicleDashboardPageProps {
 function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
   const [sort, setSort] = useState<'urgency' | 'name'>('urgency');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [vehicleDropdownOpen, setVehicleDropdownOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<IMaintenanceCardResDTO | null>(
     null,
@@ -1384,10 +1384,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
   );
 
   useEffect(() => {
-    const close = () => {
-      setActiveDropdownId(null);
-      setVehicleDropdownOpen(false);
-    };
+    const close = () => setActiveDropdownId(null);
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, []);
@@ -1433,44 +1430,23 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
             {vehicle.mileageUnit}
           </p>
         </div>
-        <div className="relative">
+        <div className="flex gap-2">
           <button
             type="button"
-            aria-label="Vehicle actions"
-            onClick={(e) => {
-              e.stopPropagation();
-              setVehicleDropdownOpen((prev) => !prev);
-            }}
+            aria-label="Edit vehicle"
+            onClick={() => setEditVehicleOpen(true)}
             className="rounded-md border border-input bg-background px-2 py-1 text-sm hover:bg-accent"
           >
-            ⋮
+            Edit
           </button>
-          {vehicleDropdownOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[100px] rounded-md border bg-background shadow-md">
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVehicleDropdownOpen(false);
-                  setEditVehicleOpen(true);
-                }}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm text-destructive hover:bg-accent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVehicleDropdownOpen(false);
-                  setDeleteVehicleOpen(true);
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          )}
+          <button
+            type="button"
+            aria-label="Delete vehicle"
+            onClick={() => setDeleteVehicleOpen(true)}
+            className="rounded-md border border-input bg-background px-2 py-1 text-sm text-destructive hover:bg-accent"
+          >
+            Delete
+          </button>
         </div>
       </div>
 
