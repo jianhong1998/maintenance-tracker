@@ -43,6 +43,8 @@ export function VehicleFormDialog({
     }
   }, [open, vehicle]);
 
+  // Both hooks must be called unconditionally (Rules of Hooks).
+  // Only one fires per save depending on isEdit.
   const createMutation = useCreateVehicle();
   const patchMutation = usePatchVehicle(vehicle?.id ?? '');
 
@@ -57,36 +59,28 @@ export function VehicleFormDialog({
   const isPending = createMutation.isPending || patchMutation.isPending;
   const unitLocked = isEdit && hasCards;
 
-  const handleSave = () => {
-    const data = {
-      brand: brand.trim(),
-      model: model.trim(),
-      colour: colour.trim(),
-      mileage: parsedMileage,
-      mileageUnit,
-    };
+  const mutation = isEdit ? patchMutation : createMutation;
+  const successMsg = isEdit ? 'Vehicle updated' : 'Vehicle created';
 
-    if (isEdit) {
-      patchMutation.mutate(data, {
+  const handleSave = () => {
+    mutation.mutate(
+      {
+        brand: brand.trim(),
+        model: model.trim(),
+        colour: colour.trim(),
+        mileage: parsedMileage,
+        mileageUnit,
+      },
+      {
         onSuccess: () => {
-          toast.success('Vehicle updated');
+          toast.success(successMsg);
           onOpenChange(false);
         },
         onError: (err) => {
           toast.error(err.message ?? 'Something went wrong');
         },
-      });
-    } else {
-      createMutation.mutate(data, {
-        onSuccess: () => {
-          toast.success('Vehicle created');
-          onOpenChange(false);
-        },
-        onError: (err) => {
-          toast.error(err.message ?? 'Something went wrong');
-        },
-      });
-    }
+      },
+    );
   };
 
   return (
