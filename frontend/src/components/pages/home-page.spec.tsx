@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import type { IVehicleResDTO } from '@project/types';
 
@@ -23,6 +23,15 @@ vi.mock('@/components/vehicles/vehicle-card', () => ({
 
 vi.mock('@/components/auth/auth-guard', () => ({
   AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock('@/components/vehicles/vehicle-form-dialog', () => ({
+  VehicleFormDialog: ({
+    open,
+  }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+  }) => (open ? <div data-testid="vehicle-form-dialog" /> : null),
 }));
 
 import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
@@ -131,5 +140,43 @@ describe('HomePage', () => {
 
     // AuthGuard is mocked to render children — if it renders, AuthGuard was used
     expect(screen.getByRole('main')).toBeInTheDocument();
+  });
+
+  it('renders "Add Vehicle" button', () => {
+    vi.mocked(useVehicles).mockReturnValue({
+      data: [] as IVehicleResDTO[],
+      isLoading: false,
+    } as ReturnType<typeof useVehicles>);
+
+    render(<HomePage />);
+
+    expect(
+      screen.getByRole('button', { name: /add vehicle/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('renders "Add Vehicle" button even while loading', () => {
+    vi.mocked(useVehicles).mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    } as ReturnType<typeof useVehicles>);
+
+    render(<HomePage />);
+
+    expect(
+      screen.getByRole('button', { name: /add vehicle/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens VehicleFormDialog when "Add Vehicle" button is clicked', () => {
+    vi.mocked(useVehicles).mockReturnValue({
+      data: [] as IVehicleResDTO[],
+      isLoading: false,
+    } as ReturnType<typeof useVehicles>);
+
+    render(<HomePage />);
+    fireEvent.click(screen.getByRole('button', { name: /add vehicle/i }));
+
+    expect(screen.getByTestId('vehicle-form-dialog')).toBeInTheDocument();
   });
 });
