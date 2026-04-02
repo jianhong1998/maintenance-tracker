@@ -1,6 +1,6 @@
 # Vehicle CRUD Frontend Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Add create, edit, and delete vehicle UI to the frontend — "Add Vehicle" button on the home page, and a ⋮ dropdown on the vehicle dashboard for edit/delete.
 
@@ -35,7 +35,7 @@
 - Create: `frontend/src/hooks/mutations/vehicles/useCreateVehicle.ts`
 - Create: `frontend/src/hooks/mutations/vehicles/useCreateVehicle.spec.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 // frontend/src/hooks/mutations/vehicles/useCreateVehicle.spec.ts
@@ -134,7 +134,7 @@ describe('useCreateVehicle', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useCreateVehicle.spec.ts
@@ -142,7 +142,7 @@ cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useCreateVehicl
 
 Expected: FAIL — `useCreateVehicle` is not defined.
 
-- [ ] **Step 3: Implement the hook**
+- [x] **Step 3: Implement the hook**
 
 ```typescript
 // frontend/src/hooks/mutations/vehicles/useCreateVehicle.ts
@@ -165,7 +165,7 @@ export const useCreateVehicle = () => {
 };
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useCreateVehicle.spec.ts
@@ -173,7 +173,7 @@ cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useCreateVehicl
 
 Expected: PASS — 4 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/hooks/mutations/vehicles/useCreateVehicle.ts frontend/src/hooks/mutations/vehicles/useCreateVehicle.spec.ts
@@ -188,7 +188,7 @@ git commit -m "add useCreateVehicle mutation hook"
 - Create: `frontend/src/hooks/mutations/vehicles/useDeleteVehicle.ts`
 - Create: `frontend/src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 // frontend/src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts
@@ -254,7 +254,7 @@ describe('useDeleteVehicle', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts
@@ -262,7 +262,7 @@ cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useDeleteVehicl
 
 Expected: FAIL — `useDeleteVehicle` is not defined.
 
-- [ ] **Step 3: Implement the hook**
+- [x] **Step 3: Implement the hook**
 
 ```typescript
 // frontend/src/hooks/mutations/vehicles/useDeleteVehicle.ts
@@ -284,7 +284,7 @@ export const useDeleteVehicle = () => {
 };
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts
@@ -292,7 +292,7 @@ cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useDeleteVehicl
 
 Expected: PASS — 3 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/hooks/mutations/vehicles/useDeleteVehicle.ts frontend/src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts
@@ -307,7 +307,7 @@ git commit -m "add useDeleteVehicle mutation hook"
 - Create: `frontend/src/components/vehicles/vehicle-form-dialog.tsx`
 - Create: `frontend/src/components/vehicles/vehicle-form-dialog.spec.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 // frontend/src/components/vehicles/vehicle-form-dialog.spec.tsx
@@ -572,7 +572,7 @@ describe('VehicleFormDialog', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-form-dialog.spec.tsx
@@ -580,7 +580,7 @@ cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-form-dialog.
 
 Expected: FAIL — `VehicleFormDialog` is not defined.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 ```typescript
 // frontend/src/components/vehicles/vehicle-form-dialog.tsx
@@ -792,7 +792,7 @@ export function VehicleFormDialog({
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-form-dialog.spec.tsx
@@ -800,7 +800,7 @@ cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-form-dialog.
 
 Expected: PASS — 11 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/vehicles/vehicle-form-dialog.tsx frontend/src/components/vehicles/vehicle-form-dialog.spec.tsx
@@ -815,7 +815,7 @@ git commit -m "add VehicleFormDialog component"
 - Create: `frontend/src/components/vehicles/vehicle-delete-confirm-dialog.tsx`
 - Create: `frontend/src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 // frontend/src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx
@@ -963,7 +963,7 @@ describe('VehicleDeleteConfirmDialog', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx
@@ -971,7 +971,7 @@ cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-delete-confi
 
 Expected: FAIL — `VehicleDeleteConfirmDialog` is not defined.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 ```typescript
 // frontend/src/components/vehicles/vehicle-delete-confirm-dialog.tsx
@@ -1042,7 +1042,7 @@ export function VehicleDeleteConfirmDialog({
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx
@@ -1050,7 +1050,7 @@ cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-delete-confi
 
 Expected: PASS — 5 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/vehicles/vehicle-delete-confirm-dialog.tsx frontend/src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx
@@ -1070,7 +1070,7 @@ git commit -m "add VehicleDeleteConfirmDialog component"
 - Add `createOpen` state and `VehicleFormDialog` to `HomeContent`.
 - `HomePage` becomes just the `AuthGuard` + `<main>` wrapper.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add the following new tests to `home-page.spec.tsx`. First, add `fireEvent` to the import and add the `VehicleFormDialog` mock at the top of the file alongside the existing mocks:
 
@@ -1129,7 +1129,7 @@ it('opens VehicleFormDialog when "Add Vehicle" button is clicked', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify new tests fail**
+- [x] **Step 2: Run tests to verify new tests fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/pages/home-page.spec.tsx
@@ -1137,7 +1137,7 @@ cd frontend && pnpm exec vitest run src/components/pages/home-page.spec.tsx
 
 Expected: The 3 new tests FAIL (no "Add Vehicle" button exists yet). Existing tests still pass.
 
-- [ ] **Step 3: Update `home-page.tsx`**
+- [x] **Step 3: Update `home-page.tsx`**
 
 Replace the entire file contents:
 
@@ -1224,7 +1224,7 @@ export function HomePage() {
 }
 ```
 
-- [ ] **Step 4: Run all home-page tests**
+- [x] **Step 4: Run all home-page tests**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/pages/home-page.spec.tsx
@@ -1232,7 +1232,7 @@ cd frontend && pnpm exec vitest run src/components/pages/home-page.spec.tsx
 
 Expected: PASS — all tests passing (existing + 3 new).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/pages/home-page.tsx frontend/src/components/pages/home-page.spec.tsx
@@ -1253,7 +1253,7 @@ git commit -m "add Add Vehicle button and create dialog to home page"
 - Extend the existing document click handler to also close `vehicleDropdownOpen`.
 - Render `VehicleFormDialog` (edit mode) and `VehicleDeleteConfirmDialog` at the bottom of `DashboardContent`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add the following mocks at the top of `vehicle-dashboard-page.spec.tsx`, alongside the existing mocks:
 
@@ -1321,7 +1321,7 @@ it('opens vehicle delete dialog when Delete is clicked in the ⋮ dropdown', () 
 });
 ```
 
-- [ ] **Step 2: Run tests to verify new tests fail**
+- [x] **Step 2: Run tests to verify new tests fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/pages/vehicle-dashboard-page.spec.tsx
@@ -1329,7 +1329,7 @@ cd frontend && pnpm exec vitest run src/components/pages/vehicle-dashboard-page.
 
 Expected: The 3 new tests FAIL (no ⋮ button or vehicle dialogs yet). Existing tests still pass.
 
-- [ ] **Step 3: Update `vehicle-dashboard-page.tsx`**
+- [x] **Step 3: Update `vehicle-dashboard-page.tsx`**
 
 Replace the entire file contents:
 
@@ -1588,7 +1588,7 @@ export function VehicleDashboardPage({ vehicleId }: VehicleDashboardPageProps) {
 }
 ```
 
-- [ ] **Step 4: Run all vehicle-dashboard-page tests**
+- [x] **Step 4: Run all vehicle-dashboard-page tests**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/pages/vehicle-dashboard-page.spec.tsx
@@ -1596,7 +1596,7 @@ cd frontend && pnpm exec vitest run src/components/pages/vehicle-dashboard-page.
 
 Expected: PASS — all tests passing (existing + 3 new).
 
-- [ ] **Step 5: Run full frontend test suite**
+- [x] **Step 5: Run full frontend test suite**
 
 ```bash
 just test-unit
@@ -1604,7 +1604,7 @@ just test-unit
 
 Expected: All tests passing.
 
-- [ ] **Step 6: Format and lint**
+- [x] **Step 6: Format and lint**
 
 ```bash
 just format && just lint
@@ -1612,7 +1612,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/components/pages/vehicle-dashboard-page.tsx frontend/src/components/pages/vehicle-dashboard-page.spec.tsx
