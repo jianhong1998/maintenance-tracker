@@ -114,3 +114,126 @@
 - `frontend/src/components/maintenance-cards/maintenance-card-row.tsx`
 - `frontend/src/components/pages/vehicle-dashboard-page.tsx`
 - `frontend/src/app/vehicles/[id]/page.tsx`
+
+---
+
+## Plan 13 — Firebase Runtime Environment Config
+
+**Goal:** Replace compile-time Firebase env var substitution (baked into JS bundle at `next build`) with a Server Action that reads `process.env` at runtime, so Firebase config is never embedded in the client bundle.
+
+**Problem:** When `next build` runs during Docker image build (before env vars are injected), Firebase config is undefined → Firebase fails to initialize in production.
+
+### What was implemented
+
+- **`frontend/src/actions/firebase-config.ts`** — `'use server'` Server Action (`getFirebaseConfig()`) that reads `process.env` at request time; config never baked into bundle
+- **`frontend/src/lib/firebase.ts`** — Refactored from module-level singleton to lazy init API: `initFirebase(config)` + `getFirebaseAuth()`. `getFirebaseAuth()` throws if called before init.
+- **`AuthProvider`** — Now calls `getFirebaseConfig()` on mount (async), then calls `initFirebase(config)`, then subscribes to `onAuthStateChanged`
+- **`authError`** field added to `AuthContextValue` for surfacing init failures
+- **`next.config.ts` `env` block removed** — no env vars leaked to client bundle
+
+### Key design decisions
+
+- **`settled` flag** in `AuthProvider` prevents stale state updates if component unmounts before config fetch completes
+- **`authError` state** set when `getFirebaseConfig()` or `initFirebase()` throws — surfaces config failures to UI without crashing
+- **`setAuthTokenGetter` reset on unmount** — safe because `api-client.ts` guards with `if (getToken)` before use
+
+### Key post-implementation fixes
+- Added missing `authError: null` to test mocks in `auth-guard.spec.tsx` and `login/page.spec.tsx`
+
+### Key files
+- `frontend/src/actions/firebase-config.ts` (new)
+- `frontend/src/actions/firebase-config.spec.ts` (new)
+- `frontend/src/lib/firebase.ts` (rewritten — lazy init API)
+- `frontend/src/lib/firebase.spec.ts` (rewritten)
+- `frontend/src/contexts/auth-context.tsx` (modified — added `authError`)
+- `frontend/src/components/providers/auth-provider.tsx` (modified — async init via server action)
+- `frontend/src/components/providers/auth-provider.spec.tsx` (modified)
+- `frontend/next.config.ts` (modified — removed `env` block)
+
+---
+
+## Plan 14 — Maintenance Card CRUD Frontend
+
+**Goal:** Full CRUD on maintenance cards from the vehicle dashboard. Users can create, edit, mark done, and delete maintenance cards without leaving the dashboard.
+
+### What was implemented
+
+**Mutation hooks** (`frontend/src/hooks/mutations/maintenance-cards/`):
+- **`useCreateMaintenanceCard(vehicleId)`** — `POST /vehicles/:id/maintenance-cards`; invalidates `[MAINTENANCE_CARDS, vehicleId]` on success
+- **`usePatchMaintenanceCard(vehicleId, cardId)`** — `PATCH .../maintenance-cards/:cardId`; invalidates `[MAINTENANCE_CARDS, vehicleId]`
+- **`useDeleteMaintenanceCard(vehicleId)`** — `DELETE .../maintenance-cards/:cardId` (cardId passed as mutation variable); invalidates `[MAINTENANCE_CARDS, vehicleId]`
+- **`useMarkDone(vehicleId, cardId)`** — `POST .../complete`; invalidates `[MAINTENANCE_CARDS, vehicleId]` (prefix match) + `[VEHICLES, vehicleId]` (exact — mark done may update vehicle mileage)
+
+**Dialog components** (`frontend/src/components/maintenance-cards/`):
+- **`MaintenanceCardFormDialog`** — single component for both create and edit modes (mode determined by whether a `card` prop is passed). Fields: Type (3-button toggle: Task/Part/Item, default=task), Name (required), Description (optional), Every km (conditional), Every months (conditional). Save disabled until name filled AND at least one interval positive.
+- **`MarkDoneDialog`** — Fields: Done at mileage (shown+required when card has `intervalMileage`), Notes (optional). On save: calls `useMarkDone`, closes on success.
+- **`DeleteConfirmDialog`** — Body: `Delete "[card.name]"? This cannot be undone.` Buttons: Cancel (ghost), Delete (destructive).
+
+**`MaintenanceCardRow` updates:**
+- Added ⋮ button opening an inline dropdown with three items: Mark Done, Edit, Delete
+- New props: `isDropdownOpen`, `onDropdownToggle`, `onEdit`, `onMarkDone`, `onDelete`
+
+**`VehicleDashboardPage` updates:**
+- All dialog/dropdown state lifted here (`editingCard`, `markingDoneCard`, `deletingCard`, `activeDropdownId`) — guarantees mutual exclusion with no coordination logic
+- Passes down callbacks to `MaintenanceCardRow`; opens appropriate dialog on action
+
+**Success toasts** (via sonner): "Card created", "Card updated", "Card deleted", "Marked as done"
+
+### Key design decisions
+
+- **State lifted to page level** — mutual exclusion of dialogs/dropdowns is a free side-effect of keeping state in one place; no need for explicit locking logic
+- **Cache invalidation uses prefix match** for card lists — covers both sorted and unsorted cache entries for the same vehicle with a single invalidate call
+- **`useMarkDone` invalidates both cards and vehicle** — mark-done may bump vehicle mileage; vehicle query would be stale otherwise
+
+### Key files
+- `frontend/src/hooks/mutations/maintenance-cards/useCreateMaintenanceCard.ts` (new)
+- `frontend/src/hooks/mutations/maintenance-cards/usePatchMaintenanceCard.ts` (new)
+- `frontend/src/hooks/mutations/maintenance-cards/useDeleteMaintenanceCard.ts` (new)
+- `frontend/src/hooks/mutations/maintenance-cards/useMarkDone.ts` (new)
+- `frontend/src/components/maintenance-cards/maintenance-card-form-dialog.tsx` (new)
+- `frontend/src/components/maintenance-cards/mark-done-dialog.tsx` (new)
+- `frontend/src/components/maintenance-cards/delete-confirm-dialog.tsx` (new)
+- `frontend/src/components/maintenance-cards/maintenance-card-row.tsx` (modified)
+- `frontend/src/components/pages/vehicle-dashboard-page.tsx` (modified)
+
+---
+
+## Plan 15 — Add Card Button Redesign
+
+**Goal:** Replace the floating action button (FAB, fixed position bottom-right) with an inline dotted-border add-card box at the top of the maintenance cards section.
+
+**Problem with FAB:** Fixed-position overlay obscures card content; not inline with the list it adds to.
+
+### What was implemented
+
+- FAB removed entirely from `VehicleDashboardPage`
+- Full-width dotted-border button added above the cards list (always visible regardless of loading/empty state)
+- `relative` class removed from `<main>` (was only needed as FAB positioning reference)
+
+### Render structure
+
+```tsx
+<div className="flex flex-col gap-2">
+  {/* Add card box — always visible */}
+  <button
+    type="button"
+    aria-label="Add maintenance card"
+    onClick={() => setCreateOpen(true)}
+    className="flex w-full items-center justify-center rounded-md border-2 border-dashed border-gray-300 py-4 text-gray-400 hover:bg-gray-50"
+  >
+    <span className="text-2xl font-light leading-none">+</span>
+  </button>
+
+  {cardsLoading ? (
+    <p>Loading cards…</p>
+  ) : cards.length === 0 ? (
+    <p>No maintenance cards yet.</p>
+  ) : (
+    cards.map((card) => <MaintenanceCardRow ... />)
+  )}
+</div>
+```
+
+### Key files
+- `frontend/src/components/pages/vehicle-dashboard-page.tsx` (modified)
+- `frontend/src/components/pages/vehicle-dashboard-page.spec.tsx` (modified)
