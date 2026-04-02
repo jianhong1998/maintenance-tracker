@@ -8,6 +8,8 @@ import { MaintenanceCardRow } from '@/components/maintenance-cards/maintenance-c
 import { MaintenanceCardFormDialog } from '@/components/maintenance-cards/maintenance-card-form-dialog';
 import { MarkDoneDialog } from '@/components/maintenance-cards/mark-done-dialog';
 import { DeleteConfirmDialog } from '@/components/maintenance-cards/delete-confirm-dialog';
+import { VehicleFormDialog } from '@/components/vehicles/vehicle-form-dialog';
+import { VehicleDeleteConfirmDialog } from '@/components/vehicles/vehicle-delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { useVehicle } from '@/hooks/queries/vehicles/useVehicle';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
@@ -20,6 +22,7 @@ interface VehicleDashboardPageProps {
 function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
   const [sort, setSort] = useState<'urgency' | 'name'>('urgency');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
+  const [vehicleDropdownOpen, setVehicleDropdownOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<IMaintenanceCardResDTO | null>(
     null,
@@ -28,6 +31,8 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
     useState<IMaintenanceCardResDTO | null>(null);
   const [deletingCard, setDeletingCard] =
     useState<IMaintenanceCardResDTO | null>(null);
+  const [editVehicleOpen, setEditVehicleOpen] = useState(false);
+  const [deleteVehicleOpen, setDeleteVehicleOpen] = useState(false);
 
   const router = useRouter();
 
@@ -41,9 +46,11 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
     sort,
   );
 
-  // Close dropdown when user clicks anywhere on the document
   useEffect(() => {
-    const close = () => setActiveDropdownId(null);
+    const close = () => {
+      setActiveDropdownId(null);
+      setVehicleDropdownOpen(false);
+    };
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, []);
@@ -79,14 +86,55 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      <div>
-        <h1 className="text-xl font-semibold">
-          {vehicle.brand} {vehicle.model}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {vehicle.colour} &middot; {vehicle.mileage.toLocaleString()}{' '}
-          {vehicle.mileageUnit}
-        </p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">
+            {vehicle.brand} {vehicle.model}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {vehicle.colour} &middot; {vehicle.mileage.toLocaleString()}{' '}
+            {vehicle.mileageUnit}
+          </p>
+        </div>
+        <div className="relative">
+          <button
+            type="button"
+            aria-label="Vehicle actions"
+            onClick={(e) => {
+              e.stopPropagation();
+              setVehicleDropdownOpen((prev) => !prev);
+            }}
+            className="rounded-md border border-input bg-background px-2 py-1 text-sm hover:bg-accent"
+          >
+            ⋮
+          </button>
+          {vehicleDropdownOpen && (
+            <div className="absolute right-0 top-full z-10 mt-1 min-w-[100px] rounded-md border bg-background shadow-md">
+              <button
+                type="button"
+                className="block w-full px-3 py-2 text-left text-sm hover:bg-accent"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setVehicleDropdownOpen(false);
+                  setEditVehicleOpen(true);
+                }}
+              >
+                Edit
+              </button>
+              <button
+                type="button"
+                className="block w-full px-3 py-2 text-left text-sm text-destructive hover:bg-accent"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setVehicleDropdownOpen(false);
+                  setDeleteVehicleOpen(true);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <MileagePrompt vehicleId={vehicleId} />
@@ -140,7 +188,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
         )}
       </div>
 
-      {/* Dialogs */}
+      {/* Maintenance card dialogs */}
       <MaintenanceCardFormDialog
         open={createOpen || !!editingCard}
         onOpenChange={(open) => {
@@ -176,6 +224,20 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
           vehicleId={vehicleId}
         />
       )}
+
+      {/* Vehicle dialogs */}
+      <VehicleFormDialog
+        open={editVehicleOpen}
+        onOpenChange={setEditVehicleOpen}
+        vehicle={vehicle}
+        hasCards={cards.length > 0}
+      />
+
+      <VehicleDeleteConfirmDialog
+        open={deleteVehicleOpen}
+        onOpenChange={setDeleteVehicleOpen}
+        vehicle={vehicle}
+      />
     </main>
   );
 }

@@ -69,6 +69,33 @@ vi.mock('@/components/maintenance-cards/delete-confirm-dialog', () => ({
     vehicleId: string;
   }) => (open ? <div data-testid="delete-dialog">{card.id}</div> : null),
 }));
+vi.mock('@/components/vehicles/vehicle-form-dialog', () => ({
+  VehicleFormDialog: ({
+    open,
+    vehicle,
+  }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+    vehicle?: IVehicleResDTO;
+    hasCards?: boolean;
+  }) =>
+    open ? (
+      <div data-testid="vehicle-form-dialog">
+        {vehicle ? `edit:${vehicle.id}` : 'create'}
+      </div>
+    ) : null,
+}));
+vi.mock('@/components/vehicles/vehicle-delete-confirm-dialog', () => ({
+  VehicleDeleteConfirmDialog: ({
+    open,
+    vehicle,
+  }: {
+    open: boolean;
+    onOpenChange: (v: boolean) => void;
+    vehicle: IVehicleResDTO;
+  }) =>
+    open ? <div data-testid="vehicle-delete-dialog">{vehicle.id}</div> : null,
+}));
 vi.mock('@/hooks/queries/vehicles/useVehicle', () => ({
   useVehicle: vi.fn(),
 }));
@@ -277,5 +304,33 @@ describe('VehicleDashboardPage', () => {
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
     fireEvent.click(screen.getByText('delete-card-1'));
     expect(screen.getByTestId('delete-dialog')).toHaveTextContent('card-1');
+  });
+
+  it('renders the ⋮ vehicle actions button', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    expect(
+      screen.getByRole('button', { name: /vehicle actions/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('opens vehicle edit dialog when Edit is clicked in the ⋮ dropdown', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    fireEvent.click(screen.getByRole('button', { name: /vehicle actions/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+    expect(screen.getByTestId('vehicle-form-dialog')).toHaveTextContent(
+      'edit:vehicle-1',
+    );
+  });
+
+  it('opens vehicle delete dialog when Delete is clicked in the ⋮ dropdown', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    fireEvent.click(screen.getByRole('button', { name: /vehicle actions/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+    expect(screen.getByTestId('vehicle-delete-dialog')).toHaveTextContent(
+      'vehicle-1',
+    );
   });
 });
