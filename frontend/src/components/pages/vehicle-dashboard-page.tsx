@@ -102,6 +102,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
             aria-label="Vehicle actions"
             onClick={(e) => {
               e.stopPropagation();
+              e.nativeEvent.stopImmediatePropagation();
               setVehicleDropdownOpen((prev) => !prev);
             }}
             className="rounded-md border border-input bg-background px-2 py-1 text-sm hover:bg-accent"
