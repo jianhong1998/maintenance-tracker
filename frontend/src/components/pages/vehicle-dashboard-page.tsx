@@ -82,7 +82,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start gap-3">
         <div>
           <h1 className="text-xl font-semibold">
             {vehicle.brand} {vehicle.model}
