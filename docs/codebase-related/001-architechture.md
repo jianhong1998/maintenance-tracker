@@ -1,7 +1,6 @@
 # Architecture: Maintenance Tracker
 
 **Status:** Living document — reflects design spec and planned implementation.
-**Spec:** `docs/superpowers/specs/2026-03-14-maintenance-tracker-design.md`
 
 ---
 
@@ -85,7 +84,7 @@ User (1) ──< Vehicle (1) ──< MaintenanceCard (1) ──< MaintenanceHist
 | vehicle_id | uuid FK | → Vehicle |
 | type | enum | `task` / `part` / `item` — display label only |
 | name, description | varchar | |
-| interval_mileage | decimal nullable | trigger distance (same unit as parent vehicle) |
+| interval_mileage | int nullable | trigger distance (same unit as parent vehicle) |
 | interval_time_months | integer nullable | trigger time in months |
 | next_due_mileage | decimal nullable | recomputed on mark-done; stored for fast queries |
 | next_due_date | date nullable | recomputed on mark-done; stored for fast queries |
