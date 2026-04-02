@@ -74,3 +74,33 @@
 - `backend/src/modules/maintenance-card/repositories/maintenance-history.repository.ts`
 - `backend/src/modules/maintenance-card/services/maintenance-history.service.ts`
 - `backend/src/modules/maintenance-card/services/maintenance-card.service.ts` — `markDone` method
+
+---
+
+## Plan 05 Post-Review Fixes — Code Review Fixes
+
+**Goal:** Resolve issues identified in the feat/005 code review — circular dependency, wrong HTTP status, wrong column type, and minor code smells.
+
+### Changes made
+
+**Circular dependency broken (VehicleService ↔ MaintenanceCardService):**
+- Old approach: `VehicleService.deleteVehicle()` called `MaintenanceCardService` (causing circular module imports via `forwardRef`)
+- New approach: `VehicleEntity` gets `@OneToMany({ cascade: ['soft-remove'] })` pointing to `MaintenanceCardEntity`; TypeORM handles cascade at the ORM layer
+- `VehicleService` drops its `MaintenanceCardService` dependency entirely; uses the `cascade` option on the ORM `delete` call instead
+- `MaintenanceCardService` retains one-way dependency on `VehicleService` (for vehicle ownership verification)
+- `VehicleModule` no longer imports `MaintenanceCardModule`; `MaintenanceCardModule` imports `VehicleModule` directly (no `forwardRef`)
+
+**Other fixes:**
+- `@HttpCode(HttpStatus.CREATED)` decorator added to `POST /vehicles/:vehicleId/maintenance-cards` (was returning 200 instead of 201)
+- `intervalMileage` column type changed from `decimal(10,2)` to `int` (mileage intervals are always whole numbers; decimal was wrong and required unnecessary transformer)
+- Removed redundant `!isOverdue(c)` check in urgency sort (already guarded by ordering logic)
+- Removed double `new Date()` wrap in date comparison
+
+### Key files changed
+- `backend/src/db/entities/vehicle.entity.ts` — added `@OneToMany` relation with cascade
+- `backend/src/modules/vehicle/services/vehicle.service.ts` — removed `MaintenanceCardService` dependency
+- `backend/src/modules/vehicle/vehicle.module.ts` — removed `MaintenanceCardModule` import
+- `backend/src/modules/maintenance-card/maintenance-card.module.ts` — removed `forwardRef`, direct `VehicleModule` import
+- `backend/src/modules/maintenance-card/controllers/maintenance-card.controller.ts` — added `@HttpCode(HttpStatus.CREATED)`
+- `backend/src/db/entities/maintenance-card.entity.ts` — changed `intervalMileage` column type to `int`
+- `backend/src/db/migrations/<timestamp>-FixIntervalMileageType.ts` — migration for column type change

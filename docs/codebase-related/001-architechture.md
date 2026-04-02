@@ -1,7 +1,6 @@
 # Architecture: Maintenance Tracker
 
 **Status:** Living document — reflects design spec and planned implementation.
-**Spec:** `docs/superpowers/specs/2026-03-14-maintenance-tracker-design.md`
 
 ---
 
@@ -85,7 +84,7 @@ User (1) ──< Vehicle (1) ──< MaintenanceCard (1) ──< MaintenanceHist
 | vehicle_id | uuid FK | → Vehicle |
 | type | enum | `task` / `part` / `item` — display label only |
 | name, description | varchar | |
-| interval_mileage | decimal nullable | trigger distance (same unit as parent vehicle) |
+| interval_mileage | int nullable | trigger distance (same unit as parent vehicle) |
 | interval_time_months | integer nullable | trigger time in months |
 | next_due_mileage | decimal nullable | recomputed on mark-done; stored for fast queries |
 | next_due_date | date nullable | recomputed on mark-done; stored for fast queries |
@@ -183,7 +182,7 @@ backend/src/
     ├── firebase/              # FirebaseModule (@Global) — Admin SDK init
     ├── auth/                  # AuthGuard — token verification, user resolution
     ├── vehicles/              # VehiclesModule
-    ├── maintenance-cards/     # MaintenanceCardsModule
+    ├── maintenance-cards/     # MaintenanceCardsModule — imports VehicleModule for ownership checks; VehicleModule does NOT import MaintenanceCardsModule (one-way dependency). Vehicle→card delete cascade is handled at the ORM layer via TypeORM @OneToMany({ cascade: ['soft-remove'] }) on VehicleEntity.
     ├── maintenance-history/   # MaintenanceHistoryModule
     ├── config/                # ConfigModule — GET /config endpoint
     ├── background-jobs/       # BackgroundJobModule — DB-backed job table
@@ -242,12 +241,12 @@ frontend/src/
 │   └── vehicles/[id]/      # /vehicles/:id (dashboard)
 ├── components/
 │   ├── ui/                 # shadcn/ui style primitives (Dialog, Button, …)
-│   ├── maintenance-cards/  # Maintenance card row and CRUD dialogs
+│   ├── maintenance-cards/  # Maintenance card row and CRUD dialogs (MaintenanceCardFormDialog, MarkDoneDialog, DeleteConfirmDialog)
 │   ├── pages/              # Page-level components
 │   └── providers/          # ReactQueryProvider, etc.
 ├── hooks/
 │   ├── queries/            # TanStack Query read hooks (per feature)
-│   └── mutations/          # TanStack Query mutation hooks (per feature)
+│   └── mutations/          # TanStack Query mutation hooks (per feature); maintenance-cards subfolder contains four hooks: useCreateMaintenanceCard, useUpdateMaintenanceCard, useDeleteMaintenanceCard, useMarkDone
 ├── lib/
 │   ├── api-client.ts       # Centralised API calls
 │   ├── query-client.ts     # TanStack Query client config
@@ -326,3 +325,33 @@ Migration workflow:
 cd backend && pnpm run migration:generate --name=MigrationName
 cd backend && pnpm run migration:run
 ```
+
+---
+
+## 12. Architectural Patterns & Decisions
+
+#### Backend: ORM-level cascade over service-layer cascade
+
+Delete cascade for Vehicle → MaintenanceCard is implemented via TypeORM `@OneToMany({ cascade: ['soft-remove'] })` on `VehicleEntity`, not by calling `MaintenanceCardService` from `VehicleService`. This eliminates a circular module dependency (both modules needed each other) and keeps module dependency one-directional: `MaintenanceCardModule` → `VehicleModule`.
+
+**Rule:** When two modules would need to import each other, resolve the dependency by pushing shared behaviour into the data layer (ORM relations, cascade) rather than using `forwardRef`.
+
+#### Frontend: Firebase config loaded at runtime via Server Action
+
+Firebase config (`apiKey`, `authDomain`, `projectId`) is never embedded in the client bundle. A Next.js Server Action (`getFirebaseConfig()`) reads `process.env` at request time, then the client calls `initFirebase(config)` to lazily initialize Firebase.
+
+**Why:** `next build` runs during Docker image build before env vars are injected; compile-time substitution bakes undefined values into the bundle.
+
+**Pattern:** `firebase.ts` exposes a lazy init API (`initFirebase(config)` + `getFirebaseAuth()`). `AuthProvider` calls the server action on mount, then initializes Firebase. `getFirebaseAuth()` throws if called before init.
+
+#### Frontend: State lifting for dialog/dropdown mutual exclusion
+
+All dialog and dropdown open/close state for the vehicle dashboard lives in `VehicleDashboardPage` (not in individual card rows or dialogs). This makes mutual exclusion a free side-effect: only one piece of state can be set at a time.
+
+**Rule:** When multiple UI elements must be mutually exclusive, lift their state to a common ancestor rather than adding explicit locking/coordination logic between siblings.
+
+#### Frontend: TanStack Query cache invalidation strategy
+
+- **Prefix match** (no `exact: true`): used for list invalidation after create/patch/delete — covers both sorted and unsorted cache entries for the same vehicle.
+- **Exact match** (`exact: true`): used for individual entity invalidation to avoid over-invalidating the list.
+- `useMarkDone` invalidates both `[MAINTENANCE_CARDS, vehicleId]` and `[VEHICLES, vehicleId]` (exact) because mark-done may update vehicle mileage.
