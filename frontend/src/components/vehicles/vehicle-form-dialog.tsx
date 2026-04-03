@@ -77,7 +77,7 @@ export function VehicleFormDialog({
           onOpenChange(false);
         },
         onError: (err) => {
-          toast.error(err.message ?? 'Something went wrong');
+          toast.error(err.message || 'Something went wrong');
         },
       },
     );

@@ -1249,7 +1249,7 @@ git commit -m "add Add Vehicle button and create dialog to home page"
 
 **What changes:**
 - Add `editVehicleOpen`, `deleteVehicleOpen` state to `DashboardContent`.
-- Place direct `Edit` (aria-label="Edit vehicle") and `Delete` (aria-label="Delete vehicle") buttons to the right of the vehicle header — no dropdown.
+- Place direct `Edit` (aria-label="Edit vehicle") and `Delete` (aria-label="Delete vehicle") buttons immediately adjacent to the vehicle title block using `flex items-start gap-3` — **not** `justify-between`. Buttons sit close to the title, not pushed to the far right.
 - Render `VehicleFormDialog` (edit mode) and `VehicleDeleteConfirmDialog` at the bottom of `DashboardContent`.
 - _Changed from ⋮ dropdown design after tester feedback (extra click was redundant)._
 
@@ -1420,7 +1420,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start gap-3">
         <div>
           <h1 className="text-xl font-semibold">
             {vehicle.brand} {vehicle.model}

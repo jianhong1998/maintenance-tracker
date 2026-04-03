@@ -142,4 +142,23 @@ describe('VehicleDeleteConfirmDialog', () => {
 
     expect(toast.error).toHaveBeenCalledWith('Delete failed');
   });
+
+  it('shows fallback error toast when delete error message is empty string', () => {
+    vi.mocked(useDeleteVehicle).mockReturnValue({
+      mutate: (_id: string, opts: { onError: (err: Error) => void }) =>
+        opts.onError(new Error('')),
+      isPending: false,
+    } as ReturnType<typeof useDeleteVehicle>);
+
+    render(
+      <VehicleDeleteConfirmDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        vehicle={mockVehicle}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+
+    expect(toast.error).toHaveBeenCalledWith('Something went wrong');
+  });
 });

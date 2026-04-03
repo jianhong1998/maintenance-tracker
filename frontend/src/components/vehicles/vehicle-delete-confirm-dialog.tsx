@@ -29,7 +29,7 @@ export function VehicleDeleteConfirmDialog({
         router.replace('/');
       },
       onError: (err) => {
-        toast.error(err.message ?? 'Something went wrong');
+        toast.error(err.message || 'Something went wrong');
       },
     });
   };

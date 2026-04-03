@@ -25,7 +25,7 @@ Implement vehicle Create, Edit, and Delete on the frontend. No backend changes r
 - Opens a **modal dialog** (`VehicleFormDialog` in create mode).
 
 ### Edit & Delete
-- Triggered from **direct `Edit` and `Delete` buttons** in the vehicle header on the dashboard page (`/vehicles/:id`), placed to the right of the vehicle name and details.
+- Triggered from **direct `Edit` and `Delete` buttons** in the vehicle header on the dashboard page (`/vehicles/:id`), placed immediately adjacent (to the right) to the vehicle name block using `flex gap-3` — **not** right-aligned with `justify-between`. Intentional layout: buttons sit close to the title, not pushed to the far edge.
 - Edit opens `VehicleFormDialog` in edit mode.
 - Delete opens `VehicleDeleteConfirmDialog`.
 - _Note: Originally designed as a ⋮ dropdown (matching maintenance card rows), but changed after tester feedback — the extra click to open the dropdown was redundant._

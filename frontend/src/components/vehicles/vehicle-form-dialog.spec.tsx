@@ -38,7 +38,8 @@ import { useCreateVehicle } from '@/hooks/mutations/vehicles/useCreateVehicle';
 import { usePatchVehicle } from '@/hooks/mutations/vehicles/usePatchVehicle';
 import { VehicleFormDialog } from './vehicle-form-dialog';
 
-const mockMutate = vi.fn();
+const mockCreateMutate = vi.fn();
+const mockPatchMutate = vi.fn();
 
 const mockVehicle: IVehicleResDTO = {
   id: 'v1',
@@ -55,11 +56,11 @@ describe('VehicleFormDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(useCreateVehicle).mockReturnValue({
-      mutate: mockMutate,
+      mutate: mockCreateMutate,
       isPending: false,
     } as ReturnType<typeof useCreateVehicle>);
     vi.mocked(usePatchVehicle).mockReturnValue({
-      mutate: mockMutate,
+      mutate: mockPatchMutate,
       isPending: false,
     } as ReturnType<typeof usePatchVehicle>);
   });
@@ -172,7 +173,7 @@ describe('VehicleFormDialog', () => {
       target: { value: '85000' },
     });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    expect(mockMutate).toHaveBeenCalledWith(
+    expect(mockCreateMutate).toHaveBeenCalledWith(
       {
         brand: 'Toyota',
         model: 'Corolla',
@@ -182,6 +183,7 @@ describe('VehicleFormDialog', () => {
       },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
+    expect(mockPatchMutate).not.toHaveBeenCalled();
   });
 
   it('calls patchMutation.mutate with correct data on Save in edit mode', () => {
@@ -193,7 +195,7 @@ describe('VehicleFormDialog', () => {
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
-    expect(mockMutate).toHaveBeenCalledWith(
+    expect(mockPatchMutate).toHaveBeenCalledWith(
       {
         brand: 'Toyota',
         model: 'Corolla',
@@ -203,6 +205,7 @@ describe('VehicleFormDialog', () => {
       },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
+    expect(mockCreateMutate).not.toHaveBeenCalled();
   });
 
   it('shows success toast and closes dialog on create success', () => {
@@ -286,5 +289,35 @@ describe('VehicleFormDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     expect(toast.error).toHaveBeenCalledWith('Server error');
+  });
+
+  it('shows fallback error toast when mutation error message is empty string', () => {
+    vi.mocked(useCreateVehicle).mockReturnValue({
+      mutate: (_data: unknown, opts: { onError: (err: Error) => void }) =>
+        opts.onError(new Error('')),
+      isPending: false,
+    } as ReturnType<typeof useCreateVehicle>);
+
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText(/toyota/i), {
+      target: { value: 'Toyota' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/corolla/i), {
+      target: { value: 'Corolla' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/silver/i), {
+      target: { value: 'Silver' },
+    });
+    fireEvent.change(screen.getByPlaceholderText(/85000/i), {
+      target: { value: '85000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+
+    expect(toast.error).toHaveBeenCalledWith('Something went wrong');
   });
 });
