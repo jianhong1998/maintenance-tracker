@@ -96,6 +96,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
           <Button
             size="sm"
             variant="outline"
+            aria-label="Edit vehicle"
             onClick={() => setEditVehicleOpen(true)}
           >
             Edit
@@ -103,6 +104,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
           <Button
             size="sm"
             variant="outline"
+            aria-label="Delete vehicle"
             onClick={() => setDeleteVehicleOpen(true)}
             className="text-destructive"
           >
