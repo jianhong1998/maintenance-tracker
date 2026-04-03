@@ -95,10 +95,14 @@ export function VehicleFormDialog({
       <div className="flex flex-col gap-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <label
+              htmlFor="vehicle-brand"
+              className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            >
               Brand <span className="text-destructive">*</span>
             </label>
             <input
+              id="vehicle-brand"
               type="text"
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
@@ -107,10 +111,14 @@ export function VehicleFormDialog({
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <label
+              htmlFor="vehicle-model"
+              className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            >
               Model <span className="text-destructive">*</span>
             </label>
             <input
+              id="vehicle-model"
               type="text"
               value={model}
               onChange={(e) => setModel(e.target.value)}
@@ -121,10 +129,14 @@ export function VehicleFormDialog({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <label
+            htmlFor="vehicle-colour"
+            className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+          >
             Colour <span className="text-destructive">*</span>
           </label>
           <input
+            id="vehicle-colour"
             type="text"
             value={colour}
             onChange={(e) => setColour(e.target.value)}
@@ -135,10 +147,14 @@ export function VehicleFormDialog({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <label
+              htmlFor="vehicle-mileage"
+              className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            >
               Mileage <span className="text-destructive">*</span>
             </label>
             <input
+              id="vehicle-mileage"
               type="number"
               min={0}
               value={mileage}

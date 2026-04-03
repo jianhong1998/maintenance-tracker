@@ -98,9 +98,9 @@ describe('VehicleFormDialog', () => {
         vehicle={mockVehicle}
       />,
     );
-    expect(screen.getByPlaceholderText(/toyota/i)).toHaveValue('Toyota');
-    expect(screen.getByPlaceholderText(/corolla/i)).toHaveValue('Corolla');
-    expect(screen.getByPlaceholderText(/silver/i)).toHaveValue('Silver');
+    expect(screen.getByLabelText(/brand/i)).toHaveValue('Toyota');
+    expect(screen.getByLabelText(/model/i)).toHaveValue('Corolla');
+    expect(screen.getByLabelText(/colour/i)).toHaveValue('Silver');
   });
 
   it('Save button is disabled when required fields are empty', () => {
@@ -160,16 +160,16 @@ describe('VehicleFormDialog', () => {
         onOpenChange={vi.fn()}
       />,
     );
-    fireEvent.change(screen.getByPlaceholderText(/toyota/i), {
+    fireEvent.change(screen.getByLabelText(/brand/i), {
       target: { value: 'Toyota' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/corolla/i), {
+    fireEvent.change(screen.getByLabelText(/model/i), {
       target: { value: 'Corolla' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/silver/i), {
+    fireEvent.change(screen.getByLabelText(/colour/i), {
       target: { value: 'Silver' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/85000/i), {
+    fireEvent.change(screen.getByLabelText(/mileage/i), {
       target: { value: '85000' },
     });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
@@ -222,16 +222,16 @@ describe('VehicleFormDialog', () => {
         onOpenChange={onOpenChange}
       />,
     );
-    fireEvent.change(screen.getByPlaceholderText(/toyota/i), {
+    fireEvent.change(screen.getByLabelText(/brand/i), {
       target: { value: 'Toyota' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/corolla/i), {
+    fireEvent.change(screen.getByLabelText(/model/i), {
       target: { value: 'Corolla' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/silver/i), {
+    fireEvent.change(screen.getByLabelText(/colour/i), {
       target: { value: 'Silver' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/85000/i), {
+    fireEvent.change(screen.getByLabelText(/mileage/i), {
       target: { value: '85000' },
     });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
@@ -274,16 +274,16 @@ describe('VehicleFormDialog', () => {
         onOpenChange={vi.fn()}
       />,
     );
-    fireEvent.change(screen.getByPlaceholderText(/toyota/i), {
+    fireEvent.change(screen.getByLabelText(/brand/i), {
       target: { value: 'Toyota' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/corolla/i), {
+    fireEvent.change(screen.getByLabelText(/model/i), {
       target: { value: 'Corolla' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/silver/i), {
+    fireEvent.change(screen.getByLabelText(/colour/i), {
       target: { value: 'Silver' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/85000/i), {
+    fireEvent.change(screen.getByLabelText(/mileage/i), {
       target: { value: '85000' },
     });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
@@ -304,16 +304,16 @@ describe('VehicleFormDialog', () => {
         onOpenChange={vi.fn()}
       />,
     );
-    fireEvent.change(screen.getByPlaceholderText(/toyota/i), {
+    fireEvent.change(screen.getByLabelText(/brand/i), {
       target: { value: 'Toyota' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/corolla/i), {
+    fireEvent.change(screen.getByLabelText(/model/i), {
       target: { value: 'Corolla' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/silver/i), {
+    fireEvent.change(screen.getByLabelText(/colour/i), {
       target: { value: 'Silver' },
     });
-    fireEvent.change(screen.getByPlaceholderText(/85000/i), {
+    fireEvent.change(screen.getByLabelText(/mileage/i), {
       target: { value: '85000' },
     });
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
