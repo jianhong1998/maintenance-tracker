@@ -17,6 +17,9 @@ interface VehicleFormDialogProps {
   hasCards?: boolean;
 }
 
+const inputClass =
+  'w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
+
 export function VehicleFormDialog({
   open,
   onOpenChange,
@@ -100,7 +103,7 @@ export function VehicleFormDialog({
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               placeholder="e.g. Toyota"
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className={inputClass}
             />
           </div>
           <div>
@@ -112,7 +115,7 @@ export function VehicleFormDialog({
               value={model}
               onChange={(e) => setModel(e.target.value)}
               placeholder="e.g. Corolla"
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className={inputClass}
             />
           </div>
         </div>
@@ -126,7 +129,7 @@ export function VehicleFormDialog({
             value={colour}
             onChange={(e) => setColour(e.target.value)}
             placeholder="e.g. Silver"
-            className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className={inputClass}
           />
         </div>
 
@@ -141,7 +144,7 @@ export function VehicleFormDialog({
               value={mileage}
               onChange={(e) => setMileage(e.target.value)}
               placeholder="e.g. 85000"
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className={inputClass}
             />
           </div>
           <div>

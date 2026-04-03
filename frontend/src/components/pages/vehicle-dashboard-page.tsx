@@ -93,22 +93,21 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
-            type="button"
-            aria-label="Edit vehicle"
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => setEditVehicleOpen(true)}
-            className="rounded-md border border-input bg-background px-2 py-1 text-sm hover:bg-accent"
           >
             Edit
-          </button>
-          <button
-            type="button"
-            aria-label="Delete vehicle"
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
             onClick={() => setDeleteVehicleOpen(true)}
-            className="rounded-md border border-input bg-background px-2 py-1 text-sm text-destructive hover:bg-accent"
+            className="text-destructive"
           >
             Delete
-          </button>
+          </Button>
         </div>
       </div>
 
