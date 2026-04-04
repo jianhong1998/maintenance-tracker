@@ -62,10 +62,12 @@
 - **`MaintenanceHistoryService`** — wraps repository operations
 - **`MaintenanceCardService.markDone`** orchestration:
   1. Validate card exists and belongs to vehicle
-  2. Create `MaintenanceHistory` record
-  3. If `doneAtMileage` provided and greater than vehicle's current mileage → update vehicle mileage
+  2. If card has `intervalMileage`, require `doneAtMileage` in request; throw `BadRequestException` if missing
+  3. If `doneAtMileage` is provided, validate `doneAtMileage >= vehicle.mileage`; throw `BadRequestException` if below
   4. Recompute `nextDueMileage` = `doneAtMileage + intervalMileage` (if both present)
   5. Recompute `nextDueDate` = today + `intervalTimeMonths` (if present)
+  6. Create `MaintenanceHistory` record and update card — both inside a single transaction
+  7. If `doneAtMileage > Vehicle.mileage`, update vehicle mileage (runs after transaction commit)
 - **Background job cancellation** — `markDone` also cancels any pending `BackgroundJob` records for the card (deferred from Plan 08 completion, done here)
 - History endpoint returns records even when card is soft-deleted
 

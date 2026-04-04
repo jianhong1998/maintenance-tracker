@@ -157,11 +157,13 @@ All endpoints require `Authorization: Bearer <firebase_id_token>`. Ownership vio
 
 ### Mark Done Logic
 On `POST .../complete`:
-1. Creates a `MaintenanceHistory` record (`done_at_date` = server today).
-2. Resets `next_due_mileage` = `done_at_mileage` + `interval_mileage` (if set).
-3. Resets `next_due_date` = `done_at_date` + `interval_time_months` (if set).
-4. If `done_at_mileage > Vehicle.mileage`, updates `Vehicle.mileage`.
-5. Cancels all `pending`/`processing` `BackgroundJob` records for this card.
+1. Validates `done_at_mileage` is present when card has `interval_mileage`; returns 400 if missing.
+2. Validates `done_at_mileage >= Vehicle.mileage` when provided; returns 400 if below current mileage.
+3. Resets `next_due_mileage` = `done_at_mileage` + `interval_mileage` (if set).
+4. Resets `next_due_date` = `done_at_date` + `interval_time_months` (if set).
+5. Creates a `MaintenanceHistory` record (`done_at_date` = server today) and saves the updated card — both inside a single transaction.
+6. If `done_at_mileage > Vehicle.mileage`, updates `Vehicle.mileage` (after transaction commit).
+7. Cancels all `pending`/`processing` `BackgroundJob` records for this card (inside the transaction).
 
 ---
 
