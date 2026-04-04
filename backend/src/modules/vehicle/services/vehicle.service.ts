@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import type {
   ICreateVehicleReqDTO,
   IUpdateVehicleReqDTO,
@@ -37,6 +41,11 @@ export class VehicleService {
     input: IUpdateVehicleReqDTO,
   ): Promise<VehicleEntity> {
     const vehicle = await this.getVehicle(id, userId);
+    if (input.mileage !== undefined && input.mileage < vehicle.mileage) {
+      throw new BadRequestException(
+        'New mileage cannot be less than the current mileage',
+      );
+    }
     Object.assign(vehicle, input);
     const [updated] = await this.vehicleRepository.updateWithSave({
       dataArray: [vehicle],

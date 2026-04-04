@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 
 interface MileagePromptProps {
   vehicleId: string;
+  currentMileage: number;
 }
 
 export function getTodayKey(vehicleId: string): string {
@@ -13,7 +14,10 @@ export function getTodayKey(vehicleId: string): string {
   return `mileage_prompted_${vehicleId}_${today}`;
 }
 
-export function MileagePrompt({ vehicleId }: MileagePromptProps) {
+export function MileagePrompt({
+  vehicleId,
+  currentMileage,
+}: MileagePromptProps) {
   const [visible, setVisible] = useState(false);
   const [value, setValue] = useState('');
   const { mutate: patchVehicle, isError } = usePatchVehicle(vehicleId);
@@ -30,8 +34,12 @@ export function MileagePrompt({ vehicleId }: MileagePromptProps) {
     setVisible(false);
   };
 
+  const parsedValue = parseFloat(value.trim());
+  const isBelowCurrent = !isNaN(parsedValue) && parsedValue < currentMileage;
+
   const handleSubmit = () => {
-    patchVehicle({ mileage: parseFloat(value.trim()) }, { onSuccess: dismiss });
+    if (isNaN(parsedValue) || isBelowCurrent) return;
+    patchVehicle({ mileage: parsedValue }, { onSuccess: dismiss });
   };
 
   if (!visible) return null;
@@ -46,6 +54,11 @@ export function MileagePrompt({ vehicleId }: MileagePromptProps) {
           Failed to update mileage. Please try again.
         </p>
       )}
+      {isBelowCurrent && (
+        <p className="text-destructive mb-2 text-xs">
+          Mileage cannot be less than current ({currentMileage})
+        </p>
+      )}
       <div className="flex gap-2">
         <input
           type="number"
@@ -58,7 +71,7 @@ export function MileagePrompt({ vehicleId }: MileagePromptProps) {
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={!value.trim() || isNaN(parseFloat(value))}
+          disabled={!value.trim() || isNaN(parsedValue) || isBelowCurrent}
         >
           Update
         </Button>

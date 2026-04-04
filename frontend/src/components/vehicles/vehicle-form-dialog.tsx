@@ -57,7 +57,8 @@ export function VehicleFormDialog({
     model.trim().length > 0 &&
     colour.trim().length > 0 &&
     !isNaN(parsedMileage) &&
-    parsedMileage >= 0;
+    parsedMileage >= 0 &&
+    (!isEdit || parsedMileage >= vehicle!.mileage);
 
   const isPending = createMutation.isPending || patchMutation.isPending;
   const unitLocked = isEdit && hasCards;
@@ -162,6 +163,13 @@ export function VehicleFormDialog({
               placeholder="e.g. 85000"
               className={inputClass}
             />
+            {isEdit &&
+              !isNaN(parsedMileage) &&
+              parsedMileage < vehicle!.mileage && (
+                <p className="text-destructive text-xs mt-1">
+                  Cannot reduce mileage below current value ({vehicle!.mileage})
+                </p>
+              )}
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">

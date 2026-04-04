@@ -9,13 +9,15 @@ export const usePatchVehicle = (vehicleId: string) => {
   return useMutation<IVehicleResDTO, Error, IUpdateVehicleReqDTO>({
     mutationFn: (data) =>
       apiClient.patch<IVehicleResDTO>(`/vehicles/${vehicleId}`, data),
-    onSuccess: (updatedVehicle) => {
-      // Update the individual vehicle cache entry directly (no refetch for this entry)
-      queryClient.setQueryData(
-        [QueryGroup.VEHICLES, vehicleId],
-        updatedVehicle,
-      );
-      // exact: true targets only the list key [VEHICLES], not individual [VEHICLES, id] entries
+    // Two invalidations (individual + list) are intentional.
+    // Using setQueryData for the individual key caused stale cache in some consumers
+    // because it relied on component-captured state rather than fresh server data.
+    // Dual invalidation trades one extra fetch for guaranteed consistency.
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [QueryGroup.VEHICLES, vehicleId],
+        exact: true,
+      });
       void queryClient.invalidateQueries({
         queryKey: [QueryGroup.VEHICLES],
         exact: true,

@@ -71,6 +71,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     expect(
@@ -85,6 +86,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithoutMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     expect(
@@ -99,6 +101,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     expect(screen.getByRole('button', { name: /done/i })).toBeDisabled();
@@ -111,6 +114,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
@@ -126,6 +130,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithoutMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     expect(screen.getByRole('button', { name: /done/i })).not.toBeDisabled();
@@ -138,6 +143,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
@@ -161,6 +167,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
@@ -176,6 +183,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
@@ -204,6 +212,7 @@ describe('MarkDoneDialog', () => {
         onOpenChange={onOpenChange}
         card={cardWithoutMileage}
         vehicleId="v1"
+        currentMileage={50000}
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /done/i }));
@@ -225,10 +234,59 @@ describe('MarkDoneDialog', () => {
         onOpenChange={vi.fn()}
         card={cardWithoutMileage}
         vehicleId="v1"
+        currentMileage={14100}
       />,
     );
     fireEvent.click(screen.getByRole('button', { name: /done/i }));
 
     expect(toast.error).toHaveBeenCalledWith('Mark done failed');
+  });
+
+  it('disables Done button when doneAtMileage is below vehicle current mileage', () => {
+    render(
+      <MarkDoneDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        card={cardWithMileage}
+        vehicleId="v1"
+        currentMileage={14100}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
+      target: { value: '14000' },
+    });
+    expect(screen.getByRole('button', { name: /done/i })).toBeDisabled();
+  });
+
+  it('enables Done button when doneAtMileage equals vehicle current mileage', () => {
+    render(
+      <MarkDoneDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        card={cardWithMileage}
+        vehicleId="v1"
+        currentMileage={14100}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
+      target: { value: '14100' },
+    });
+    expect(screen.getByRole('button', { name: /done/i })).not.toBeDisabled();
+  });
+
+  it('enables Done button when doneAtMileage is above vehicle current mileage', () => {
+    render(
+      <MarkDoneDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        card={cardWithMileage}
+        vehicleId="v1"
+        currentMileage={14100}
+      />,
+    );
+    fireEvent.change(screen.getByPlaceholderText('Current odometer reading'), {
+      target: { value: '15000' },
+    });
+    expect(screen.getByRole('button', { name: /done/i })).not.toBeDisabled();
   });
 });

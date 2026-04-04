@@ -13,6 +13,7 @@ interface MarkDoneDialogProps {
   onOpenChange: (open: boolean) => void;
   card: IMaintenanceCardResDTO;
   vehicleId: string;
+  currentMileage: number;
 }
 
 export function MarkDoneDialog({
@@ -20,6 +21,7 @@ export function MarkDoneDialog({
   onOpenChange,
   card,
   vehicleId,
+  currentMileage,
 }: MarkDoneDialogProps) {
   const [doneAtMileage, setDoneAtMileage] = useState('');
   const [notes, setNotes] = useState('');
@@ -34,7 +36,9 @@ export function MarkDoneDialog({
   const markDone = useMarkDone(vehicleId, card.id);
   const requiresMileage = card.intervalMileage !== null;
   const parsedMileage = parsePositiveInteger(doneAtMileage);
-  const isValid = !requiresMileage || parsedMileage !== null;
+  const isValid =
+    !requiresMileage ||
+    (parsedMileage !== null && parsedMileage >= currentMileage);
 
   const handleDone = () => {
     markDone.mutate(

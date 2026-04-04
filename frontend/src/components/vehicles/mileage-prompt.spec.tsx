@@ -25,7 +25,12 @@ describe('MileagePrompt', () => {
   it('renders nothing when localStorage key is already set for today', async () => {
     localStorage.setItem(getTodayKey(VEHICLE_ID), '1');
 
-    const { container } = render(<MileagePrompt vehicleId={VEHICLE_ID} />);
+    const { container } = render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
 
     await waitFor(() => {
       expect(container.firstChild).toBeNull();
@@ -33,7 +38,12 @@ describe('MileagePrompt', () => {
   });
 
   it('renders the prompt when localStorage key is not set', async () => {
-    render(<MileagePrompt vehicleId={VEHICLE_ID} />);
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
 
     await waitFor(() => {
       expect(
@@ -43,7 +53,12 @@ describe('MileagePrompt', () => {
   });
 
   it('sets localStorage and hides prompt when Dismiss is clicked', async () => {
-    render(<MileagePrompt vehicleId={VEHICLE_ID} />);
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Dismiss')).toBeInTheDocument();
@@ -61,19 +76,24 @@ describe('MileagePrompt', () => {
   });
 
   it('calls patchVehicle with parsed mileage and onSuccess callback when Update is clicked', async () => {
-    render(<MileagePrompt vehicleId={VEHICLE_ID} />);
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Enter mileage')).toBeInTheDocument();
     });
 
     const input = screen.getByPlaceholderText('Enter mileage');
-    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.change(input, { target: { value: '60000' } });
 
     fireEvent.click(screen.getByText('Update'));
 
     expect(mockMutate).toHaveBeenCalledWith(
-      { mileage: 12345 },
+      { mileage: 60000 },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
     // dismiss() must NOT fire before mutation settles
@@ -89,7 +109,12 @@ describe('MileagePrompt', () => {
       isError: true,
     } as unknown as ReturnType<typeof usePatchVehicle>);
 
-    render(<MileagePrompt vehicleId={VEHICLE_ID} />);
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
 
     await waitFor(() => {
       expect(
@@ -105,14 +130,19 @@ describe('MileagePrompt', () => {
       },
     );
 
-    render(<MileagePrompt vehicleId={VEHICLE_ID} />);
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText('Enter mileage')).toBeInTheDocument();
     });
 
     const input = screen.getByPlaceholderText('Enter mileage');
-    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.change(input, { target: { value: '60000' } });
     fireEvent.click(screen.getByText('Update'));
 
     expect(localStorage.getItem(getTodayKey(VEHICLE_ID))).toBe('1');
@@ -121,5 +151,79 @@ describe('MileagePrompt', () => {
         screen.queryByText("What's your current odometer reading?"),
       ).not.toBeInTheDocument();
     });
+  });
+
+  it('disables Update button when entered value is less than currentMileage', async () => {
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter mileage')).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText('Enter mileage');
+    fireEvent.change(input, { target: { value: '49999' } });
+
+    expect(screen.getByRole('button', { name: /update/i })).toBeDisabled();
+  });
+
+  it('shows inline validation error when entered value is less than currentMileage', async () => {
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter mileage')).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText('Enter mileage');
+    fireEvent.change(input, { target: { value: '49999' } });
+
+    expect(
+      screen.getByText(/mileage cannot be less than current/i),
+    ).toBeInTheDocument();
+  });
+
+  it('does not call patchVehicle when entered value is less than currentMileage', async () => {
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter mileage')).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText('Enter mileage');
+    fireEvent.change(input, { target: { value: '49999' } });
+
+    expect(mockMutate).not.toHaveBeenCalled();
+  });
+
+  it('enables Update button when entered value equals currentMileage', async () => {
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter mileage')).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText('Enter mileage');
+    fireEvent.change(input, { target: { value: '50000' } });
+
+    expect(screen.getByRole('button', { name: /update/i })).not.toBeDisabled();
   });
 });

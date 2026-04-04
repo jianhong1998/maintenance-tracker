@@ -27,6 +27,18 @@
 - **`VehicleController`** — maps entities to `IVehicleResDTO` (dates as ISO strings)
 - **`VehicleModule`** — registered in `AppModule`
 
+### Mileage update validation
+
+`VehicleService.updateVehicle` enforces that mileage can only increase. After loading the current vehicle entity, it checks:
+
+```ts
+if (input.mileage !== undefined && input.mileage < vehicle.mileage) {
+  throw new BadRequestException('New mileage cannot be less than the current mileage');
+}
+```
+
+This is an application-layer guard (not a DB constraint). It is the primary enforcement point — both `MileagePrompt` and `VehicleFormDialog` also block below-current values on the frontend, but those are UX guards only; direct API calls are caught here.
+
 ### Key architectural decisions
 
 - **`MileageUnit` is not a TypeScript enum.** It is a frozen `const` object + derived type in `@project/types`: `MILEAGE_UNITS = Object.freeze({ KM: 'km', MILE: 'mile' } as const)`. Uses `Object.values(MILEAGE_UNITS)` for TypeORM `enum:` option and `@IsIn(Object.values(MILEAGE_UNITS))` for validation. Enums cause nominal type incompatibilities across package boundaries.

@@ -650,12 +650,43 @@ describe('MaintenanceCardService', () => {
       );
     });
 
-    it('does NOT update vehicle mileage when doneAtMileage <= vehicle.mileage', async () => {
+    it('does NOT update vehicle mileage when doneAtMileage equals vehicle current mileage', async () => {
+      // baseVehicle.mileage = 10000; equal is valid but should not trigger a vehicle update
       await service.markDone(cardId, vehicleId, userId, {
-        doneAtMileage: 9000,
+        doneAtMileage: 10000,
       });
 
       expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when doneAtMileage is below vehicle current mileage', async () => {
+      // baseVehicle.mileage = 10000
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 9000 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when doneAtMileage is 0 and vehicle.mileage is greater than 0', async () => {
+      // baseVehicle.mileage = 10000 — zero is below current mileage, must reject
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 0 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('computes nextDueMileage correctly when doneAtMileage is 0 and vehicle.mileage is 0', async () => {
+      mockVehicleService.getVehicle.mockResolvedValueOnce({
+        ...baseVehicle,
+        mileage: 0,
+      });
+
+      await service.markDone(cardId, vehicleId, userId, { doneAtMileage: 0 });
+
+      const savedCard = (
+        mockMaintenanceCardRepository.updateWithSave.mock.calls[0]?.[0] as {
+          dataArray: Array<{ nextDueMileage: number }>;
+        }
+      ).dataArray[0];
+      expect(savedCard.nextDueMileage).toBe(6000); // 0 + intervalMileage(6000)
     });
 
     it('throws BadRequestException when card has intervalMileage but doneAtMileage is not provided', async () => {

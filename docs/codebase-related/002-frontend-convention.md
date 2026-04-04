@@ -164,3 +164,35 @@ export default async function VehiclePage() {
   return <VehiclePageComponent />;
 }
 ```
+
+# Data refetch convention
+
+## Always use `invalidateQueries` after mutations — never `setQueryData`
+
+After a mutation succeeds, invalidate the relevant query keys. Do **not** write the mutation response directly into the cache via `queryClient.setQueryData`.
+
+**Why:** Mutation hooks are often called with props that are undefined on first render (e.g. `usePatchVehicle(vehicle?.id ?? '')`). React's Rules of Hooks require the call to be unconditional, so the hook initialises with `vehicleId = ''`. If `onSuccess` closes over that `vehicleId` and writes `setQueryData([VEHICLES, vehicleId], response)`, it writes to the wrong cache key `[VEHICLES, '']`. The real query `[VEHICLES, realId]` is then invalidated and refetches from scratch — causing the component to briefly lose all data during the loading window (Bug 2).
+
+**Rule:** After a mutation, invalidate all affected query keys with `exact: true`:
+
+```ts
+// ✅ Correct
+onSuccess: () => {
+  void queryClient.invalidateQueries({
+    queryKey: [QueryGroup.VEHICLES, vehicleId],
+    exact: true,
+  });
+  void queryClient.invalidateQueries({
+    queryKey: [QueryGroup.VEHICLES],
+    exact: true,
+  });
+},
+
+// ❌ Never do this — stale-closure on vehicleId corrupts the cache
+onSuccess: (updatedVehicle) => {
+  queryClient.setQueryData([QueryGroup.VEHICLES, vehicleId], updatedVehicle);
+  void queryClient.invalidateQueries({ queryKey: [QueryGroup.VEHICLES], exact: true });
+},
+```
+
+Use `exact: true` on every `invalidateQueries` call to prevent unintended cascade to unrelated query keys.

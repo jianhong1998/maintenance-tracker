@@ -91,10 +91,10 @@
 **Query/mutation hooks:**
 - **`useVehicle(vehicleId)`** — `queryKey: [VEHICLES, vehicleId]`; exports `vehicleQueryOptions` for reuse
 - **`useMaintenanceCards(vehicleId, sort?)`** — updated to accept optional `sort` param; separate cache entries for sorted vs unsorted (intentional — different response payloads)
-- **`usePatchVehicle(vehicleId)`** — `PATCH /vehicles/:id`; on success: `setQueryData` for individual vehicle entry + `invalidateQueries` (exact: true) for list
+- **`usePatchVehicle(vehicleId)`** — `PATCH /vehicles/:id`; on success: `invalidateQueries([VEHICLES, vehicleId], exact: true)` + `invalidateQueries([VEHICLES], exact: true)`. Does not use `setQueryData` — avoids the stale-closure bug where `vehicleId` is `''` on first render (see Bug 2 in `docs/bug-list/001-mileage-update-issues/`).
 
 **Components:**
-- **`MileagePrompt`** — checks `localStorage` key `mileage_prompted_{vehicleId}_{YYYY-MM-DD}` on mount; shows dismissible mileage input if not seen today. `dismiss()` fires in mutation `onSuccess` (not before) to prevent silent data loss on mutation failure
+- **`MileagePrompt`** — checks `localStorage` key `mileage_prompted_{vehicleId}_{YYYY-MM-DD}` on mount; shows dismissible mileage input if not seen today. `dismiss()` fires in mutation `onSuccess` (not before) to prevent silent data loss on mutation failure. Accepts `currentMileage: number` prop; submit is blocked and an inline error shown when entered value < `currentMileage`.
 - **`MaintenanceCardRow`** — colour-coded row: red (`bg-destructive/10`) for overdue, yellow (`bg-yellow-50 dark:bg-yellow-950`) for warning; shows remaining mileage or "OVERDUE"; includes dark mode variants for yellow states
 - **`VehicleDashboardPage`** — `AuthGuard` wrapper, vehicle header, mileage prompt, sort toggle, card list; redirects to `/` on 404/error
 
@@ -104,7 +104,7 @@
 ### Key post-review fixes
 - `MileagePrompt.handleSubmit`: `dismiss()` moved to `onSuccess` callback — prevents marking prompt as seen when mileage save fails
 - `MaintenanceCardRow` warning colors: added `dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-400` variants
-- `usePatchVehicle` comments clarified to explain `exact: true` on `invalidateQueries`
+- `usePatchVehicle` uses dual `invalidateQueries` (individual vehicle + list) instead of `setQueryData` — avoids stale-closure bug where `vehicleId` captured as `''` on first render writes to the wrong cache key
 - `MileagePrompt` input validation: `disabled={!value.trim() || isNaN(parseFloat(value))}` — rejects whitespace-only and non-numeric input
 
 ### Key files
@@ -166,7 +166,7 @@
 
 **Dialog components** (`frontend/src/components/maintenance-cards/`):
 - **`MaintenanceCardFormDialog`** — single component for both create and edit modes (mode determined by whether a `card` prop is passed). Fields: Type (3-button toggle: Task/Part/Item, default=task), Name (required), Description (optional), Every km (conditional), Every months (conditional). Save disabled until name filled AND at least one interval positive.
-- **`MarkDoneDialog`** — Fields: Done at mileage (shown+required when card has `intervalMileage`), Notes (optional). On save: calls `useMarkDone`, closes on success.
+- **`MarkDoneDialog`** — Accepts `currentMileage: number` prop. Fields: Done at mileage (shown+required when card has `intervalMileage`), Notes (optional). Done button is disabled until `doneAtMileage >= currentMileage`. On save: calls `useMarkDone`, closes on success.
 - **`DeleteConfirmDialog`** — Body: `Delete "[card.name]"? This cannot be undone.` Buttons: Cancel (ghost), Delete (destructive).
 
 **`MaintenanceCardRow` updates:**

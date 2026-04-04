@@ -31,6 +31,20 @@ function assertAtLeastOneInterval(input: {
   }
 }
 
+function addMonths(date: Date, months: number): Date {
+  const targetDay = date.getDate();
+  const result = new Date(date);
+  result.setDate(1);
+  result.setMonth(date.getMonth() + months);
+  const lastDay = new Date(
+    result.getFullYear(),
+    result.getMonth() + 1,
+    0,
+  ).getDate();
+  result.setDate(Math.min(targetDay, lastDay));
+  return result;
+}
+
 function sortByUrgency(
   cards: MaintenanceCardEntity[],
   vehicleMileage: number,
@@ -175,29 +189,27 @@ export class MaintenanceCardService {
     ]);
     if (!card) throw new NotFoundException('Maintenance card not found');
 
-    if (card.intervalMileage !== null && input.doneAtMileage == null) {
+    const doneAtMileage = input.doneAtMileage;
+
+    if (card.intervalMileage !== null && typeof doneAtMileage !== 'number') {
       throw new BadRequestException(
         'doneAtMileage is required when the card has an intervalMileage',
       );
     }
 
+    if (typeof doneAtMileage === 'number' && doneAtMileage < vehicle.mileage) {
+      throw new BadRequestException(
+        'doneAtMileage cannot be less than the vehicle current mileage',
+      );
+    }
+
     const today = new Date();
 
-    if (card.intervalMileage !== null) {
-      card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
+    if (card.intervalMileage !== null && typeof doneAtMileage === 'number') {
+      card.nextDueMileage = doneAtMileage + card.intervalMileage;
     }
     if (card.intervalTimeMonths !== null) {
-      const targetDay = today.getDate();
-      const nextDue = new Date(today);
-      nextDue.setDate(1);
-      nextDue.setMonth(today.getMonth() + card.intervalTimeMonths);
-      const lastDayOfMonth = new Date(
-        nextDue.getFullYear(),
-        nextDue.getMonth() + 1,
-        0,
-      ).getDate();
-      nextDue.setDate(Math.min(targetDay, lastDayOfMonth));
-      card.nextDueDate = nextDue;
+      card.nextDueDate = addMonths(today, card.intervalTimeMonths);
     }
 
     const history = await this.dataSource.transaction(async (em) => {
@@ -208,7 +220,7 @@ export class MaintenanceCardService {
       const createdHistory = await this.historyRepository.create({
         creationData: {
           maintenanceCardId: id,
-          doneAtMileage: input.doneAtMileage ?? null,
+          doneAtMileage: doneAtMileage ?? null,
           doneAtDate: today,
           notes: input.notes ?? null,
         },
@@ -221,9 +233,9 @@ export class MaintenanceCardService {
     // Known limitation: updateVehicle runs after the transaction commits.
     // A failure here leaves the vehicle mileage stale while the history record persists.
     // Cross-service atomicity requires a saga/outbox pattern (out of scope).
-    if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
+    if (typeof doneAtMileage === 'number' && doneAtMileage > vehicle.mileage) {
       await this.vehicleService.updateVehicle(vehicleId, userId, {
-        mileage: input.doneAtMileage,
+        mileage: doneAtMileage,
       });
     }
 
