@@ -9,8 +9,11 @@ export const usePatchVehicle = (vehicleId: string) => {
   return useMutation<IVehicleResDTO, Error, IUpdateVehicleReqDTO>({
     mutationFn: (data) =>
       apiClient.patch<IVehicleResDTO>(`/vehicles/${vehicleId}`, data),
-    onSuccess: (data) => {
-      queryClient.setQueryData([QueryGroup.VEHICLES, vehicleId], data);
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [QueryGroup.VEHICLES, vehicleId],
+        exact: true,
+      });
       void queryClient.invalidateQueries({
         queryKey: [QueryGroup.VEHICLES],
         exact: true,

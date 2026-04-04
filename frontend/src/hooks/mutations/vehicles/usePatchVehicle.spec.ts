@@ -68,7 +68,7 @@ describe('usePatchVehicle', () => {
     expect(result.current.data).toEqual(mockVehicle);
   });
 
-  it('should call setQueryData with individual vehicle key and mutation response data on success', async () => {
+  it('should NOT call setQueryData on success', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper, queryClient } = createWrapperWithClient();
@@ -84,13 +84,10 @@ describe('usePatchVehicle', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(setQueryDataSpy).toHaveBeenCalledWith(
-      [QueryGroup.VEHICLES, 'abc-123'],
-      mockVehicle,
-    );
+    expect(setQueryDataSpy).not.toHaveBeenCalled();
   });
 
-  it('should call invalidateQueries only for the list key, not the individual key, on success', async () => {
+  it('should call invalidateQueries for both the individual vehicle key and the list key on success', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper, queryClient } = createWrapperWithClient();
@@ -107,11 +104,11 @@ describe('usePatchVehicle', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: [QueryGroup.VEHICLES],
+      queryKey: [QueryGroup.VEHICLES, 'abc-123'],
       exact: true,
     });
-    expect(invalidateQueriesSpy).not.toHaveBeenCalledWith({
-      queryKey: [QueryGroup.VEHICLES, 'abc-123'],
+    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+      queryKey: [QueryGroup.VEHICLES],
       exact: true,
     });
   });

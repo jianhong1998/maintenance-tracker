@@ -200,11 +200,11 @@ The `setQueryData` optimisation is only safe when `vehicleId` is guaranteed corr
 
 Maintenance cards use their own `QueryGroup.MAINTENANCE_CARDS` group, not nested under `VEHICLES`. This means invalidating `[QueryGroup.VEHICLES, vehicleId]` does not cascade to maintenance cards regardless of the `exact` flag.
 
-### Fix Plan
+### Fix Applied
 
-1. **Remove `setQueryData` from `usePatchVehicle` — use invalidation only**
+1. **Removed `setQueryData` from `usePatchVehicle` — use invalidation only**
 
-   Replace the entire `onSuccess` with dual `invalidateQueries`, both using `exact: true`:
+   Replaced the entire `onSuccess` with dual `invalidateQueries`, both using `exact: true` (`frontend/src/hooks/mutations/vehicles/usePatchVehicle.ts`):
 
    ```ts
    onSuccess: () => {
@@ -225,34 +225,20 @@ Maintenance cards use their own `QueryGroup.MAINTENANCE_CARDS` group, not nested
 
    > **Why not `await` sequentially?** `invalidateQueries` synchronously marks queries stale and initiates refetches for active observers. Both calls can fire concurrently with `void`. There is no atomicity requirement between the individual vehicle and list views.
 
-2. **Guard against empty vehicleId in `usePatchVehicle`**
+   > **Note on `vehicleId` guard:** A prior fix attempt added `if (!vehicleId) throw new Error(...)` in `mutationFn`. This was removed per code review — `VehicleFormDialog` only fires the mutation when `isEdit = true`, which guarantees `vehicle.id` is a valid UUID. The guard added noise without providing real safety.
 
-   Add an early throw in `mutationFn`:
+2. **Tests updated (`frontend/src/hooks/mutations/vehicles/usePatchVehicle.spec.ts`)**
 
-   ```ts
-   mutationFn: (data) => {
-     if (!vehicleId) throw new Error('vehicleId is required');
-     return apiClient.patch<IVehicleResDTO>(`/vehicles/${vehicleId}`, data);
-   },
-   ```
-
-   > **Note:** In `VehicleFormDialog`, `patchMutation` is only called when `isEdit = true`, which requires `vehicle` to be defined, which means `vehicle.id` is a valid UUID. This guard is belt-and-suspenders defense — it should never actually trigger, but it prevents a malformed API call (`PATCH /vehicles/`) if the hook is ever misused.
-
-3. **Tests**
-
-   Update `usePatchVehicle.spec.ts`:
-   - Assert `invalidateQueries` is called for `[QueryGroup.VEHICLES, vehicleId]` with `exact: true`.
-   - Assert `invalidateQueries` is called for `[QueryGroup.VEHICLES]` with `exact: true`.
-   - Assert `setQueryData` is **not** called.
-   - Assert that calling `mutate` with an empty `vehicleId` rejects immediately.
+   - "should NOT call setQueryData on success" — verifies `setQueryData` is never called.
+   - "should call invalidateQueries for both the individual vehicle key and the list key on success" — verifies both `[QueryGroup.VEHICLES, vehicleId]` and `[QueryGroup.VEHICLES]` are invalidated with `exact: true`.
 
 ---
 
 ## Dependency / execution order
 
-1. Write failing tests for Bug 1 (backend service + frontend components).
-2. Implement Bug 1 backend fix (`VehicleService.updateVehicle`).
-3. Implement Bug 1 frontend fixes (`MileagePrompt` prop + caller update + `VehicleFormDialog` validation).
-4. Write failing tests for Bug 2 (`usePatchVehicle`).
-5. Implement Bug 2 fix (remove `setQueryData`, use dual `invalidateQueries` with `exact: true`).
-6. Format and lint all changed files.
+1. Write failing tests for Bug 1 (backend service + frontend components). ✅
+2. Implement Bug 1 backend fix (`VehicleService.updateVehicle`). ✅
+3. Implement Bug 1 frontend fixes (`MileagePrompt` prop + caller update + `VehicleFormDialog` validation). ✅
+4. Write failing tests for Bug 2 (`usePatchVehicle`). ✅
+5. Implement Bug 2 fix (remove `setQueryData`, use dual `invalidateQueries` with `exact: true`). ✅
+6. Format and lint all changed files. ✅
