@@ -38,19 +38,34 @@ After `getVehicle` loads the current entity (with its existing mileage), `Object
 - `MileagePrompt` (`frontend/src/components/vehicles/mileage-prompt.tsx:61`): disabled only checks for a parseable number; component has no access to current mileage so it cannot compare.
 - `VehicleFormDialog` (`frontend/src/components/vehicles/vehicle-form-dialog.tsx:55-60`): validates `parsedMileage >= 0` but does not compare against `vehicle.mileage` in edit mode.
 
-### Paths already protected — no changes needed
+### `MarkDoneDialog` path — also affected, now fixed
 
-**`maintenance-card.service.ts#markDone` (`backend/src/modules/maintenance-card/services/maintenance-card.service.ts:224`)**
+The original plan marked this path as protected because `updateVehicle` was only called when `doneAtMileage > vehicle.mileage`. However, the `markDone` operation itself was not guarded: a request with `doneAtMileage` below the current vehicle mileage would still succeed, recording a history entry with a stale/physically impossible mileage. This is a data integrity issue.
 
-```ts
-if (input.doneAtMileage != null && input.doneAtMileage > vehicle.mileage) {
-  await this.vehicleService.updateVehicle(vehicleId, userId, {
-    mileage: input.doneAtMileage,
-  });
-}
-```
+**Fix applied:**
 
-This path only calls `updateVehicle` when `doneAtMileage > vehicle.mileage`. A lower or equal value simply skips the vehicle update — it cannot decrease mileage. Additionally, once the backend guard (Step 1 below) is in place, any future call to `updateVehicle` from this path also inherits the guard. No changes needed here.
+- **Frontend — `MarkDoneDialog`** (`frontend/src/components/maintenance-cards/mark-done-dialog.tsx`):
+  Added `currentMileage: number` prop. `isValid` now requires `doneAtMileage >= currentMileage`:
+  ```ts
+  const isValid =
+    !requiresMileage ||
+    (parsedMileage !== null && parsedMileage >= currentMileage);
+  ```
+  Call site in `vehicle-dashboard-page.tsx` updated to pass `currentMileage={vehicle.mileage}`.
+
+- **Backend — `MaintenanceCardService.markDone`** (`backend/src/modules/maintenance-card/services/maintenance-card.service.ts`):
+  Added guard after vehicle/card load, before transaction:
+  ```ts
+  if (input.doneAtMileage != null && input.doneAtMileage < vehicle.mileage) {
+    throw new BadRequestException(
+      'doneAtMileage cannot be less than the vehicle current mileage',
+    );
+  }
+  ```
+
+- **Tests:**
+  - `mark-done-dialog.spec.tsx`: added 3 tests (below, equal, above current mileage); all 9 existing renders updated with `currentMileage` prop.
+  - `maintenance-card.service.spec.ts`: added `throws BadRequestException when doneAtMileage is below vehicle current mileage`; updated `does NOT update vehicle mileage when doneAtMileage <= vehicle.mileage` to use the equal case (10000 == 10000) since below-mileage is now rejected.
 
 ### Fix Plan
 
