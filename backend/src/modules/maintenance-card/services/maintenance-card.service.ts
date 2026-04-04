@@ -181,10 +181,18 @@ export class MaintenanceCardService {
       );
     }
 
+    const doneAtMileage = input.doneAtMileage;
+
+    if (!!doneAtMileage && doneAtMileage < vehicle.mileage) {
+      throw new BadRequestException(
+        'doneAtMileage cannot be less than the vehicle current mileage',
+      );
+    }
+
     const today = new Date();
 
-    if (card.intervalMileage !== null) {
-      card.nextDueMileage = input.doneAtMileage! + card.intervalMileage;
+    if (card.intervalMileage !== null && doneAtMileage) {
+      card.nextDueMileage = doneAtMileage + card.intervalMileage;
     }
     if (card.intervalTimeMonths !== null) {
       const targetDay = today.getDate();

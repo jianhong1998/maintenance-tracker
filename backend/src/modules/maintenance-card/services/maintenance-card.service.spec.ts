@@ -650,12 +650,20 @@ describe('MaintenanceCardService', () => {
       );
     });
 
-    it('does NOT update vehicle mileage when doneAtMileage <= vehicle.mileage', async () => {
+    it('does NOT update vehicle mileage when doneAtMileage equals vehicle current mileage', async () => {
+      // baseVehicle.mileage = 10000; equal is valid but should not trigger a vehicle update
       await service.markDone(cardId, vehicleId, userId, {
-        doneAtMileage: 9000,
+        doneAtMileage: 10000,
       });
 
       expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when doneAtMileage is below vehicle current mileage', async () => {
+      // baseVehicle.mileage = 10000
+      await expect(
+        service.markDone(cardId, vehicleId, userId, { doneAtMileage: 9000 }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('throws BadRequestException when card has intervalMileage but doneAtMileage is not provided', async () => {
