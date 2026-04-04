@@ -91,7 +91,7 @@
 **Query/mutation hooks:**
 - **`useVehicle(vehicleId)`** — `queryKey: [VEHICLES, vehicleId]`; exports `vehicleQueryOptions` for reuse
 - **`useMaintenanceCards(vehicleId, sort?)`** — updated to accept optional `sort` param; separate cache entries for sorted vs unsorted (intentional — different response payloads)
-- **`usePatchVehicle(vehicleId)`** — `PATCH /vehicles/:id`; on success: dual `invalidateQueries` with `exact: true` — one for `[VEHICLES, vehicleId]` (individual entry), one for `[VEHICLES]` (list). `setQueryData` was removed (was writing to wrong cache key when `vehicleId` was empty string on first render). `mutationFn` also guards against empty `vehicleId` with an early throw.
+- **`usePatchVehicle(vehicleId)`** — `PATCH /vehicles/:id`; on success: `setQueryData([VEHICLES, vehicleId], data)` with the mutation response (always fresh), then a single `invalidateQueries` for `[VEHICLES]` (list). Using the response data for `setQueryData` avoids the stale-state problem that triggered the earlier dual-invalidation approach. No empty-string `vehicleId` guard — `patchMutation.mutate` is only reached when `isEdit === true`, so `vehicleId` is always non-empty at call time.
 
 **Components:**
 - **`MileagePrompt`** — checks `localStorage` key `mileage_prompted_{vehicleId}_{YYYY-MM-DD}` on mount; shows dismissible mileage input if not seen today. `dismiss()` fires in mutation `onSuccess` (not before) to prevent silent data loss on mutation failure. Accepts `currentMileage: number` prop; submit is blocked and an inline error shown when entered value < `currentMileage`.
@@ -104,7 +104,7 @@
 ### Key post-review fixes
 - `MileagePrompt.handleSubmit`: `dismiss()` moved to `onSuccess` callback — prevents marking prompt as seen when mileage save fails
 - `MaintenanceCardRow` warning colors: added `dark:border-yellow-800 dark:bg-yellow-950 dark:text-yellow-400` variants
-- `usePatchVehicle` comments clarified to explain `exact: true` on `invalidateQueries`
+- `usePatchVehicle` switched from dual `invalidateQueries` to `setQueryData(response)` + single list invalidation; removed dead empty-string `vehicleId` guard
 - `MileagePrompt` input validation: `disabled={!value.trim() || isNaN(parseFloat(value))}` — rejects whitespace-only and non-numeric input
 
 ### Key files

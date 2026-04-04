@@ -63,8 +63,8 @@
 - **`MaintenanceCardService.markDone`** orchestration:
   1. Validate card exists and belongs to vehicle
   2. If card has `intervalMileage`, require `doneAtMileage` in request; throw `BadRequestException` if missing
-  3. If `doneAtMileage` is provided, validate `doneAtMileage >= vehicle.mileage`; throw `BadRequestException` if below
-  4. Recompute `nextDueMileage` = `doneAtMileage + intervalMileage` (if both present)
+  3. If `doneAtMileage != null` (explicit null check — `0` is a valid mileage), validate `doneAtMileage >= vehicle.mileage`; throw `BadRequestException` if below
+  4. Recompute `nextDueMileage` = `doneAtMileage + intervalMileage` (if `intervalMileage` set and `doneAtMileage != null`)
   5. Recompute `nextDueDate` = today + `intervalTimeMonths` (if present)
   6. Create `MaintenanceHistory` record and update card — both inside a single transaction
   7. If `doneAtMileage > Vehicle.mileage`, update vehicle mileage (runs after transaction commit)
