@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { VehicleService } from './vehicle.service';
 import { VehicleRepository } from '../repositories/vehicle.repository';
@@ -123,6 +123,24 @@ describe('VehicleService', () => {
       await expect(
         service.updateVehicle(vehicleId, userId, { colour: 'Black' }),
       ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException when input.mileage is less than current vehicle mileage', async () => {
+      mockVehicleRepository.getOne.mockResolvedValue(baseVehicle); // baseVehicle.mileage = 1000
+
+      await expect(
+        service.updateVehicle(vehicleId, userId, { mileage: 999 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('does not throw when input.mileage equals current vehicle mileage', async () => {
+      const updated = { ...baseVehicle };
+      mockVehicleRepository.getOne.mockResolvedValue(baseVehicle);
+      mockVehicleRepository.updateWithSave.mockResolvedValue([updated]);
+
+      await expect(
+        service.updateVehicle(vehicleId, userId, { mileage: 1000 }),
+      ).resolves.not.toThrow();
     });
   });
 

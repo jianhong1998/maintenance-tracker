@@ -291,6 +291,33 @@ describe('VehicleFormDialog', () => {
     expect(toast.error).toHaveBeenCalledWith('Server error');
   });
 
+  it('disables Save button in edit mode when mileage is reduced below current vehicle mileage', () => {
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        vehicle={mockVehicle}
+      />,
+    );
+    // Change mileage to something lower than 85000
+    fireEvent.change(screen.getByLabelText(/mileage/i), {
+      target: { value: '80000' },
+    });
+    expect(screen.getByRole('button', { name: /^save$/i })).toBeDisabled();
+  });
+
+  it('enables Save button in edit mode when mileage equals current vehicle mileage', () => {
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        vehicle={mockVehicle}
+      />,
+    );
+    // Pre-filled with 85000 (the current mileage) — should be valid
+    expect(screen.getByRole('button', { name: /^save$/i })).not.toBeDisabled();
+  });
+
   it('shows fallback error toast when mutation error message is empty string', () => {
     vi.mocked(useCreateVehicle).mockReturnValue({
       mutate: (_data: unknown, opts: { onError: (err: Error) => void }) =>
