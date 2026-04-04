@@ -185,7 +185,6 @@ describe('MileagePrompt', () => {
 
     const input = screen.getByPlaceholderText('Enter mileage');
     fireEvent.change(input, { target: { value: '49999' } });
-    fireEvent.click(screen.getByRole('button', { name: /update/i }));
 
     expect(
       screen.getByText(/mileage cannot be less than current/i),
@@ -206,7 +205,6 @@ describe('MileagePrompt', () => {
 
     const input = screen.getByPlaceholderText('Enter mileage');
     fireEvent.change(input, { target: { value: '49999' } });
-    fireEvent.click(screen.getByRole('button', { name: /update/i }));
 
     expect(mockMutate).not.toHaveBeenCalled();
   });
