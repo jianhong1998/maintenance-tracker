@@ -71,7 +71,7 @@ export function MileagePrompt({
         <Button
           size="sm"
           onClick={handleSubmit}
-          disabled={!value.trim() || isNaN(parseFloat(value)) || isBelowCurrent}
+          disabled={!value.trim() || isNaN(parsedValue) || isBelowCurrent}
         >
           Update
         </Button>

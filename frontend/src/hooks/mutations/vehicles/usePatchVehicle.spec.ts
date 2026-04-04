@@ -87,7 +87,7 @@ describe('usePatchVehicle', () => {
     expect(setQueryDataSpy).not.toHaveBeenCalled();
   });
 
-  it('should call queryClient.invalidateQueries for individual vehicle key with exact:true on success', async () => {
+  it('should call invalidateQueries for both individual vehicle key and list key with exact:true on success', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper, queryClient } = createWrapperWithClient();
