@@ -113,7 +113,10 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
         </div>
       </div>
 
-      <MileagePrompt vehicleId={vehicleId} />
+      <MileagePrompt
+        vehicleId={vehicleId}
+        currentMileage={vehicle.mileage}
+      />
 
       <div className="flex gap-2">
         <Button

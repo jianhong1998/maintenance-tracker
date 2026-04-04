@@ -88,12 +88,12 @@ describe('MileagePrompt', () => {
     });
 
     const input = screen.getByPlaceholderText('Enter mileage');
-    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.change(input, { target: { value: '60000' } });
 
     fireEvent.click(screen.getByText('Update'));
 
     expect(mockMutate).toHaveBeenCalledWith(
-      { mileage: 12345 },
+      { mileage: 60000 },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
     // dismiss() must NOT fire before mutation settles
@@ -142,7 +142,7 @@ describe('MileagePrompt', () => {
     });
 
     const input = screen.getByPlaceholderText('Enter mileage');
-    fireEvent.change(input, { target: { value: '12345' } });
+    fireEvent.change(input, { target: { value: '60000' } });
     fireEvent.click(screen.getByText('Update'));
 
     expect(localStorage.getItem(getTodayKey(VEHICLE_ID))).toBe('1');
