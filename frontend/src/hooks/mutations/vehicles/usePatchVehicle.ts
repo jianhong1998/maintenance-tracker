@@ -7,15 +7,15 @@ export const usePatchVehicle = (vehicleId: string) => {
   const queryClient = useQueryClient();
 
   return useMutation<IVehicleResDTO, Error, IUpdateVehicleReqDTO>({
-    mutationFn: (data) =>
-      apiClient.patch<IVehicleResDTO>(`/vehicles/${vehicleId}`, data),
-    onSuccess: (updatedVehicle) => {
-      // Update the individual vehicle cache entry directly (no refetch for this entry)
-      queryClient.setQueryData(
-        [QueryGroup.VEHICLES, vehicleId],
-        updatedVehicle,
-      );
-      // exact: true targets only the list key [VEHICLES], not individual [VEHICLES, id] entries
+    mutationFn: (data) => {
+      if (!vehicleId) throw new Error('vehicleId is required');
+      return apiClient.patch<IVehicleResDTO>(`/vehicles/${vehicleId}`, data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: [QueryGroup.VEHICLES, vehicleId],
+        exact: true,
+      });
       void queryClient.invalidateQueries({
         queryKey: [QueryGroup.VEHICLES],
         exact: true,
