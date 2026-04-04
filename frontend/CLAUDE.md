@@ -29,4 +29,4 @@ Next.js 15 App Router with TanStack Query for server state.
 - API calls: use `apiClient` from `src/lib/api-client.ts`, never raw axios
 - Server state: use TanStack Query hooks in `src/hooks/queries/<feature>/`; query keys live in `src/hooks/queries/keys/`
 - Shared types from `@project/types` — never redefine API response shapes locally
-- `FRONTEND_BACKEND_BASE_URL` must be set in `.env` when the frontend runs in Docker
+- Refer other conventions in @../docs/codebase-related/002-frontend-convention.md .
