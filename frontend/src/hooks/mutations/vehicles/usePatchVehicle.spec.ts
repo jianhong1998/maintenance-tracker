@@ -68,7 +68,7 @@ describe('usePatchVehicle', () => {
     expect(result.current.data).toEqual(mockVehicle);
   });
 
-  it('should NOT call queryClient.setQueryData on success', async () => {
+  it('should call setQueryData with individual vehicle key and mutation response data on success', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper, queryClient } = createWrapperWithClient();
@@ -84,10 +84,13 @@ describe('usePatchVehicle', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(setQueryDataSpy).not.toHaveBeenCalled();
+    expect(setQueryDataSpy).toHaveBeenCalledWith(
+      [QueryGroup.VEHICLES, 'abc-123'],
+      mockVehicle,
+    );
   });
 
-  it('should call invalidateQueries for both individual vehicle key and list key with exact:true on success', async () => {
+  it('should call invalidateQueries only for the list key, not the individual key, on success', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper, queryClient } = createWrapperWithClient();
@@ -104,11 +107,11 @@ describe('usePatchVehicle', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: [QueryGroup.VEHICLES, 'abc-123'],
+      queryKey: [QueryGroup.VEHICLES],
       exact: true,
     });
-    expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-      queryKey: [QueryGroup.VEHICLES],
+    expect(invalidateQueriesSpy).not.toHaveBeenCalledWith({
+      queryKey: [QueryGroup.VEHICLES, 'abc-123'],
       exact: true,
     });
   });
@@ -132,20 +135,5 @@ describe('usePatchVehicle', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     expect(invalidateQueriesSpy).not.toHaveBeenCalled();
-  });
-
-  it('should throw an error when vehicleId is empty string', async () => {
-    const { wrapper } = createWrapperWithClient();
-    const { result } = renderHook(() => usePatchVehicle(''), {
-      wrapper,
-    });
-
-    act(() => {
-      result.current.mutate(patchData);
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-
-    expect(result.current.error?.message).toBe('vehicleId is required');
   });
 });

@@ -183,7 +183,7 @@ export class MaintenanceCardService {
 
     const doneAtMileage = input.doneAtMileage;
 
-    if (!!doneAtMileage && doneAtMileage < vehicle.mileage) {
+    if (doneAtMileage != null && doneAtMileage < vehicle.mileage) {
       throw new BadRequestException(
         'doneAtMileage cannot be less than the vehicle current mileage',
       );
@@ -191,7 +191,7 @@ export class MaintenanceCardService {
 
     const today = new Date();
 
-    if (card.intervalMileage !== null && doneAtMileage) {
+    if (card.intervalMileage !== null && doneAtMileage != null) {
       card.nextDueMileage = doneAtMileage + card.intervalMileage;
     }
     if (card.intervalTimeMonths !== null) {

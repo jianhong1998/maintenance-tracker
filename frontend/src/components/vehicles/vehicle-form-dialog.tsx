@@ -58,7 +58,7 @@ export function VehicleFormDialog({
     colour.trim().length > 0 &&
     !isNaN(parsedMileage) &&
     parsedMileage >= 0 &&
-    (!isEdit || parsedMileage >= (vehicle?.mileage ?? 0));
+    (!isEdit || parsedMileage >= vehicle!.mileage);
 
   const isPending = createMutation.isPending || patchMutation.isPending;
   const unitLocked = isEdit && hasCards;
@@ -165,9 +165,9 @@ export function VehicleFormDialog({
             />
             {isEdit &&
               !isNaN(parsedMileage) &&
-              parsedMileage < (vehicle?.mileage ?? 0) && (
+              parsedMileage < vehicle!.mileage && (
                 <p className="text-destructive text-xs mt-1">
-                  Cannot reduce mileage below current value ({vehicle?.mileage})
+                  Cannot reduce mileage below current value ({vehicle!.mileage})
                 </p>
               )}
           </div>
