@@ -126,7 +126,7 @@ describe('VehicleService', () => {
     });
 
     it('throws BadRequestException when input.mileage is less than current vehicle mileage', async () => {
-      mockVehicleRepository.getOne.mockResolvedValue(baseVehicle); // baseVehicle.mileage = 1000
+      mockVehicleRepository.getOne.mockResolvedValue(baseVehicle);
 
       await expect(
         service.updateVehicle(vehicleId, userId, { mileage: 999 }),
