@@ -190,6 +190,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
           }}
           card={markingDoneCard}
           vehicleId={vehicleId}
+          currentMileage={vehicle.mileage}
         />
       )}
 
