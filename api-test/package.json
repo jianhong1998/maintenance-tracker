@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@project/types": "workspace:*",
-    "axios": "^1.11.0"
+    "axios": "1.14.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
