@@ -1,8 +1,8 @@
 # Vehicle CRUD Frontend Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
-**Goal:** Add create, edit, and delete vehicle UI to the frontend — "Add Vehicle" button on the home page, and a ⋮ dropdown on the vehicle dashboard for edit/delete.
+**Goal:** Add create, edit, and delete vehicle UI to the frontend — "Add Vehicle" button on the home page, and direct Edit/Delete buttons on the vehicle dashboard header.
 
 **Architecture:** Two new mutation hooks (`useCreateVehicle`, `useDeleteVehicle`), two new dialog components (`VehicleFormDialog`, `VehicleDeleteConfirmDialog`), and targeted modifications to `home-page.tsx` and `vehicle-dashboard-page.tsx`. All state lifted to page level following the existing pattern in `VehicleDashboardPage`. TDD throughout.
 
@@ -35,7 +35,7 @@
 - Create: `frontend/src/hooks/mutations/vehicles/useCreateVehicle.ts`
 - Create: `frontend/src/hooks/mutations/vehicles/useCreateVehicle.spec.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 // frontend/src/hooks/mutations/vehicles/useCreateVehicle.spec.ts
@@ -134,7 +134,7 @@ describe('useCreateVehicle', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useCreateVehicle.spec.ts
@@ -142,7 +142,7 @@ cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useCreateVehicl
 
 Expected: FAIL — `useCreateVehicle` is not defined.
 
-- [ ] **Step 3: Implement the hook**
+- [x] **Step 3: Implement the hook**
 
 ```typescript
 // frontend/src/hooks/mutations/vehicles/useCreateVehicle.ts
@@ -165,7 +165,7 @@ export const useCreateVehicle = () => {
 };
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useCreateVehicle.spec.ts
@@ -173,7 +173,7 @@ cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useCreateVehicl
 
 Expected: PASS — 4 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/hooks/mutations/vehicles/useCreateVehicle.ts frontend/src/hooks/mutations/vehicles/useCreateVehicle.spec.ts
@@ -188,7 +188,7 @@ git commit -m "add useCreateVehicle mutation hook"
 - Create: `frontend/src/hooks/mutations/vehicles/useDeleteVehicle.ts`
 - Create: `frontend/src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 // frontend/src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts
@@ -254,7 +254,7 @@ describe('useDeleteVehicle', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts
@@ -262,7 +262,7 @@ cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useDeleteVehicl
 
 Expected: FAIL — `useDeleteVehicle` is not defined.
 
-- [ ] **Step 3: Implement the hook**
+- [x] **Step 3: Implement the hook**
 
 ```typescript
 // frontend/src/hooks/mutations/vehicles/useDeleteVehicle.ts
@@ -284,7 +284,7 @@ export const useDeleteVehicle = () => {
 };
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts
@@ -292,7 +292,7 @@ cd frontend && pnpm exec vitest run src/hooks/mutations/vehicles/useDeleteVehicl
 
 Expected: PASS — 3 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/hooks/mutations/vehicles/useDeleteVehicle.ts frontend/src/hooks/mutations/vehicles/useDeleteVehicle.spec.ts
@@ -307,7 +307,7 @@ git commit -m "add useDeleteVehicle mutation hook"
 - Create: `frontend/src/components/vehicles/vehicle-form-dialog.tsx`
 - Create: `frontend/src/components/vehicles/vehicle-form-dialog.spec.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 // frontend/src/components/vehicles/vehicle-form-dialog.spec.tsx
@@ -572,7 +572,7 @@ describe('VehicleFormDialog', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-form-dialog.spec.tsx
@@ -580,7 +580,7 @@ cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-form-dialog.
 
 Expected: FAIL — `VehicleFormDialog` is not defined.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 ```typescript
 // frontend/src/components/vehicles/vehicle-form-dialog.tsx
@@ -792,7 +792,7 @@ export function VehicleFormDialog({
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-form-dialog.spec.tsx
@@ -800,7 +800,7 @@ cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-form-dialog.
 
 Expected: PASS — 11 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/vehicles/vehicle-form-dialog.tsx frontend/src/components/vehicles/vehicle-form-dialog.spec.tsx
@@ -815,7 +815,7 @@ git commit -m "add VehicleFormDialog component"
 - Create: `frontend/src/components/vehicles/vehicle-delete-confirm-dialog.tsx`
 - Create: `frontend/src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```typescript
 // frontend/src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx
@@ -963,7 +963,7 @@ describe('VehicleDeleteConfirmDialog', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx
@@ -971,7 +971,7 @@ cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-delete-confi
 
 Expected: FAIL — `VehicleDeleteConfirmDialog` is not defined.
 
-- [ ] **Step 3: Implement the component**
+- [x] **Step 3: Implement the component**
 
 ```typescript
 // frontend/src/components/vehicles/vehicle-delete-confirm-dialog.tsx
@@ -1042,7 +1042,7 @@ export function VehicleDeleteConfirmDialog({
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx
@@ -1050,7 +1050,7 @@ cd frontend && pnpm exec vitest run src/components/vehicles/vehicle-delete-confi
 
 Expected: PASS — 5 tests passing.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/vehicles/vehicle-delete-confirm-dialog.tsx frontend/src/components/vehicles/vehicle-delete-confirm-dialog.spec.tsx
@@ -1070,7 +1070,7 @@ git commit -m "add VehicleDeleteConfirmDialog component"
 - Add `createOpen` state and `VehicleFormDialog` to `HomeContent`.
 - `HomePage` becomes just the `AuthGuard` + `<main>` wrapper.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add the following new tests to `home-page.spec.tsx`. First, add `fireEvent` to the import and add the `VehicleFormDialog` mock at the top of the file alongside the existing mocks:
 
@@ -1129,7 +1129,7 @@ it('opens VehicleFormDialog when "Add Vehicle" button is clicked', () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify new tests fail**
+- [x] **Step 2: Run tests to verify new tests fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/pages/home-page.spec.tsx
@@ -1137,7 +1137,7 @@ cd frontend && pnpm exec vitest run src/components/pages/home-page.spec.tsx
 
 Expected: The 3 new tests FAIL (no "Add Vehicle" button exists yet). Existing tests still pass.
 
-- [ ] **Step 3: Update `home-page.tsx`**
+- [x] **Step 3: Update `home-page.tsx`**
 
 Replace the entire file contents:
 
@@ -1224,7 +1224,7 @@ export function HomePage() {
 }
 ```
 
-- [ ] **Step 4: Run all home-page tests**
+- [x] **Step 4: Run all home-page tests**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/pages/home-page.spec.tsx
@@ -1232,7 +1232,7 @@ cd frontend && pnpm exec vitest run src/components/pages/home-page.spec.tsx
 
 Expected: PASS — all tests passing (existing + 3 new).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/pages/home-page.tsx frontend/src/components/pages/home-page.spec.tsx
@@ -1241,19 +1241,19 @@ git commit -m "add Add Vehicle button and create dialog to home page"
 
 ---
 
-## Task 6: Update `vehicle-dashboard-page.tsx` — ⋮ dropdown and vehicle edit/delete dialogs
+## Task 6: Update `vehicle-dashboard-page.tsx` — direct Edit/Delete buttons and vehicle edit/delete dialogs
 
 **Files:**
 - Modify: `frontend/src/components/pages/vehicle-dashboard-page.tsx`
 - Modify: `frontend/src/components/pages/vehicle-dashboard-page.spec.tsx`
 
 **What changes:**
-- Add `vehicleDropdownOpen`, `editVehicleOpen`, `deleteVehicleOpen` state to `DashboardContent`.
-- Wrap the vehicle header `<div>` in a flex row with the ⋮ dropdown on the right.
-- Extend the existing document click handler to also close `vehicleDropdownOpen`.
+- Add `editVehicleOpen`, `deleteVehicleOpen` state to `DashboardContent`.
+- Place direct `Edit` (aria-label="Edit vehicle") and `Delete` (aria-label="Delete vehicle") buttons immediately adjacent to the vehicle title block using `flex items-start gap-3` — **not** `justify-between`. Buttons sit close to the title, not pushed to the far right.
 - Render `VehicleFormDialog` (edit mode) and `VehicleDeleteConfirmDialog` at the bottom of `DashboardContent`.
+- _Changed from ⋮ dropdown design after tester feedback (extra click was redundant)._
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Add the following mocks at the top of `vehicle-dashboard-page.spec.tsx`, alongside the existing mocks:
 
@@ -1292,44 +1292,45 @@ vi.mock('@/components/vehicles/vehicle-delete-confirm-dialog', () => ({
 Add these test cases inside the existing `describe('VehicleDashboardPage', ...)` block:
 
 ```typescript
-it('renders the ⋮ vehicle actions button', () => {
+it('renders Edit and Delete vehicle action buttons', () => {
   setupVehicleLoaded();
   render(<VehicleDashboardPage vehicleId="vehicle-1" />);
   expect(
-    screen.getByRole('button', { name: /vehicle actions/i }),
+    screen.getByRole('button', { name: /edit vehicle/i }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: /delete vehicle/i }),
   ).toBeInTheDocument();
 });
 
-it('opens vehicle edit dialog when Edit is clicked in the ⋮ dropdown', () => {
+it('opens vehicle edit dialog when Edit button is clicked', () => {
   setupVehicleLoaded();
   render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-  fireEvent.click(screen.getByRole('button', { name: /vehicle actions/i }));
-  fireEvent.click(screen.getByRole('button', { name: /^edit$/i }));
+  fireEvent.click(screen.getByRole('button', { name: /edit vehicle/i }));
   expect(screen.getByTestId('vehicle-form-dialog')).toHaveTextContent(
     'edit:vehicle-1',
   );
 });
 
-it('opens vehicle delete dialog when Delete is clicked in the ⋮ dropdown', () => {
+it('opens vehicle delete dialog when Delete button is clicked', () => {
   setupVehicleLoaded();
   render(<VehicleDashboardPage vehicleId="vehicle-1" />);
-  fireEvent.click(screen.getByRole('button', { name: /vehicle actions/i }));
-  fireEvent.click(screen.getByRole('button', { name: /^delete$/i }));
+  fireEvent.click(screen.getByRole('button', { name: /delete vehicle/i }));
   expect(screen.getByTestId('vehicle-delete-dialog')).toHaveTextContent(
     'vehicle-1',
   );
 });
 ```
 
-- [ ] **Step 2: Run tests to verify new tests fail**
+- [x] **Step 2: Run tests to verify new tests fail**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/pages/vehicle-dashboard-page.spec.tsx
 ```
 
-Expected: The 3 new tests FAIL (no ⋮ button or vehicle dialogs yet). Existing tests still pass.
+Expected: The 3 new tests FAIL (no Edit/Delete buttons or vehicle dialogs yet). Existing tests still pass.
 
-- [ ] **Step 3: Update `vehicle-dashboard-page.tsx`**
+- [x] **Step 3: Update `vehicle-dashboard-page.tsx`**
 
 Replace the entire file contents:
 
@@ -1359,7 +1360,6 @@ interface VehicleDashboardPageProps {
 function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
   const [sort, setSort] = useState<'urgency' | 'name'>('urgency');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
-  const [vehicleDropdownOpen, setVehicleDropdownOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [editingCard, setEditingCard] = useState<IMaintenanceCardResDTO | null>(
     null,
@@ -1384,10 +1384,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
   );
 
   useEffect(() => {
-    const close = () => {
-      setActiveDropdownId(null);
-      setVehicleDropdownOpen(false);
-    };
+    const close = () => setActiveDropdownId(null);
     document.addEventListener('click', close);
     return () => document.removeEventListener('click', close);
   }, []);
@@ -1423,7 +1420,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start gap-3">
         <div>
           <h1 className="text-xl font-semibold">
             {vehicle.brand} {vehicle.model}
@@ -1433,44 +1430,23 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
             {vehicle.mileageUnit}
           </p>
         </div>
-        <div className="relative">
+        <div className="flex gap-2">
           <button
             type="button"
-            aria-label="Vehicle actions"
-            onClick={(e) => {
-              e.stopPropagation();
-              setVehicleDropdownOpen((prev) => !prev);
-            }}
+            aria-label="Edit vehicle"
+            onClick={() => setEditVehicleOpen(true)}
             className="rounded-md border border-input bg-background px-2 py-1 text-sm hover:bg-accent"
           >
-            ⋮
+            Edit
           </button>
-          {vehicleDropdownOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 min-w-[100px] rounded-md border bg-background shadow-md">
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-accent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVehicleDropdownOpen(false);
-                  setEditVehicleOpen(true);
-                }}
-              >
-                Edit
-              </button>
-              <button
-                type="button"
-                className="block w-full px-3 py-2 text-left text-sm text-destructive hover:bg-accent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setVehicleDropdownOpen(false);
-                  setDeleteVehicleOpen(true);
-                }}
-              >
-                Delete
-              </button>
-            </div>
-          )}
+          <button
+            type="button"
+            aria-label="Delete vehicle"
+            onClick={() => setDeleteVehicleOpen(true)}
+            className="rounded-md border border-input bg-background px-2 py-1 text-sm text-destructive hover:bg-accent"
+          >
+            Delete
+          </button>
         </div>
       </div>
 
@@ -1588,7 +1564,7 @@ export function VehicleDashboardPage({ vehicleId }: VehicleDashboardPageProps) {
 }
 ```
 
-- [ ] **Step 4: Run all vehicle-dashboard-page tests**
+- [x] **Step 4: Run all vehicle-dashboard-page tests**
 
 ```bash
 cd frontend && pnpm exec vitest run src/components/pages/vehicle-dashboard-page.spec.tsx
@@ -1596,7 +1572,7 @@ cd frontend && pnpm exec vitest run src/components/pages/vehicle-dashboard-page.
 
 Expected: PASS — all tests passing (existing + 3 new).
 
-- [ ] **Step 5: Run full frontend test suite**
+- [x] **Step 5: Run full frontend test suite**
 
 ```bash
 just test-unit
@@ -1604,7 +1580,7 @@ just test-unit
 
 Expected: All tests passing.
 
-- [ ] **Step 6: Format and lint**
+- [x] **Step 6: Format and lint**
 
 ```bash
 just format && just lint
@@ -1612,7 +1588,7 @@ just format && just lint
 
 Expected: No errors.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/components/pages/vehicle-dashboard-page.tsx frontend/src/components/pages/vehicle-dashboard-page.spec.tsx

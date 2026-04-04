@@ -8,6 +8,8 @@ import { MaintenanceCardRow } from '@/components/maintenance-cards/maintenance-c
 import { MaintenanceCardFormDialog } from '@/components/maintenance-cards/maintenance-card-form-dialog';
 import { MarkDoneDialog } from '@/components/maintenance-cards/mark-done-dialog';
 import { DeleteConfirmDialog } from '@/components/maintenance-cards/delete-confirm-dialog';
+import { VehicleFormDialog } from '@/components/vehicles/vehicle-form-dialog';
+import { VehicleDeleteConfirmDialog } from '@/components/vehicles/vehicle-delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
 import { useVehicle } from '@/hooks/queries/vehicles/useVehicle';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
@@ -28,6 +30,8 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
     useState<IMaintenanceCardResDTO | null>(null);
   const [deletingCard, setDeletingCard] =
     useState<IMaintenanceCardResDTO | null>(null);
+  const [editVehicleOpen, setEditVehicleOpen] = useState(false);
+  const [deleteVehicleOpen, setDeleteVehicleOpen] = useState(false);
 
   const router = useRouter();
 
@@ -41,7 +45,6 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
     sort,
   );
 
-  // Close dropdown when user clicks anywhere on the document
   useEffect(() => {
     const close = () => setActiveDropdownId(null);
     document.addEventListener('click', close);
@@ -79,14 +82,35 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
 
   return (
     <main className="flex flex-col gap-6 p-6">
-      <div>
-        <h1 className="text-xl font-semibold">
-          {vehicle.brand} {vehicle.model}
-        </h1>
-        <p className="text-muted-foreground text-sm">
-          {vehicle.colour} &middot; {vehicle.mileage.toLocaleString()}{' '}
-          {vehicle.mileageUnit}
-        </p>
+      <div className="flex items-start gap-3">
+        <div>
+          <h1 className="text-xl font-semibold">
+            {vehicle.brand} {vehicle.model}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {vehicle.colour} &middot; {vehicle.mileage.toLocaleString()}{' '}
+            {vehicle.mileageUnit}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label="Edit vehicle"
+            onClick={() => setEditVehicleOpen(true)}
+          >
+            Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label="Delete vehicle"
+            onClick={() => setDeleteVehicleOpen(true)}
+            className="text-destructive"
+          >
+            Delete
+          </Button>
+        </div>
       </div>
 
       <MileagePrompt vehicleId={vehicleId} />
@@ -140,7 +164,7 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
         )}
       </div>
 
-      {/* Dialogs */}
+      {/* Maintenance card dialogs */}
       <MaintenanceCardFormDialog
         open={createOpen || !!editingCard}
         onOpenChange={(open) => {
@@ -176,6 +200,20 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
           vehicleId={vehicleId}
         />
       )}
+
+      {/* Vehicle dialogs */}
+      <VehicleFormDialog
+        open={editVehicleOpen}
+        onOpenChange={setEditVehicleOpen}
+        vehicle={vehicle}
+        hasCards={cards.length > 0}
+      />
+
+      <VehicleDeleteConfirmDialog
+        open={deleteVehicleOpen}
+        onOpenChange={setDeleteVehicleOpen}
+        vehicle={vehicle}
+      />
     </main>
   );
 }

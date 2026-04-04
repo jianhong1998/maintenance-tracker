@@ -25,10 +25,10 @@ Implement vehicle Create, Edit, and Delete on the frontend. No backend changes r
 - Opens a **modal dialog** (`VehicleFormDialog` in create mode).
 
 ### Edit & Delete
-- Triggered from a **`⋮` dropdown menu** in the vehicle header on the dashboard page (`/vehicles/:id`).
-- Matches the existing `⋮` dropdown pattern on maintenance card rows.
+- Triggered from **direct `Edit` and `Delete` buttons** in the vehicle header on the dashboard page (`/vehicles/:id`), placed immediately adjacent (to the right) to the vehicle name block using `flex gap-3` — **not** right-aligned with `justify-between`. Intentional layout: buttons sit close to the title, not pushed to the far edge.
 - Edit opens `VehicleFormDialog` in edit mode.
 - Delete opens `VehicleDeleteConfirmDialog`.
+- _Note: Originally designed as a ⋮ dropdown (matching maintenance card rows), but changed after tester feedback — the extra click to open the dropdown was redundant._
 
 ### Delete confirmation copy
 - Body: *"Delete [brand model]? This cannot be undone."*
@@ -98,8 +98,8 @@ Under `frontend/src/hooks/mutations/vehicles/`:
 - Renders `<VehicleFormDialog open={createOpen} onOpenChange={setCreateOpen} />`.
 
 ### `VehicleDashboardPage` (`vehicle-dashboard-page.tsx`)
-- Add `editOpen: boolean` and `deleteOpen: boolean` state.
-- `⋮` dropdown in vehicle header: Edit sets `editOpen = true`, Delete sets `deleteOpen = true`.
+- Add `editVehicleOpen: boolean` and `deleteVehicleOpen: boolean` state.
+- `Edit` button in vehicle header sets `editVehicleOpen = true`; `Delete` button sets `deleteVehicleOpen = true`.
 - Renders `<VehicleFormDialog open={editOpen} onOpenChange={setEditOpen} vehicle={vehicle} hasCards={cards.length > 0} />`.
 - Renders `<VehicleDeleteConfirmDialog open={deleteOpen} onOpenChange={setDeleteOpen} vehicle={vehicle} />`.
 - On delete success: invalidate `[VEHICLES]` list, redirect to `/`.
@@ -130,4 +130,4 @@ TDD. Spec files co-located alongside each source file.
 | `vehicle-form-dialog.spec.tsx` | Correct title for create vs edit; Save disabled when required fields empty; unit toggle disabled when `hasCards=true`; hint text shown when locked; calls create mutation on save (create); calls patch mutation on save (edit) |
 | `vehicle-delete-confirm-dialog.spec.tsx` | Renders vehicle name in body; calls delete mutation on confirm; redirects to `/` on success |
 | `home-page.spec.tsx` | Renders `+ Add Vehicle` button; opens form dialog on click |
-| `vehicle-dashboard-page.spec.tsx` | Renders `⋮` dropdown in vehicle header; opens edit dialog; opens delete dialog |
+| `vehicle-dashboard-page.spec.tsx` | Renders `Edit` and `Delete` buttons in vehicle header; opens edit dialog; opens delete dialog |
