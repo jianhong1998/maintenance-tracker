@@ -208,4 +208,22 @@ describe('MileagePrompt', () => {
 
     expect(mockMutate).not.toHaveBeenCalled();
   });
+
+  it('enables Update button when entered value equals currentMileage', async () => {
+    render(
+      <MileagePrompt
+        vehicleId={VEHICLE_ID}
+        currentMileage={50000}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Enter mileage')).toBeInTheDocument();
+    });
+
+    const input = screen.getByPlaceholderText('Enter mileage');
+    fireEvent.change(input, { target: { value: '50000' } });
+
+    expect(screen.getByRole('button', { name: /update/i })).not.toBeDisabled();
+  });
 });

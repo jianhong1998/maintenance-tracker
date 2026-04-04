@@ -38,11 +38,8 @@ export function MileagePrompt({
   const isBelowCurrent = !isNaN(parsedValue) && parsedValue < currentMileage;
 
   const handleSubmit = () => {
-    const parsed = parseFloat(value.trim());
-    if (parsed < currentMileage) {
-      return;
-    }
-    patchVehicle({ mileage: parsed }, { onSuccess: dismiss });
+    if (isNaN(parsedValue) || isBelowCurrent) return;
+    patchVehicle({ mileage: parsedValue }, { onSuccess: dismiss });
   };
 
   if (!visible) return null;
