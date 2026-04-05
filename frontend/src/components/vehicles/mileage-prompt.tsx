@@ -59,7 +59,6 @@ export const MileagePrompt: FC<MileagePromptProps> = ({
   const isBelowCurrent = !isNaN(parsedValue) && parsedValue < currentMileage;
 
   const handleSubmit = () => {
-    if (isNaN(parsedValue) || isBelowCurrent) return;
     recordMileage(
       { mileage: parsedValue },
       { onSuccess: () => setVisible(false) },

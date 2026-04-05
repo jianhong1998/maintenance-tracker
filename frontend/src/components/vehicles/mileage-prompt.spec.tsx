@@ -67,7 +67,6 @@ describe('MileagePrompt', () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date('2026-04-05T10:00:00Z'));
 
-      // Apr 5 06:00 UTC is Apr 5 in every timezone from UTC-5 eastward
       const { container } = renderPrompt('2026-04-05T06:00:00.000Z');
 
       await waitFor(() => {
@@ -259,6 +258,22 @@ describe('MileagePrompt', () => {
       });
 
       expect(mockMutate).not.toHaveBeenCalled();
+    });
+
+    it('disables Update button for non-numeric input', async () => {
+      renderPrompt(null);
+
+      await waitFor(() => {
+        expect(
+          screen.getByPlaceholderText('Enter mileage'),
+        ).toBeInTheDocument();
+      });
+
+      fireEvent.change(screen.getByPlaceholderText('Enter mileage'), {
+        target: { value: 'abc' },
+      });
+
+      expect(screen.getByRole('button', { name: /update/i })).toBeDisabled();
     });
 
     it('enables Update button when entered value equals currentMileage', async () => {
