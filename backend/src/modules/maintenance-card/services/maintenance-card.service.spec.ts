@@ -21,6 +21,7 @@ const mockMaintenanceCardRepository = {
 const mockVehicleService = {
   getVehicle: vi.fn(),
   updateVehicle: vi.fn(),
+  recordMileage: vi.fn(),
 };
 
 const mockHistoryRepository = {
@@ -636,27 +637,29 @@ describe('MaintenanceCardService', () => {
       vi.useRealTimers();
     });
 
-    it('auto-updates vehicle mileage when doneAtMileage > vehicle.mileage', async () => {
+    it('records mileage via recordMileage when doneAtMileage > vehicle.mileage', async () => {
       await service.markDone(cardId, vehicleId, userId, {
         doneAtMileage: 12500,
       });
 
-      expect(mockVehicleService.updateVehicle).toHaveBeenCalledWith(
-        vehicleId,
+      expect(mockVehicleService.recordMileage).toHaveBeenCalledWith({
+        id: vehicleId,
         userId,
-        {
-          mileage: 12500,
-        },
-      );
+        mileage: 12500,
+      });
     });
 
-    it('does NOT update vehicle mileage when doneAtMileage equals vehicle current mileage', async () => {
-      // baseVehicle.mileage = 10000; equal is valid but should not trigger a vehicle update
+    it('records mileage via recordMileage when doneAtMileage equals vehicle current mileage', async () => {
+      // baseVehicle.mileage = 10000; equal triggers recordMileage (to update mileageLastUpdatedAt)
       await service.markDone(cardId, vehicleId, userId, {
         doneAtMileage: 10000,
       });
 
-      expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+      expect(mockVehicleService.recordMileage).toHaveBeenCalledWith({
+        id: vehicleId,
+        userId,
+        mileage: 10000,
+      });
     });
 
     it('throws BadRequestException when doneAtMileage is below vehicle current mileage', async () => {
@@ -707,7 +710,7 @@ describe('MaintenanceCardService', () => {
       const result = await service.markDone(cardId, vehicleId, userId, {});
 
       expect(result).toEqual(baseHistory);
-      expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+      expect(mockVehicleService.recordMileage).not.toHaveBeenCalled();
       const call = mockHistoryRepository.create.mock.calls[0]?.[0] as {
         creationData: { doneAtMileage: number | null };
       };
@@ -791,7 +794,7 @@ describe('MaintenanceCardService', () => {
         service.markDone(cardId, vehicleId, userId, { doneAtMileage: 12500 }),
       ).rejects.toThrow('DB insert failed');
 
-      expect(mockVehicleService.updateVehicle).not.toHaveBeenCalled();
+      expect(mockVehicleService.recordMileage).not.toHaveBeenCalled();
     });
   });
 });
