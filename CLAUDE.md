@@ -87,6 +87,10 @@ The hook skips merge commits, squash commits, and rebase operations automaticall
 - Environment variables for backend should always have prefix `BACKEND_`.
 - Environment variables for frontend should always have prefix `FRONTEND_`. No `NEXT_` prefix in the variable.
 
+## Bug history
+
+All recorded bugs and their fix context are indexed at @docs/bug-list/index.md . Before investigating a bug or reviewing a bugfix branch, check the index first — it links to the full bug report and fix plan for each issue.
+
 ## Code review
 
 - Must understand the context of code changing (eg. what are the background stories to make the changes? what decissions made?)
