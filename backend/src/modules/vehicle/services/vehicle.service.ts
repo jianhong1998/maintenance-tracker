@@ -53,6 +53,26 @@ export class VehicleService {
     return updated;
   }
 
+  async recordMileage(params: {
+    id: string;
+    userId: string;
+    mileage: number;
+  }): Promise<VehicleEntity> {
+    const { id, userId, mileage } = params;
+    const vehicle = await this.getVehicle(id, userId);
+    if (mileage < vehicle.mileage) {
+      throw new BadRequestException(
+        'New mileage cannot be less than the current mileage',
+      );
+    }
+    vehicle.mileage = mileage;
+    vehicle.mileageLastUpdatedAt = new Date();
+    const [updated] = await this.vehicleRepository.updateWithSave({
+      dataArray: [vehicle],
+    });
+    return updated;
+  }
+
   async deleteVehicle(id: string, userId: string): Promise<void> {
     const result = await this.vehicleRepository.delete({
       criteria: { id, userId },

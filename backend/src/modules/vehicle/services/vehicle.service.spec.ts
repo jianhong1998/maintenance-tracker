@@ -23,6 +23,7 @@ const baseVehicle = {
   colour: 'White',
   mileage: 1000,
   mileageUnit: 'km',
+  mileageLastUpdatedAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
@@ -141,6 +142,72 @@ describe('VehicleService', () => {
       await expect(
         service.updateVehicle(vehicleId, userId, { mileage: 1000 }),
       ).resolves.not.toThrow();
+    });
+  });
+
+  describe('#recordMileage', () => {
+    it('updates mileage and sets mileageLastUpdatedAt', async () => {
+      const now = new Date('2026-04-05T10:00:00Z');
+      vi.setSystemTime(now);
+
+      const updated = {
+        ...baseVehicle,
+        mileage: 1500,
+        mileageLastUpdatedAt: now,
+      };
+      mockVehicleRepository.getOne.mockResolvedValue({ ...baseVehicle });
+      mockVehicleRepository.updateWithSave.mockResolvedValue([updated]);
+
+      const result = await service.recordMileage({
+        id: vehicleId,
+        userId,
+        mileage: 1500,
+      });
+
+      expect(mockVehicleRepository.updateWithSave).toHaveBeenCalledWith({
+        dataArray: [
+          expect.objectContaining({
+            mileage: 1500,
+            mileageLastUpdatedAt: now,
+          }),
+        ],
+      });
+      expect(result).toEqual(updated);
+
+      vi.useRealTimers();
+    });
+
+    it('sets mileageLastUpdatedAt even when mileage equals current value', async () => {
+      const now = new Date('2026-04-05T10:00:00Z');
+      vi.setSystemTime(now);
+
+      const updated = { ...baseVehicle, mileageLastUpdatedAt: now };
+      mockVehicleRepository.getOne.mockResolvedValue({ ...baseVehicle });
+      mockVehicleRepository.updateWithSave.mockResolvedValue([updated]);
+
+      await service.recordMileage({ id: vehicleId, userId, mileage: 1000 });
+
+      expect(mockVehicleRepository.updateWithSave).toHaveBeenCalledWith({
+        dataArray: [expect.objectContaining({ mileageLastUpdatedAt: now })],
+      });
+
+      vi.useRealTimers();
+    });
+
+    it('throws NotFoundException when vehicle not found', async () => {
+      mockVehicleRepository.getOne.mockResolvedValue(null);
+
+      await expect(
+        service.recordMileage({ id: vehicleId, userId, mileage: 1500 }),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws BadRequestException when mileage is below current vehicle mileage', async () => {
+      mockVehicleRepository.getOne.mockResolvedValue({ ...baseVehicle });
+
+      await expect(
+        service.recordMileage({ id: vehicleId, userId, mileage: 999 }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
