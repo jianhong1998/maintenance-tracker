@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { VehicleService } from './vehicle.service';
 import { VehicleRepository } from '../repositories/vehicle.repository';
 
@@ -146,6 +146,10 @@ describe('VehicleService', () => {
   });
 
   describe('#recordMileage', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
     it('updates mileage and sets mileageLastUpdatedAt', async () => {
       const now = new Date('2026-04-05T10:00:00Z');
       vi.setSystemTime(now);
@@ -173,8 +177,6 @@ describe('VehicleService', () => {
         ],
       });
       expect(result).toEqual(updated);
-
-      vi.useRealTimers();
     });
 
     it('sets mileageLastUpdatedAt even when mileage equals current value', async () => {
@@ -190,8 +192,6 @@ describe('VehicleService', () => {
       expect(mockVehicleRepository.updateWithSave).toHaveBeenCalledWith({
         dataArray: [expect.objectContaining({ mileageLastUpdatedAt: now })],
       });
-
-      vi.useRealTimers();
     });
 
     it('throws NotFoundException when vehicle not found', async () => {
