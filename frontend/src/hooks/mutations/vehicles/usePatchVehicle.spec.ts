@@ -19,6 +19,7 @@ const mockVehicle = {
   colour: 'White',
   mileage: 60000,
   mileageUnit: 'km',
+  mileageLastUpdatedAt: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-06-01T00:00:00.000Z',
 };
