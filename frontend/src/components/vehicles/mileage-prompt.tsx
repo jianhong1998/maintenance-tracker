@@ -45,6 +45,8 @@ export const MileagePrompt: FC<MileagePromptProps> = ({
 
     if (!updatedToday && !dismissedToday) {
       setVisible(true);
+    } else {
+      setVisible(false);
     }
   }, [vehicleId, mileageLastUpdatedAt]);
 

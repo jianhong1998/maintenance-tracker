@@ -76,6 +76,36 @@ describe('MileagePrompt', () => {
 
       vi.useRealTimers();
     });
+
+    it('hides prompt when mileageLastUpdatedAt updates to today (reactive)', async () => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-04-05T10:00:00Z'));
+
+      const { rerender } = renderPrompt(null); // initially visible
+
+      await waitFor(() => {
+        expect(
+          screen.getByText("What's your current odometer reading?"),
+        ).toBeInTheDocument();
+      });
+
+      // Simulate query refetch returning today's timestamp
+      rerender(
+        <MileagePrompt
+          vehicleId={VEHICLE_ID}
+          currentMileage={50000}
+          mileageLastUpdatedAt="2026-04-05T06:00:00.000Z"
+        />,
+      );
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText("What's your current odometer reading?"),
+        ).not.toBeInTheDocument();
+      });
+
+      vi.useRealTimers();
+    });
   });
 
   describe('visibility — localStorage-driven (dismiss)', () => {
