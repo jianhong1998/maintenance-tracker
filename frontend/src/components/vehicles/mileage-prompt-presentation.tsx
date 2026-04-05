@@ -6,6 +6,7 @@ type MileagePromptPresentationProps = {
   value: string;
   isError: boolean;
   isBelowCurrent: boolean;
+  isSubmitDisabled: boolean;
   onValueChange: (value: string) => void;
   onSubmit: () => void;
   onDismiss: () => void;
@@ -16,12 +17,11 @@ export const MileagePromptPresentation: FC<MileagePromptPresentationProps> = ({
   value,
   isError,
   isBelowCurrent,
+  isSubmitDisabled,
   onValueChange,
   onSubmit,
   onDismiss,
 }) => {
-  const parsedValue = parseFloat(value.trim());
-
   return (
     <div className="rounded-lg border bg-muted p-4">
       <p className="mb-2 text-sm font-medium">
@@ -49,7 +49,7 @@ export const MileagePromptPresentation: FC<MileagePromptPresentationProps> = ({
         <Button
           size="sm"
           onClick={onSubmit}
-          disabled={!value.trim() || isNaN(parsedValue) || isBelowCurrent}
+          disabled={isSubmitDisabled}
         >
           Update
         </Button>

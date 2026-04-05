@@ -57,6 +57,8 @@ export const MileagePrompt: FC<MileagePromptProps> = ({
 
   const parsedValue = parseFloat(value.trim());
   const isBelowCurrent = !isNaN(parsedValue) && parsedValue < currentMileage;
+  const isSubmitDisabled =
+    !value.trim() || isNaN(parsedValue) || isBelowCurrent;
 
   const handleSubmit = () => {
     recordMileage(
@@ -73,6 +75,7 @@ export const MileagePrompt: FC<MileagePromptProps> = ({
       value={value}
       isError={isError}
       isBelowCurrent={isBelowCurrent}
+      isSubmitDisabled={isSubmitDisabled}
       onValueChange={setValue}
       onSubmit={handleSubmit}
       onDismiss={dismiss}
