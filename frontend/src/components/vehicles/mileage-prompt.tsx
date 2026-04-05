@@ -1,36 +1,55 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { usePatchVehicle } from '@/hooks/mutations/vehicles/usePatchVehicle';
+import { FC, useEffect, useState } from 'react';
+import { useRecordMileage } from '@/hooks/mutations/vehicles/useRecordMileage';
 import { Button } from '@/components/ui/button';
 
 interface MileagePromptProps {
   vehicleId: string;
   currentMileage: number;
+  mileageLastUpdatedAt: string | null;
 }
 
-export function getTodayKey(vehicleId: string): string {
-  const today = new Date().toISOString().slice(0, 10);
-  return `mileage_prompted_${vehicleId}_${today}`;
-}
+const isSameLocalDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
-export function MileagePrompt({
+export const getTodayLocalDateString = (): string => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+export const getDismissKey = (vehicleId: string): string =>
+  `dismissMileagePromptDate_${vehicleId}`;
+
+export const MileagePrompt: FC<MileagePromptProps> = ({
   vehicleId,
   currentMileage,
-}: MileagePromptProps) {
+  mileageLastUpdatedAt,
+}) => {
   const [visible, setVisible] = useState(false);
   const [value, setValue] = useState('');
-  const { mutate: patchVehicle, isError } = usePatchVehicle(vehicleId);
+  const { mutate: recordMileage, isError } = useRecordMileage(vehicleId);
 
   useEffect(() => {
-    const key = getTodayKey(vehicleId);
-    if (!localStorage.getItem(key)) {
+    const updatedToday =
+      mileageLastUpdatedAt !== null &&
+      isSameLocalDay(new Date(mileageLastUpdatedAt), new Date());
+
+    const dismissedDate = localStorage.getItem(getDismissKey(vehicleId));
+    const dismissedToday = dismissedDate === getTodayLocalDateString();
+
+    if (!updatedToday && !dismissedToday) {
       setVisible(true);
     }
-  }, [vehicleId]);
+  }, [vehicleId, mileageLastUpdatedAt]);
 
   const dismiss = () => {
-    localStorage.setItem(getTodayKey(vehicleId), '1');
+    localStorage.setItem(getDismissKey(vehicleId), getTodayLocalDateString());
     setVisible(false);
   };
 
@@ -39,7 +58,10 @@ export function MileagePrompt({
 
   const handleSubmit = () => {
     if (isNaN(parsedValue) || isBelowCurrent) return;
-    patchVehicle({ mileage: parsedValue }, { onSuccess: dismiss });
+    recordMileage(
+      { mileage: parsedValue },
+      { onSuccess: () => setVisible(false) },
+    );
   };
 
   if (!visible) return null;
@@ -85,4 +107,4 @@ export function MileagePrompt({
       </div>
     </div>
   );
-}
+};
