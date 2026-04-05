@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { usePatchVehicle } from './usePatchVehicle';
+import { useRecordMileage } from './useRecordMileage';
 import { QueryGroup } from '../../queries/keys';
 import { createWrapperWithClient } from '../../queries/test-utils';
 
@@ -19,49 +19,46 @@ const mockVehicle = {
   colour: 'White',
   mileage: 60000,
   mileageUnit: 'km',
-  mileageLastUpdatedAt: null,
+  mileageLastUpdatedAt: '2026-04-05T10:00:00.000Z',
   createdAt: '2024-01-01T00:00:00.000Z',
-  updatedAt: '2024-06-01T00:00:00.000Z',
+  updatedAt: '2026-04-05T10:00:00.000Z',
 };
 
-const patchData = { mileage: 60000 };
-
-describe('usePatchVehicle', () => {
+describe('useRecordMileage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('should call apiClient.patch("/vehicles/:vehicleId", data) in mutationFn', async () => {
+  it('calls apiClient.patch("/vehicles/:vehicleId/mileage", data)', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper } = createWrapperWithClient();
-    const { result } = renderHook(() => usePatchVehicle('abc-123'), {
+    const { result } = renderHook(() => useRecordMileage('abc-123'), {
       wrapper,
     });
 
     act(() => {
-      result.current.mutate(patchData);
+      result.current.mutate({ mileage: 60000 });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(apiClient.patch).toHaveBeenCalledWith(
-      '/vehicles/abc-123',
-      patchData,
-    );
+    expect(apiClient.patch).toHaveBeenCalledWith('/vehicles/abc-123/mileage', {
+      mileage: 60000,
+    });
     expect(apiClient.patch).toHaveBeenCalledTimes(1);
   });
 
-  it('should return the updated vehicle data on success', async () => {
+  it('returns the updated vehicle on success', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper } = createWrapperWithClient();
-    const { result } = renderHook(() => usePatchVehicle('abc-123'), {
+    const { result } = renderHook(() => useRecordMileage('abc-123'), {
       wrapper,
     });
 
     act(() => {
-      result.current.mutate(patchData);
+      result.current.mutate({ mileage: 60000 });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -69,37 +66,18 @@ describe('usePatchVehicle', () => {
     expect(result.current.data).toEqual(mockVehicle);
   });
 
-  it('should NOT call setQueryData on success', async () => {
-    vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
-
-    const { wrapper, queryClient } = createWrapperWithClient();
-    const setQueryDataSpy = vi.spyOn(queryClient, 'setQueryData');
-
-    const { result } = renderHook(() => usePatchVehicle('abc-123'), {
-      wrapper,
-    });
-
-    act(() => {
-      result.current.mutate(patchData);
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(setQueryDataSpy).not.toHaveBeenCalled();
-  });
-
-  it('should call invalidateQueries for both the individual vehicle key and the list key on success', async () => {
+  it('invalidates both the individual vehicle key and the list key on success', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue(mockVehicle);
 
     const { wrapper, queryClient } = createWrapperWithClient();
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    const { result } = renderHook(() => usePatchVehicle('abc-123'), {
+    const { result } = renderHook(() => useRecordMileage('abc-123'), {
       wrapper,
     });
 
     act(() => {
-      result.current.mutate(patchData);
+      result.current.mutate({ mileage: 60000 });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -114,20 +92,18 @@ describe('usePatchVehicle', () => {
     });
   });
 
-  it('should set isError when apiClient.patch rejects and not update the cache', async () => {
-    const vehicleId = 'v1';
-    const error = new Error('Network error');
-    vi.mocked(apiClient.patch).mockRejectedValue(error);
+  it('sets isError when apiClient.patch rejects and does not invalidate cache', async () => {
+    vi.mocked(apiClient.patch).mockRejectedValue(new Error('Network error'));
 
     const { wrapper, queryClient } = createWrapperWithClient();
     const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
-    const { result } = renderHook(() => usePatchVehicle(vehicleId), {
+    const { result } = renderHook(() => useRecordMileage('abc-123'), {
       wrapper,
     });
 
     act(() => {
-      result.current.mutate({ mileage: 10000 });
+      result.current.mutate({ mileage: 60000 });
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

@@ -54,6 +54,30 @@ This is a **TurboRepo monorepo** with pnpm workspaces. Build order matters: `pac
 - Docker Compose services: `postgres`, `server` (NestJS), `client` (Next.js), `db-migration-service`
 - **No TypeScript enums** — use `const` object or `as const` array pattern instead (enums cause nominal type incompatibilities across package boundaries)
 - **`import type` for `@project/types` in NestJS decorated classes** — TypeScript requires `import type` (or a namespace import) when a type from an external package is referenced in a decorated method/property signature (`isolatedModules` + `emitDecoratorMetadata` enforces this)
+- When a function accepting more than 2 parameter, should group all params into an object instead.
+
+```typescript
+// ❌ NEVER do this
+const func1 = (param1: string, param2: boolean, param3: number) => {
+  // logic code
+};
+
+// ✅ Do this instead
+const func1 = (params: { param1: string; param2: boolean; param3: number }) => {
+  // logic code
+};
+
+// ✅ For more readable
+type Func1Params = {
+  param1: string;
+  param2: boolean;
+  param3: number;
+};
+
+const func1 = (params: Func1Params) => {
+  // logic code
+};
+```
 
 ## Committing — Husky prepare-commit-msg hook
 

@@ -52,6 +52,14 @@ export class VehicleEntity extends UuidV7BaseEntity {
   })
   mileageUnit: MileageUnit;
 
+  @Column({
+    type: 'timestamptz',
+    name: 'mileage_last_updated_at',
+    nullable: true,
+    default: null,
+  })
+  mileageLastUpdatedAt: Date | null;
+
   @OneToMany(() => MaintenanceCardEntity, (card) => card.vehicle, {
     cascade: ['soft-remove'],
   })

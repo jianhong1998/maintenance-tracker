@@ -41,16 +41,43 @@ export class VehicleService {
     input: IUpdateVehicleReqDTO,
   ): Promise<VehicleEntity> {
     const vehicle = await this.getVehicle(id, userId);
-    if (input.mileage !== undefined && input.mileage < vehicle.mileage) {
-      throw new BadRequestException(
-        'New mileage cannot be less than the current mileage',
-      );
+    // Intentionally does NOT update mileageLastUpdatedAt — only recordMileage does.
+    // Editing vehicle details from the settings form should not suppress the daily mileage prompt.
+    if (input.mileage !== undefined) {
+      this.validateMileageNotDecreased(input.mileage, vehicle.mileage);
     }
     Object.assign(vehicle, input);
     const [updated] = await this.vehicleRepository.updateWithSave({
       dataArray: [vehicle],
     });
     return updated;
+  }
+
+  async recordMileage(params: {
+    id: string;
+    userId: string;
+    mileage: number;
+  }): Promise<VehicleEntity> {
+    const { id, userId, mileage } = params;
+    const vehicle = await this.getVehicle(id, userId);
+    this.validateMileageNotDecreased(mileage, vehicle.mileage);
+    vehicle.mileage = mileage;
+    vehicle.mileageLastUpdatedAt = new Date();
+    const [updated] = await this.vehicleRepository.updateWithSave({
+      dataArray: [vehicle],
+    });
+    return updated;
+  }
+
+  private validateMileageNotDecreased(
+    newMileage: number,
+    currentMileage: number,
+  ): void {
+    if (newMileage < currentMileage) {
+      throw new BadRequestException(
+        'New mileage cannot be less than the current mileage',
+      );
+    }
   }
 
   async deleteVehicle(id: string, userId: string): Promise<void> {

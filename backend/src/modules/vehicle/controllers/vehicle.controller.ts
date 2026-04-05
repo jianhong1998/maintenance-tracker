@@ -16,6 +16,7 @@ import { VehicleEntity } from 'src/db/entities/vehicle.entity';
 import { VehicleService } from '../services/vehicle.service';
 import { CreateVehicleDto } from '../dtos/create-vehicle.dto';
 import { UpdateVehicleDto } from '../dtos/update-vehicle.dto';
+import { RecordMileageDto } from '../dtos/record-mileage.dto';
 
 function toResDTO(vehicle: VehicleEntity): IVehicleResDTO {
   return {
@@ -25,6 +26,7 @@ function toResDTO(vehicle: VehicleEntity): IVehicleResDTO {
     colour: vehicle.colour,
     mileage: vehicle.mileage,
     mileageUnit: vehicle.mileageUnit,
+    mileageLastUpdatedAt: vehicle.mileageLastUpdatedAt?.toISOString() ?? null,
     createdAt: vehicle.createdAt.toISOString(),
     updatedAt: vehicle.updatedAt.toISOString(),
   };
@@ -66,6 +68,20 @@ export class VehicleController {
     @CurrentUser() user: IAuthUser,
   ): Promise<IVehicleResDTO> {
     const vehicle = await this.vehicleService.updateVehicle(id, user.id, dto);
+    return toResDTO(vehicle);
+  }
+
+  @Patch(':id/mileage')
+  async recordMileage(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RecordMileageDto,
+    @CurrentUser() user: IAuthUser,
+  ): Promise<IVehicleResDTO> {
+    const vehicle = await this.vehicleService.recordMileage({
+      id,
+      userId: user.id,
+      mileage: dto.mileage,
+    });
     return toResDTO(vehicle);
   }
 

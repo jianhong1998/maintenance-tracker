@@ -1,88 +1,84 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { usePatchVehicle } from '@/hooks/mutations/vehicles/usePatchVehicle';
-import { Button } from '@/components/ui/button';
+import { FC, useEffect, useState } from 'react';
+import { useRecordMileage } from '@/hooks/mutations/vehicles/useRecordMileage';
+import { MileagePromptPresentation } from './mileage-prompt-presentation';
 
 interface MileagePromptProps {
   vehicleId: string;
   currentMileage: number;
+  mileageLastUpdatedAt: string | null;
 }
 
-export function getTodayKey(vehicleId: string): string {
-  const today = new Date().toISOString().slice(0, 10);
-  return `mileage_prompted_${vehicleId}_${today}`;
-}
+const isSameLocalDay = (a: Date, b: Date): boolean =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
 
-export function MileagePrompt({
+export const getTodayLocalDateString = (): string => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
+export const getDismissKey = (vehicleId: string): string =>
+  `dismissMileagePromptDate_${vehicleId}`;
+
+export const MileagePrompt: FC<MileagePromptProps> = ({
   vehicleId,
   currentMileage,
-}: MileagePromptProps) {
+  mileageLastUpdatedAt,
+}) => {
   const [visible, setVisible] = useState(false);
   const [value, setValue] = useState('');
-  const { mutate: patchVehicle, isError } = usePatchVehicle(vehicleId);
+  const { mutate: recordMileage, isError } = useRecordMileage(vehicleId);
 
   useEffect(() => {
-    const key = getTodayKey(vehicleId);
-    if (!localStorage.getItem(key)) {
+    const updatedToday =
+      mileageLastUpdatedAt !== null &&
+      isSameLocalDay(new Date(mileageLastUpdatedAt), new Date());
+
+    const dismissedDate = localStorage.getItem(getDismissKey(vehicleId));
+    const dismissedToday = dismissedDate === getTodayLocalDateString();
+
+    if (!updatedToday && !dismissedToday) {
       setVisible(true);
+    } else {
+      setVisible(false);
     }
-  }, [vehicleId]);
+  }, [vehicleId, mileageLastUpdatedAt]);
 
   const dismiss = () => {
-    localStorage.setItem(getTodayKey(vehicleId), '1');
+    localStorage.setItem(getDismissKey(vehicleId), getTodayLocalDateString());
     setVisible(false);
   };
 
   const parsedValue = parseFloat(value.trim());
   const isBelowCurrent = !isNaN(parsedValue) && parsedValue < currentMileage;
+  const isSubmitDisabled =
+    !value.trim() || isNaN(parsedValue) || isBelowCurrent;
 
   const handleSubmit = () => {
-    if (isNaN(parsedValue) || isBelowCurrent) return;
-    patchVehicle({ mileage: parsedValue }, { onSuccess: dismiss });
+    recordMileage(
+      { mileage: parsedValue },
+      { onSuccess: () => setVisible(false) },
+    );
   };
 
   if (!visible) return null;
 
   return (
-    <div className="rounded-lg border bg-muted p-4">
-      <p className="mb-2 text-sm font-medium">
-        What&apos;s your current odometer reading?
-      </p>
-      {isError && (
-        <p className="text-destructive mb-2 text-xs">
-          Failed to update mileage. Please try again.
-        </p>
-      )}
-      {isBelowCurrent && (
-        <p className="text-destructive mb-2 text-xs">
-          Mileage cannot be less than current ({currentMileage})
-        </p>
-      )}
-      <div className="flex gap-2">
-        <input
-          type="number"
-          min={0}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder="Enter mileage"
-          className="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-        />
-        <Button
-          size="sm"
-          onClick={handleSubmit}
-          disabled={!value.trim() || isNaN(parsedValue) || isBelowCurrent}
-        >
-          Update
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={dismiss}
-        >
-          Dismiss
-        </Button>
-      </div>
-    </div>
+    <MileagePromptPresentation
+      currentMileage={currentMileage}
+      value={value}
+      isError={isError}
+      isBelowCurrent={isBelowCurrent}
+      isSubmitDisabled={isSubmitDisabled}
+      onValueChange={setValue}
+      onSubmit={handleSubmit}
+      onDismiss={dismiss}
+    />
   );
-}
+};

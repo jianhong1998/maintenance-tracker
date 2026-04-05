@@ -21,6 +21,7 @@ const mockVehicle: IVehicleResDTO = {
   colour: 'Silver',
   mileage: 50000,
   mileageUnit: 'km',
+  mileageLastUpdatedAt: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };

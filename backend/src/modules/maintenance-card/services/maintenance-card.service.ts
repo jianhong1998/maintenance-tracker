@@ -230,11 +230,13 @@ export class MaintenanceCardService {
       return createdHistory;
     });
 
-    // Known limitation: updateVehicle runs after the transaction commits.
+    // Known limitation: recordMileage runs after the transaction commits.
     // A failure here leaves the vehicle mileage stale while the history record persists.
     // Cross-service atomicity requires a saga/outbox pattern (out of scope).
-    if (typeof doneAtMileage === 'number' && doneAtMileage > vehicle.mileage) {
-      await this.vehicleService.updateVehicle(vehicleId, userId, {
+    if (typeof doneAtMileage === 'number') {
+      await this.vehicleService.recordMileage({
+        id: vehicleId,
+        userId,
         mileage: doneAtMileage,
       });
     }

@@ -21,6 +21,10 @@ export interface IUpdateVehicleReqDTO {
   mileageUnit?: MileageUnit;
 }
 
+export interface IRecordMileageReqDTO {
+  mileage: number;
+}
+
 export interface IVehicleResDTO {
   id: string;
   brand: string;
@@ -28,6 +32,7 @@ export interface IVehicleResDTO {
   colour: string;
   mileage: number;
   mileageUnit: MileageUnit;
+  mileageLastUpdatedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
