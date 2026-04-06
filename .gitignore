@@ -13,6 +13,7 @@ postgres-data
 # Sensitive files
 .env*
 !.env.template
+!.env.pipeline
 
 # Local files
 *.local.*
