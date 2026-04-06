@@ -1,0 +1,387 @@
+version: 2.1
+
+# ===========================================================
+# Executors
+# ===========================================================
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:22.14
+
+  machine-executor:
+    machine:
+      image: ubuntu-2204:current
+
+# ===========================================================
+# Commands
+# ===========================================================
+commands:
+  install-pnpm:
+    steps:
+      - run:
+          name: Install pnpm
+          command: npm install -g pnpm@9.0.0
+
+  install-just:
+    steps:
+      - run:
+          name: Install just
+          command: |
+            curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | \
+              bash -s -- --to /usr/local/bin
+
+  set-short-sha:
+    steps:
+      - run:
+          name: Export CIRCLE_SHA1_SHORT
+          command: echo "export CIRCLE_SHA1_SHORT=$(echo $CIRCLE_SHA1 | cut -c1-7)" >> $BASH_ENV
+
+  setup-buildx:
+    steps:
+      - run:
+          name: Set up Docker Buildx with docker-container driver
+          command: |
+            docker buildx create --name builder --driver docker-container --use
+            docker buildx inspect --bootstrap
+
+  ecr-login:
+    steps:
+      - run:
+          name: Authenticate with AWS ECR
+          command: |
+            aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | \
+              docker login --username AWS --password-stdin "$AWS_ECR_REGISTRY"
+
+  docker-build-and-push:
+    parameters:
+      service:
+        type: string
+      dockerfile:
+        type: string
+    steps:
+      - set-short-sha
+      - run:
+          name: Build and push << parameters.service >>
+          command: |
+            CACHE_REPO="$AWS_ECR_REGISTRY/maintenance-tracker/cache/<< parameters.service >>"
+            IMAGE_REPO="$AWS_ECR_REGISTRY/maintenance-tracker/<< parameters.service >>"
+            docker buildx build \
+              --cache-from "type=registry,ref=$CACHE_REPO" \
+              --cache-to "type=registry,ref=$CACHE_REPO,mode=max" \
+              --tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" \
+              --file "docker/deployment/<< parameters.dockerfile >>" \
+              --push \
+              .
+
+  docker-retag-and-push:
+    parameters:
+      service:
+        type: string
+    steps:
+      - set-short-sha
+      - run:
+          name: Retag and push << parameters.service >>
+          command: |
+            IMAGE_REPO="$AWS_ECR_REGISTRY/maintenance-tracker/<< parameters.service >>"
+            docker pull "$IMAGE_REPO:$CIRCLE_SHA1_SHORT"
+            if [ -n "$CIRCLE_TAG" ]; then
+              docker tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" "$IMAGE_REPO:$CIRCLE_TAG"
+              docker push "$IMAGE_REPO:$CIRCLE_TAG"
+              docker tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" "$IMAGE_REPO:prod"
+              docker push "$IMAGE_REPO:prod"
+            else
+              docker tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" "$IMAGE_REPO:dev"
+              docker push "$IMAGE_REPO:dev"
+            fi
+
+# ===========================================================
+# Jobs
+# ===========================================================
+jobs:
+  lint-test:
+    executor: node-executor
+    steps:
+      - checkout
+      - install-pnpm
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile --ignore-scripts
+      - run:
+          name: Lint
+          command: pnpm run lint
+
+  unit-test:
+    executor: node-executor
+    steps:
+      - checkout
+      - install-pnpm
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile --ignore-scripts
+      - run:
+          name: Unit tests
+          command: cd backend && pnpm run test
+
+  ui-test:
+    executor: node-executor
+    steps:
+      - checkout
+      - install-pnpm
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile --ignore-scripts
+      - run:
+          name: UI tests
+          command: cd frontend && pnpm run test
+
+  build-service:
+    executor: machine-executor
+    parameters:
+      service:
+        type: string
+      dockerfile:
+        type: string
+    steps:
+      - checkout
+      - ecr-login
+      - setup-buildx
+      - docker-build-and-push:
+          service: << parameters.service >>
+          dockerfile: << parameters.dockerfile >>
+
+  api-test:
+    executor: machine-executor
+    steps:
+      - checkout
+      - set-short-sha
+      - ecr-login
+      - install-pnpm
+      - install-just
+      - run:
+          name: Install dependencies
+          command: pnpm install --frozen-lockfile --ignore-scripts
+      - run:
+          name: Generate .env from .env.pipeline and CircleCI secrets
+          command: |
+            cp .env.pipeline .env
+            cat >> .env \<< EOF
+            BACKEND_COOKIE_SECRET=$BACKEND_COOKIE_SECRET
+            FIREBASE_PROJECT_ID=$FIREBASE_PROJECT_ID
+            FIREBASE_CLIENT_EMAIL=$FIREBASE_CLIENT_EMAIL
+            FIREBASE_PRIVATE_KEY=$FIREBASE_PRIVATE_KEY
+            FRONTEND_FIREBASE_API_KEY=$FRONTEND_FIREBASE_API_KEY
+            FRONTEND_FIREBASE_AUTH_DOMAIN=$FRONTEND_FIREBASE_AUTH_DOMAIN
+            FRONTEND_FIREBASE_PROJECT_ID=$FRONTEND_FIREBASE_PROJECT_ID
+            POSTMARK_API_KEY=$POSTMARK_API_KEY
+            POSTMARK_FROM_ADDRESS=$POSTMARK_FROM_ADDRESS
+            EOF
+      - run:
+          name: Start services
+          command: docker compose -f docker-compose.pipeline.yml up -d
+      - run:
+          name: Wait for backend to be ready
+          command: |
+            timeout 120 bash -c 'until curl -sf http://localhost:3001/health; do sleep 3; done'
+      - run:
+          name: Run API tests
+          command: just test-api
+      - run:
+          name: Tear down services
+          command: docker compose -f docker-compose.pipeline.yml down --volumes
+          when: always
+
+  push-service:
+    executor: machine-executor
+    parameters:
+      service:
+        type: string
+    steps:
+      - checkout
+      - ecr-login
+      - docker-retag-and-push:
+          service: << parameters.service >>
+
+  deploy-staging:
+    executor: machine-executor
+    steps:
+      - run:
+          name: Trigger Coolify staging deploy
+          command: curl -fsSL -X POST "$COOLIFY_STAGING_WEBHOOK_URL"
+
+  deploy-production:
+    executor: machine-executor
+    steps:
+      - run:
+          name: Trigger Coolify production deploy
+          command: curl -fsSL -X POST "$COOLIFY_PRODUCTION_WEBHOOK_URL"
+
+# ===========================================================
+# Workflows
+# ===========================================================
+workflows:
+  # Triggered on every branch push (git tag is empty)
+  branch-workflow:
+    when:
+      equal: ['', << pipeline.git.tag >>]
+    jobs:
+      - lint-test
+      - unit-test
+      - ui-test
+      - approve-build:
+          type: approval
+          requires:
+            - lint-test
+            - unit-test
+            - ui-test
+      - build-service:
+          name: build-backend
+          service: backend
+          dockerfile: Dockerfile.backend
+          context: aws-ecr-context
+          requires:
+            - approve-build
+      - build-service:
+          name: build-frontend
+          service: frontend
+          dockerfile: Dockerfile.frontend
+          context: aws-ecr-context
+          requires:
+            - approve-build
+      - build-service:
+          name: build-background-job
+          service: background-job
+          dockerfile: Dockerfile.background-job
+          context: aws-ecr-context
+          requires:
+            - approve-build
+      - build-service:
+          name: build-db-migration
+          service: db-migration
+          dockerfile: Dockerfile.db-migration
+          context: aws-ecr-context
+          requires:
+            - approve-build
+      - approve-api-test:
+          type: approval
+          requires:
+            - build-backend
+            - build-frontend
+            - build-background-job
+            - build-db-migration
+      - api-test:
+          context: aws-ecr-context
+          requires:
+            - approve-api-test
+      - push-service:
+          name: push-backend
+          service: backend
+          context: aws-ecr-context
+          requires:
+            - api-test
+      - push-service:
+          name: push-frontend
+          service: frontend
+          context: aws-ecr-context
+          requires:
+            - api-test
+      - push-service:
+          name: push-background-job
+          service: background-job
+          context: aws-ecr-context
+          requires:
+            - api-test
+      - push-service:
+          name: push-db-migration
+          service: db-migration
+          context: aws-ecr-context
+          requires:
+            - api-test
+      - deploy-staging:
+          requires:
+            - push-backend
+            - push-frontend
+            - push-background-job
+            - push-db-migration
+
+  # Triggered only on git tag creation
+  tag-workflow:
+    when:
+      not:
+        equal: ['', << pipeline.git.tag >>]
+    jobs:
+      - lint-test
+      - unit-test
+      - ui-test
+      - build-service:
+          name: build-backend
+          service: backend
+          dockerfile: Dockerfile.backend
+          context: aws-ecr-context
+          requires:
+            - lint-test
+            - unit-test
+            - ui-test
+      - build-service:
+          name: build-frontend
+          service: frontend
+          dockerfile: Dockerfile.frontend
+          context: aws-ecr-context
+          requires:
+            - lint-test
+            - unit-test
+            - ui-test
+      - build-service:
+          name: build-background-job
+          service: background-job
+          dockerfile: Dockerfile.background-job
+          context: aws-ecr-context
+          requires:
+            - lint-test
+            - unit-test
+            - ui-test
+      - build-service:
+          name: build-db-migration
+          service: db-migration
+          dockerfile: Dockerfile.db-migration
+          context: aws-ecr-context
+          requires:
+            - lint-test
+            - unit-test
+            - ui-test
+      - api-test:
+          context: aws-ecr-context
+          requires:
+            - build-backend
+            - build-frontend
+            - build-background-job
+            - build-db-migration
+      - push-service:
+          name: push-backend
+          service: backend
+          context: aws-ecr-context
+          requires:
+            - api-test
+      - push-service:
+          name: push-frontend
+          service: frontend
+          context: aws-ecr-context
+          requires:
+            - api-test
+      - push-service:
+          name: push-background-job
+          service: background-job
+          context: aws-ecr-context
+          requires:
+            - api-test
+      - push-service:
+          name: push-db-migration
+          service: db-migration
+          context: aws-ecr-context
+          requires:
+            - api-test
+      - deploy-production:
+          requires:
+            - push-backend
+            - push-frontend
+            - push-background-job
+            - push-db-migration
