@@ -186,6 +186,37 @@ describe('#Vehicles', () => {
         axiosInstance.get(`/vehicles/${vehicleId}`),
       ).rejects.toMatchObject({ response: { status: 401 } });
     });
+
+    it('returns registrationNumber as null when not set at creation', async () => {
+      const res = await axiosInstance.get<IVehicleResDTO>(
+        `/vehicles/${vehicleId}`,
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.registrationNumber).toBeNull();
+    });
+
+    it('returns registrationNumber when it was set at creation', async () => {
+      const createRes = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        { ...baseVehiclePayload, registrationNumber: 'XYZ-9999' },
+        authHeaders(),
+      );
+      const idWithReg = createRes.data.id;
+
+      const res = await axiosInstance.get<IVehicleResDTO>(
+        `/vehicles/${idWithReg}`,
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.registrationNumber).toBe('XYZ-9999');
+
+      await axiosInstance
+        .delete(`/vehicles/${idWithReg}`, authHeaders())
+        .catch(() => undefined);
+    });
   });
 
   describe('PATCH /vehicles/:id', () => {
