@@ -274,6 +274,46 @@ describe('#Vehicles', () => {
         axiosInstance.patch(`/vehicles/${vehicleId}`, { colour: 'Black' }),
       ).rejects.toMatchObject({ response: { status: 401 } });
     });
+
+    it('returns 200 with updated registrationNumber', async () => {
+      const res = await axiosInstance.patch<IVehicleResDTO>(
+        `/vehicles/${vehicleId}`,
+        { registrationNumber: 'NEW-REG-01' },
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.registrationNumber).toBe('NEW-REG-01');
+    });
+
+    it('returns 200 and clears registrationNumber when patched to null', async () => {
+      // First set a value
+      await axiosInstance.patch<IVehicleResDTO>(
+        `/vehicles/${vehicleId}`,
+        { registrationNumber: 'TEMP-REG' },
+        authHeaders(),
+      );
+
+      // Then clear it
+      const res = await axiosInstance.patch<IVehicleResDTO>(
+        `/vehicles/${vehicleId}`,
+        { registrationNumber: null },
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.registrationNumber).toBeNull();
+    });
+
+    it('returns 400 when registrationNumber exceeds 15 characters', async () => {
+      await expect(
+        axiosInstance.patch(
+          `/vehicles/${vehicleId}`,
+          { registrationNumber: 'TOOLONGREGPLATE' + 'X' },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
   });
 
   describe('DELETE /vehicles/:id', () => {
