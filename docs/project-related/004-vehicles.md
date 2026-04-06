@@ -86,3 +86,15 @@ This is an application-layer guard (not a DB constraint). It is the primary enfo
 - **Home page vehicle card:** primary label → registration number (if set), secondary → `{brand} {model}` in muted style.
 - **Vehicle dashboard header:** same swap — registration number as `<h1>`, brand + model as muted secondary line.
 - **Add/Edit vehicle form:** optional "Vehicle Registration Number" field inserted above Brand/Model, with live character counter (`0/15`). In edit mode, clearing the field sends `null` to explicitly remove the stored value.
+
+---
+
+## Vehicle CRUD — Frontend UX Decisions
+
+### Edit / Delete button placement
+
+Edit and Delete buttons on the home page vehicle card are placed **adjacent to the vehicle name**, not right-aligned with `justify-between`. This was a deliberate layout decision made after tester feedback.
+
+An earlier design used a `⋮` (kebab) dropdown menu to house Edit and Delete. This was **explicitly rejected** after tester feedback — the hidden actions were hard to discover and the extra click felt unnecessary for a low-density card layout. Inline buttons were adopted instead.
+
+This decision is not derivable from the code; it is recorded here so it is not re-litigated.

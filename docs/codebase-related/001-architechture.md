@@ -373,3 +373,14 @@ All dialog and dropdown open/close state for the vehicle dashboard lives in `Veh
 `getVehicleDisplayLabels(vehicle)` in `frontend/src/lib/vehicle-display.ts` encapsulates the `registrationNumber`-or-fallback logic in one place. All UI surfaces (card, dashboard header) call this helper rather than duplicating the `?? \`${brand} ${model}\`` conditional.
 
 **Rule:** When the same conditional display logic is needed in two or more components, extract it into a pure helper rather than repeating the branch at each call site.
+
+#### Frontend: container/presentation split for form dialogs with complex state
+
+`VehicleFormDialog` is split into three files in `frontend/src/components/vehicles/`:
+- `use-vehicle-form.ts` — owns all state, effects, mutations, validation, and derived values.
+- `vehicle-form-dialog-presentation.tsx` — pure rendering component; receives everything as props, no hooks.
+- `vehicle-form-dialog.tsx` — thin connector (~10 lines): calls `useVehicleForm`, spreads the result into `VehicleFormDialogPresentation`.
+
+This applies the project's single-responsibility convention (documented in `docs/codebase-related/002-frontend-convention.md`) specifically to form dialogs that carry complex state (create/edit mode, mileage validation, mileage unit toggle). The split makes the hook independently testable and keeps the presentation component free of side effects.
+
+**Rule:** When a form dialog has branching state (create vs. edit mode, derived validation, multiple mutations), separate logic into a co-located hook and keep the presentation component as a pure prop consumer.
