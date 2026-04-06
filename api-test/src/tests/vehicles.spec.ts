@@ -288,11 +288,12 @@ describe('#Vehicles', () => {
 
     it('returns 200 and clears registrationNumber when patched to null', async () => {
       // First set a value
-      await axiosInstance.patch<IVehicleResDTO>(
+      const setRes = await axiosInstance.patch<IVehicleResDTO>(
         `/vehicles/${vehicleId}`,
         { registrationNumber: 'TEMP-REG' },
         authHeaders(),
       );
+      expect(setRes.data.registrationNumber).toBe('TEMP-REG');
 
       // Then clear it
       const res = await axiosInstance.patch<IVehicleResDTO>(
