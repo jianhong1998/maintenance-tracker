@@ -20,7 +20,10 @@ commands:
     steps:
       - run:
           name: Install pnpm
-          command: sudo npm install -g pnpm@9.0.0
+          command: |
+            curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=9.0.0 SHELL=bash sh -
+            echo 'export PNPM_HOME="$HOME/.local/share/pnpm"' >> $BASH_ENV
+            echo 'export PATH="$PNPM_HOME:$PATH"' >> $BASH_ENV
 
   install-just:
     steps:
