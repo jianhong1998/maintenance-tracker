@@ -1,17 +1,18 @@
 'use client';
 
+import { FC } from 'react';
 import Link from 'next/link';
 import type { IVehicleResDTO } from '@project/types';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
 import { countWarningCards } from '@/lib/warning';
 import { getVehicleDisplayLabels } from '@/lib/vehicle-display';
 
-interface VehicleCardProps {
+type VehicleCardProps = {
   vehicle: IVehicleResDTO;
   thresholdKm: number;
-}
+};
 
-export function VehicleCard({ vehicle, thresholdKm }: VehicleCardProps) {
+export const VehicleCard: FC<VehicleCardProps> = ({ vehicle, thresholdKm }) => {
   const { data: cards = [] } = useMaintenanceCards(vehicle.id);
 
   const warningCount = countWarningCards(
@@ -47,4 +48,4 @@ export function VehicleCard({ vehicle, thresholdKm }: VehicleCardProps) {
       </div>
     </Link>
   );
-}
+};

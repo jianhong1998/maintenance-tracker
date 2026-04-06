@@ -7,6 +7,7 @@ import {
   Max,
   MaxLength,
   Min,
+  MinLength,
 } from 'class-validator';
 import { MILEAGE_UNITS } from '@project/types';
 import type { ICreateVehicleReqDTO, MileageUnit } from '@project/types';
@@ -35,6 +36,7 @@ export class CreateVehicleDto implements ICreateVehicleReqDTO {
 
   @IsOptional()
   @IsString()
+  @MinLength(1)
   @MaxLength(15)
   registrationNumber?: string;
 }

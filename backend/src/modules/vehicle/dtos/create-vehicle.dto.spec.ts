@@ -175,5 +175,15 @@ describe('CreateVehicleDto', () => {
       const errors = await validate(dto);
       expect(errors).toHaveLength(0);
     });
+
+    it('rejects an empty string registrationNumber', async () => {
+      const dto = plainToInstance(CreateVehicleDto, {
+        ...validPayload,
+        registrationNumber: '',
+      });
+      const errors = await validate(dto);
+      const regErrors = errors.find((e) => e.property === 'registrationNumber');
+      expect(regErrors).toBeDefined();
+    });
   });
 });

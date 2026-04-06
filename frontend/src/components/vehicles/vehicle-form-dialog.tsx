@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import type { IVehicleResDTO } from '@project/types';
 import { MILEAGE_UNITS } from '@project/types';
@@ -10,22 +10,22 @@ import { useCreateVehicle } from '@/hooks/mutations/vehicles/useCreateVehicle';
 import { usePatchVehicle } from '@/hooks/mutations/vehicles/usePatchVehicle';
 import { cn } from '@/lib/utils';
 
-interface VehicleFormDialogProps {
+type VehicleFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   vehicle?: IVehicleResDTO;
   hasCards?: boolean;
-}
+};
 
 const inputClass =
   'w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
 
-export function VehicleFormDialog({
+export const VehicleFormDialog: FC<VehicleFormDialogProps> = ({
   open,
   onOpenChange,
   vehicle,
   hasCards = false,
-}: VehicleFormDialogProps) {
+}) => {
   const isEdit = !!vehicle;
 
   const [registrationNumber, setRegistrationNumber] = useState('');
@@ -259,4 +259,4 @@ export function VehicleFormDialog({
       </div>
     </Dialog>
   );
-}
+};

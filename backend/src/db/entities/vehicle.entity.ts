@@ -65,6 +65,7 @@ export class VehicleEntity extends UuidV7BaseEntity {
     name: 'registration_number',
     nullable: true,
     default: null,
+    length: 15,
   })
   registrationNumber: string | null;
 

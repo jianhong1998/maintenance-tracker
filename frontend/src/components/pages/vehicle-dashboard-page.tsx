@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { MileagePrompt } from '@/components/vehicles/mileage-prompt';
@@ -16,11 +16,11 @@ import { useVehicle } from '@/hooks/queries/vehicles/useVehicle';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
 import type { IMaintenanceCardResDTO } from '@project/types';
 
-interface VehicleDashboardPageProps {
+type VehicleDashboardPageProps = {
   vehicleId: string;
-}
+};
 
-function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
+const DashboardContent: FC<VehicleDashboardPageProps> = ({ vehicleId }) => {
   const [sort, setSort] = useState<'urgency' | 'name'>('urgency');
   const [activeDropdownId, setActiveDropdownId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
@@ -225,12 +225,14 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
       />
     </main>
   );
-}
+};
 
-export function VehicleDashboardPage({ vehicleId }: VehicleDashboardPageProps) {
+export const VehicleDashboardPage: FC<VehicleDashboardPageProps> = ({
+  vehicleId,
+}) => {
   return (
     <AuthGuard>
       <DashboardContent vehicleId={vehicleId} />
     </AuthGuard>
   );
-}
+};

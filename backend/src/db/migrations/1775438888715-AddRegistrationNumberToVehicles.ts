@@ -7,7 +7,7 @@ export class AddRegistrationNumberToVehicles1775438888715
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "vehicles" ADD "registration_number" character varying`,
+      `ALTER TABLE "vehicles" ADD "registration_number" character varying(15)`,
     );
   }
 

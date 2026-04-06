@@ -1,8 +1,8 @@
 import type { IVehicleResDTO } from '@project/types';
 
-export const getVehicleDisplayLabels = (vehicle: IVehicleResDTO) => ({
-  primary: vehicle.registrationNumber ?? `${vehicle.brand} ${vehicle.model}`,
-  secondary: vehicle.registrationNumber
-    ? `${vehicle.brand} ${vehicle.model}`
-    : null,
-});
+export const getVehicleDisplayLabels = (vehicle: IVehicleResDTO) => {
+  const brandModel = `${vehicle.brand} ${vehicle.model}`;
+  return vehicle.registrationNumber
+    ? { primary: vehicle.registrationNumber, secondary: brandModel }
+    : { primary: brandModel, secondary: null };
+};
