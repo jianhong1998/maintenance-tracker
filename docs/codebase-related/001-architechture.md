@@ -74,6 +74,8 @@ User (1) ──< Vehicle (1) ──< MaintenanceCard (1) ──< MaintenanceHist
 | brand, model, colour | varchar | |
 | mileage | decimal | current odometer, in vehicle's own unit |
 | mileage_unit | enum | `km` or `mile` — per vehicle |
+| registration_number | varchar(15) nullable | optional vehicle plate number; null = not set |
+| mileage_last_updated_at | timestamptz nullable | set by `recordMileage`; used to suppress daily mileage prompt |
 | created_at, updated_at | timestamp | |
 | deleted_at | timestamp | soft delete |
 
@@ -136,7 +138,8 @@ All endpoints require `Authorization: Bearer <firebase_id_token>`. Ownership vio
 | GET | `/vehicles` | List authenticated user's vehicles |
 | POST | `/vehicles` | Create a vehicle |
 | GET | `/vehicles/:id` | Get vehicle detail |
-| PATCH | `/vehicles/:id` | Update vehicle (`brand`, `model`, `colour`, `mileage`, `mileage_unit`) |
+| PATCH | `/vehicles/:id` | Update vehicle (`brand`, `model`, `colour`, `mileage`, `mileage_unit`, `registrationNumber`) |
+| PATCH | `/vehicles/:id/mileage` | Record a mileage reading — updates `mileage` and sets `mileageLastUpdatedAt` |
 | DELETE | `/vehicles/:id` | Soft delete — cascades to cards and cancels their background jobs |
 
 ### Maintenance Cards
@@ -266,7 +269,8 @@ frontend/src/
 
 ### Key Frontend Behaviours
 - **Mileage warning:** Remaining mileage converted to km, compared against `MILEAGE_WARNING_THRESHOLD_KM` from `GET /config`. Cards turn yellow/orange at threshold, red when overdue.
-- **Mileage prompt:** On first daily visit to a vehicle dashboard, shows a dismissible prompt to enter odometer reading. Suppression tracked via `localStorage` key `mileage_prompted_{vehicleId}_{YYYY-MM-DD}`.
+- **Mileage prompt:** On first daily visit to a vehicle dashboard, shows a dismissible prompt to enter odometer reading. Suppression uses a hybrid strategy: DB field `mileageLastUpdatedAt` suppresses when the user has already recorded mileage today (any device); `localStorage` key `dismissMileagePromptDate_{vehicleId}` suppresses for the rest of the day on the current device when the user dismisses without submitting.
+- **Vehicle display labels:** `frontend/src/lib/vehicle-display.ts` exports `getVehicleDisplayLabels(vehicle)` which returns `{ primary, secondary }`. When `registrationNumber` is set, `primary` = registration number and `secondary` = `{brand} {model}`; otherwise `primary` = `{brand} {model}` and `secondary` = null. Used by `VehicleCard` and `VehicleDashboardPage`.
 - **Sort:** Toggle between `urgency` (overdue first, then by closeness to due) and `name` (alphabetical).
 
 ### Card Colour Logic
@@ -357,3 +361,26 @@ All dialog and dropdown open/close state for the vehicle dashboard lives in `Veh
 - **Prefix match** (no `exact: true`): used for list invalidation after create/patch/delete — covers both sorted and unsorted cache entries for the same vehicle.
 - **Exact match** (`exact: true`): used for individual entity invalidation to avoid over-invalidating the list.
 - `useMarkDone` invalidates both `[MAINTENANCE_CARDS, vehicleId]` and `[VEHICLES, vehicleId]` (exact) because mark-done may update vehicle mileage.
+
+#### Backend: separate endpoint for system-managed field updates
+
+`mileageLastUpdatedAt` is a system field set exclusively by recorded mileage events. A dedicated `PATCH /vehicles/:id/mileage` endpoint (`VehicleService.recordMileage`) owns this field rather than letting the general `PATCH /vehicles/:id` touch it. This prevents the field from being silently overwritten by unrelated vehicle edits and makes the recording intent explicit.
+
+**Rule:** When a field has a specific update semantic (e.g. it must be set by a particular user action, not general editing), give it its own endpoint rather than folding it into a general-purpose update.
+
+#### Frontend: centralised display label helper over inline conditionals
+
+`getVehicleDisplayLabels(vehicle)` in `frontend/src/lib/vehicle-display.ts` encapsulates the `registrationNumber`-or-fallback logic in one place. All UI surfaces (card, dashboard header) call this helper rather than duplicating the `?? \`${brand} ${model}\`` conditional.
+
+**Rule:** When the same conditional display logic is needed in two or more components, extract it into a pure helper rather than repeating the branch at each call site.
+
+#### Frontend: container/presentation split for form dialogs with complex state
+
+`VehicleFormDialog` is split into three files in `frontend/src/components/vehicles/`:
+- `use-vehicle-form.ts` — owns all state, effects, mutations, validation, and derived values.
+- `vehicle-form-dialog-presentation.tsx` — pure rendering component; receives everything as props, no hooks.
+- `vehicle-form-dialog.tsx` — thin connector (~10 lines): calls `useVehicleForm`, spreads the result into `VehicleFormDialogPresentation`.
+
+This applies the project's single-responsibility convention (documented in `docs/codebase-related/002-frontend-convention.md`) specifically to form dialogs that carry complex state (create/edit mode, mileage validation, mileage unit toggle). The split makes the hook independently testable and keeps the presentation component free of side effects.
+
+**Rule:** When a form dialog has branching state (create vs. edit mode, derived validation, multiple mutations), separate logic into a co-located hook and keep the presentation component as a pure prop consumer.
