@@ -140,4 +140,40 @@ describe('CreateVehicleDto', () => {
       expect(colourErrors).toBeDefined();
     });
   });
+
+  describe('registrationNumber', () => {
+    it('accepts a payload without registrationNumber (field is optional)', async () => {
+      const dto = plainToInstance(CreateVehicleDto, validPayload);
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('accepts a valid registrationNumber string', async () => {
+      const dto = plainToInstance(CreateVehicleDto, {
+        ...validPayload,
+        registrationNumber: 'FBA1234Z',
+      });
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('rejects a registrationNumber exceeding 15 characters', async () => {
+      const dto = plainToInstance(CreateVehicleDto, {
+        ...validPayload,
+        registrationNumber: 'A'.repeat(16),
+      });
+      const errors = await validate(dto);
+      const regErrors = errors.find((e) => e.property === 'registrationNumber');
+      expect(regErrors).toBeDefined();
+    });
+
+    it('accepts a registrationNumber of exactly 15 characters', async () => {
+      const dto = plainToInstance(CreateVehicleDto, {
+        ...validPayload,
+        registrationNumber: 'A'.repeat(15),
+      });
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+    });
+  });
 });

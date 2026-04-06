@@ -2,8 +2,10 @@ import {
   IsIn,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { MILEAGE_UNITS } from '@project/types';
@@ -30,4 +32,9 @@ export class CreateVehicleDto implements ICreateVehicleReqDTO {
   @IsString()
   @IsIn(Object.values(MILEAGE_UNITS))
   mileageUnit: MileageUnit;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(15)
+  registrationNumber?: string;
 }
