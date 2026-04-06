@@ -11,6 +11,7 @@ import { DeleteConfirmDialog } from '@/components/maintenance-cards/delete-confi
 import { VehicleFormDialog } from '@/components/vehicles/vehicle-form-dialog';
 import { VehicleDeleteConfirmDialog } from '@/components/vehicles/vehicle-delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
+import { getVehicleDisplayLabels } from '@/lib/vehicle-display';
 import { useVehicle } from '@/hooks/queries/vehicles/useVehicle';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
 import type { IMaintenanceCardResDTO } from '@project/types';
@@ -65,6 +66,8 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
     return null;
   }
 
+  const { primary, secondary } = getVehicleDisplayLabels(vehicle);
+
   const handleEdit = (card: IMaintenanceCardResDTO) => {
     setActiveDropdownId(null);
     setEditingCard(card);
@@ -84,9 +87,10 @@ function DashboardContent({ vehicleId }: VehicleDashboardPageProps) {
     <main className="flex flex-col gap-6 p-6">
       <div className="flex items-start gap-3">
         <div>
-          <h1 className="text-xl font-semibold">
-            {vehicle.brand} {vehicle.model}
-          </h1>
+          <h1 className="text-xl font-semibold">{primary}</h1>
+          {secondary && (
+            <p className="text-muted-foreground text-sm">{secondary}</p>
+          )}
           <p className="text-muted-foreground text-sm">
             {vehicle.colour} &middot; {vehicle.mileage.toLocaleString()}{' '}
             {vehicle.mileageUnit}

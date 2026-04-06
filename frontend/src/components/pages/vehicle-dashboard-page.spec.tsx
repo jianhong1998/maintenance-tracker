@@ -120,6 +120,7 @@ const mockVehicle: IVehicleResDTO = {
   mileage: 50000,
   mileageUnit: 'km',
   mileageLastUpdatedAt: null,
+  registrationNumber: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
@@ -334,5 +335,31 @@ describe('VehicleDashboardPage', () => {
     expect(screen.getByTestId('vehicle-delete-dialog')).toHaveTextContent(
       'vehicle-1',
     );
+  });
+
+  it('shows registrationNumber as h1 and brand+model as secondary line when set', () => {
+    vi.mocked(useVehicle).mockReturnValue({
+      data: { ...mockVehicle, registrationNumber: 'FBA1234Z' },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useVehicle>);
+    vi.mocked(useMaintenanceCards).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMaintenanceCards>);
+
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'FBA1234Z',
+    );
+    expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
+  });
+
+  it('does not render brand+model as a secondary line when registrationNumber is null', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    // Toyota Camry appears once (as the h1 content)
+    expect(screen.getAllByText('Toyota Camry')).toHaveLength(1);
   });
 });
