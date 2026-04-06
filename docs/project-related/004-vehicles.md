@@ -17,6 +17,7 @@
 | `GET` | `/vehicles/:id` | Get single vehicle (ownership enforced) |
 | `POST` | `/vehicles` | Create vehicle |
 | `PATCH` | `/vehicles/:id` | Update vehicle fields |
+| `PATCH` | `/vehicles/:id/mileage` | Record a mileage reading (sets `mileageLastUpdatedAt`) |
 | `DELETE` | `/vehicles/:id` | Soft delete vehicle (returns 204) |
 
 ### What was implemented
@@ -79,6 +80,7 @@ This is an application-layer guard (not a DB constraint). It is the primary enfo
 **Constraints:**
 - Optional (nullable). Users may leave it blank.
 - Max 15 UTF-8 characters (any character allowed).
+- Empty string is not valid. To clear a stored value, send `null` (edit mode only).
 - Stored as `varchar`. Column name: `registration_number`.
 - Fallback: when null, all display surfaces revert to `{brand} {model}`.
 
