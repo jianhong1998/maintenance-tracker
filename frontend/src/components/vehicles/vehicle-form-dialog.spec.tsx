@@ -371,7 +371,7 @@ describe('VehicleFormDialog', () => {
         onOpenChange={vi.fn()}
       />,
     );
-    expect(screen.getByText('(0/15)')).toBeInTheDocument();
+    expect(screen.getByText(/\(0\/15\)/)).toBeInTheDocument();
   });
 
   it('updates character counter as user types', () => {
@@ -384,7 +384,7 @@ describe('VehicleFormDialog', () => {
     fireEvent.change(screen.getByLabelText(/vehicle registration number/i), {
       target: { value: 'FBA1234A' },
     });
-    expect(screen.getByText('(8/15)')).toBeInTheDocument();
+    expect(screen.getByText(/\(8\/15\)/)).toBeInTheDocument();
   });
 
   it('pre-fills registrationNumber from vehicle prop in edit mode', () => {
