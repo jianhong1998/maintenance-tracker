@@ -1,16 +1,18 @@
 'use client';
 
+import { FC } from 'react';
 import Link from 'next/link';
 import type { IVehicleResDTO } from '@project/types';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
 import { countWarningCards } from '@/lib/warning';
+import { getVehicleDisplayLabels } from '@/lib/vehicle-display';
 
-interface VehicleCardProps {
+type VehicleCardProps = {
   vehicle: IVehicleResDTO;
   thresholdKm: number;
-}
+};
 
-export function VehicleCard({ vehicle, thresholdKm }: VehicleCardProps) {
+export const VehicleCard: FC<VehicleCardProps> = ({ vehicle, thresholdKm }) => {
   const { data: cards = [] } = useMaintenanceCards(vehicle.id);
 
   const warningCount = countWarningCards(
@@ -20,6 +22,8 @@ export function VehicleCard({ vehicle, thresholdKm }: VehicleCardProps) {
     thresholdKm,
   );
 
+  const { primary, secondary } = getVehicleDisplayLabels(vehicle);
+
   return (
     <Link
       href={`/vehicles/${vehicle.id}`}
@@ -27,9 +31,10 @@ export function VehicleCard({ vehicle, thresholdKm }: VehicleCardProps) {
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="font-semibold">
-            {vehicle.brand} {vehicle.model}
-          </p>
+          <p className="font-semibold">{primary}</p>
+          {secondary && (
+            <p className="text-muted-foreground text-sm">{secondary}</p>
+          )}
           <p className="text-muted-foreground text-sm">{vehicle.colour}</p>
           <p className="text-muted-foreground text-sm">
             {vehicle.mileage.toLocaleString()} {vehicle.mileageUnit}
@@ -43,4 +48,4 @@ export function VehicleCard({ vehicle, thresholdKm }: VehicleCardProps) {
       </div>
     </Link>
   );
-}
+};

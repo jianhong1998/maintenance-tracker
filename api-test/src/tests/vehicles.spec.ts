@@ -58,6 +58,49 @@ describe('#Vehicles', () => {
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
+
+    it('returns 201 with registrationNumber when provided', async () => {
+      const res = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        { ...baseVehiclePayload, registrationNumber: 'ABC-1234' },
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(201);
+      expect(res.data.registrationNumber).toBe('ABC-1234');
+
+      await axiosInstance
+        .delete(`/vehicles/${res.data.id}`, authHeaders())
+        .catch(() => undefined);
+    });
+
+    it('returns 201 with registrationNumber null when not provided', async () => {
+      const res = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        baseVehiclePayload,
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(201);
+      expect(res.data.registrationNumber).toBeNull();
+
+      await axiosInstance
+        .delete(`/vehicles/${res.data.id}`, authHeaders())
+        .catch(() => undefined);
+    });
+
+    it('returns 400 when registrationNumber exceeds 15 characters', async () => {
+      await expect(
+        axiosInstance.post(
+          '/vehicles',
+          {
+            ...baseVehiclePayload,
+            registrationNumber: 'TOOLONGREGPLATE' + 'X',
+          },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
   });
 
   describe('GET /vehicles', () => {
@@ -143,6 +186,37 @@ describe('#Vehicles', () => {
         axiosInstance.get(`/vehicles/${vehicleId}`),
       ).rejects.toMatchObject({ response: { status: 401 } });
     });
+
+    it('returns registrationNumber as null when not set at creation', async () => {
+      const res = await axiosInstance.get<IVehicleResDTO>(
+        `/vehicles/${vehicleId}`,
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.registrationNumber).toBeNull();
+    });
+
+    it('returns registrationNumber when it was set at creation', async () => {
+      const createRes = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        { ...baseVehiclePayload, registrationNumber: 'XYZ-9999' },
+        authHeaders(),
+      );
+      const idWithReg = createRes.data.id;
+
+      const res = await axiosInstance.get<IVehicleResDTO>(
+        `/vehicles/${idWithReg}`,
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.registrationNumber).toBe('XYZ-9999');
+
+      await axiosInstance
+        .delete(`/vehicles/${idWithReg}`, authHeaders())
+        .catch(() => undefined);
+    });
   });
 
   describe('PATCH /vehicles/:id', () => {
@@ -199,6 +273,47 @@ describe('#Vehicles', () => {
       await expect(
         axiosInstance.patch(`/vehicles/${vehicleId}`, { colour: 'Black' }),
       ).rejects.toMatchObject({ response: { status: 401 } });
+    });
+
+    it('returns 200 with updated registrationNumber', async () => {
+      const res = await axiosInstance.patch<IVehicleResDTO>(
+        `/vehicles/${vehicleId}`,
+        { registrationNumber: 'NEW-REG-01' },
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.registrationNumber).toBe('NEW-REG-01');
+    });
+
+    it('returns 200 and clears registrationNumber when patched to null', async () => {
+      // First set a value
+      const setRes = await axiosInstance.patch<IVehicleResDTO>(
+        `/vehicles/${vehicleId}`,
+        { registrationNumber: 'TEMP-REG' },
+        authHeaders(),
+      );
+      expect(setRes.data.registrationNumber).toBe('TEMP-REG');
+
+      // Then clear it
+      const res = await axiosInstance.patch<IVehicleResDTO>(
+        `/vehicles/${vehicleId}`,
+        { registrationNumber: null },
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(200);
+      expect(res.data.registrationNumber).toBeNull();
+    });
+
+    it('returns 400 when registrationNumber exceeds 15 characters', async () => {
+      await expect(
+        axiosInstance.patch(
+          `/vehicles/${vehicleId}`,
+          { registrationNumber: 'TOOLONGREGPLATE' + 'X' },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
     });
   });
 

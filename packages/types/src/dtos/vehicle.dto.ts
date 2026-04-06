@@ -11,6 +11,7 @@ export interface ICreateVehicleReqDTO {
   colour: string;
   mileage: number;
   mileageUnit: MileageUnit;
+  registrationNumber?: string;
 }
 
 export interface IUpdateVehicleReqDTO {
@@ -19,6 +20,7 @@ export interface IUpdateVehicleReqDTO {
   colour?: string;
   mileage?: number;
   mileageUnit?: MileageUnit;
+  registrationNumber?: string | null;
 }
 
 export interface IRecordMileageReqDTO {
@@ -33,6 +35,7 @@ export interface IVehicleResDTO {
   mileage: number;
   mileageUnit: MileageUnit;
   mileageLastUpdatedAt: string | null;
+  registrationNumber: string | null;
   createdAt: string;
   updatedAt: string;
 }

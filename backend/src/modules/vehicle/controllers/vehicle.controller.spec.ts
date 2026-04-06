@@ -29,6 +29,7 @@ const baseVehicle = {
   mileage: 1000,
   mileageUnit: 'km',
   mileageLastUpdatedAt: null,
+  registrationNumber: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   deletedAt: null,
@@ -145,5 +146,18 @@ describe('VehicleController', () => {
     });
     expect(result.mileage).toBe(2000);
     expect(result.mileageLastUpdatedAt).toBe('2026-04-05T10:00:00.000Z');
+  });
+
+  it('toResDTO maps registrationNumber as null when not set', async () => {
+    mockVehicleService.getVehicle.mockResolvedValue(baseVehicle);
+    const result = await controller.getOne('vehicle-1', authUser);
+    expect(result.registrationNumber).toBeNull();
+  });
+
+  it('toResDTO maps registrationNumber when set', async () => {
+    const vehicleWithReg = { ...baseVehicle, registrationNumber: 'FBA1234Z' };
+    mockVehicleService.getVehicle.mockResolvedValue(vehicleWithReg);
+    const result = await controller.getOne('vehicle-1', authUser);
+    expect(result.registrationNumber).toBe('FBA1234Z');
   });
 });

@@ -84,4 +84,54 @@ describe('UpdateVehicleDto', () => {
       expect(colourErrors).toBeDefined();
     });
   });
+
+  describe('registrationNumber', () => {
+    it('accepts a payload without registrationNumber', async () => {
+      const dto = plainToInstance(UpdateVehicleDto, {});
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('accepts a valid registrationNumber string', async () => {
+      const dto = plainToInstance(UpdateVehicleDto, {
+        registrationNumber: 'FBA1234Z',
+      });
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('accepts null registrationNumber (explicit clear)', async () => {
+      const dto = plainToInstance(UpdateVehicleDto, {
+        registrationNumber: null,
+      });
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('rejects a registrationNumber exceeding 15 characters', async () => {
+      const dto = plainToInstance(UpdateVehicleDto, {
+        registrationNumber: 'A'.repeat(16),
+      });
+      const errors = await validate(dto);
+      const regErrors = errors.find((e) => e.property === 'registrationNumber');
+      expect(regErrors).toBeDefined();
+    });
+
+    it('accepts a registrationNumber of exactly 15 characters', async () => {
+      const dto = plainToInstance(UpdateVehicleDto, {
+        registrationNumber: 'A'.repeat(15),
+      });
+      const errors = await validate(dto);
+      expect(errors).toHaveLength(0);
+    });
+
+    it('rejects an empty string registrationNumber', async () => {
+      const dto = plainToInstance(UpdateVehicleDto, {
+        registrationNumber: '',
+      });
+      const errors = await validate(dto);
+      const regErrors = errors.find((e) => e.property === 'registrationNumber');
+      expect(regErrors).toBeDefined();
+    });
+  });
 });
