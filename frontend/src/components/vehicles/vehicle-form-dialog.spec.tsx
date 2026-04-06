@@ -49,6 +49,7 @@ const mockVehicle: IVehicleResDTO = {
   mileage: 85000,
   mileageUnit: 'km',
   mileageLastUpdatedAt: null,
+  registrationNumber: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
@@ -181,6 +182,7 @@ describe('VehicleFormDialog', () => {
         colour: 'Silver',
         mileage: 85000,
         mileageUnit: 'km',
+        registrationNumber: undefined,
       },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
@@ -203,6 +205,7 @@ describe('VehicleFormDialog', () => {
         colour: 'Silver',
         mileage: 85000,
         mileageUnit: 'km',
+        registrationNumber: null,
       },
       expect.objectContaining({ onSuccess: expect.any(Function) }),
     );
@@ -347,5 +350,115 @@ describe('VehicleFormDialog', () => {
     fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
 
     expect(toast.error).toHaveBeenCalledWith('Something went wrong');
+  });
+
+  it('renders the Vehicle Registration Number field', () => {
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByLabelText(/vehicle registration number/i),
+    ).toBeInTheDocument();
+  });
+
+  it('shows character counter (0/15) when field is empty', () => {
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByText('(0/15)')).toBeInTheDocument();
+  });
+
+  it('updates character counter as user types', () => {
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/vehicle registration number/i), {
+      target: { value: 'FBA1234A' },
+    });
+    expect(screen.getByText('(8/15)')).toBeInTheDocument();
+  });
+
+  it('pre-fills registrationNumber from vehicle prop in edit mode', () => {
+    const vehicleWithReg = { ...mockVehicle, registrationNumber: 'FBA1234Z' };
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        vehicle={vehicleWithReg}
+      />,
+    );
+    expect(screen.getByLabelText(/vehicle registration number/i)).toHaveValue(
+      'FBA1234Z',
+    );
+  });
+
+  it('shows empty registrationNumber field in edit mode when vehicle has none', () => {
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        vehicle={mockVehicle}
+      />,
+    );
+    expect(screen.getByLabelText(/vehicle registration number/i)).toHaveValue(
+      '',
+    );
+  });
+
+  it('includes registrationNumber as string in create payload when filled', () => {
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/vehicle registration number/i), {
+      target: { value: 'ABC123' },
+    });
+    fireEvent.change(screen.getByLabelText(/brand/i), {
+      target: { value: 'Toyota' },
+    });
+    fireEvent.change(screen.getByLabelText(/model/i), {
+      target: { value: 'Corolla' },
+    });
+    fireEvent.change(screen.getByLabelText(/colour/i), {
+      target: { value: 'Silver' },
+    });
+    fireEvent.change(screen.getByLabelText(/mileage/i), {
+      target: { value: '85000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    expect(mockCreateMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ registrationNumber: 'ABC123' }),
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
+  });
+
+  it('sends null registrationNumber in edit patch when field is cleared', () => {
+    const vehicleWithReg = { ...mockVehicle, registrationNumber: 'FBA1234Z' };
+    render(
+      <VehicleFormDialog
+        open={true}
+        onOpenChange={vi.fn()}
+        vehicle={vehicleWithReg}
+      />,
+    );
+    fireEvent.change(screen.getByLabelText(/vehicle registration number/i), {
+      target: { value: '' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^save$/i }));
+    expect(mockPatchMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ registrationNumber: null }),
+      expect.objectContaining({ onSuccess: expect.any(Function) }),
+    );
   });
 });

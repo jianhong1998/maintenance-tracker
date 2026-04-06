@@ -28,6 +28,7 @@ export function VehicleFormDialog({
 }: VehicleFormDialogProps) {
   const isEdit = !!vehicle;
 
+  const [registrationNumber, setRegistrationNumber] = useState('');
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [colour, setColour] = useState('');
@@ -38,6 +39,7 @@ export function VehicleFormDialog({
 
   useEffect(() => {
     if (open) {
+      setRegistrationNumber(vehicle?.registrationNumber ?? '');
       setBrand(vehicle?.brand ?? '');
       setModel(vehicle?.model ?? '');
       setColour(vehicle?.colour ?? '');
@@ -67,6 +69,7 @@ export function VehicleFormDialog({
   const successMsg = isEdit ? 'Vehicle updated' : 'Vehicle created';
 
   const handleSave = () => {
+    const trimmedReg = registrationNumber.trim();
     mutation.mutate(
       {
         brand: brand.trim(),
@@ -74,6 +77,9 @@ export function VehicleFormDialog({
         colour: colour.trim(),
         mileage: parsedMileage,
         mileageUnit,
+        registrationNumber: isEdit
+          ? trimmedReg || null
+          : trimmedReg || undefined,
       },
       {
         onSuccess: () => {
@@ -94,6 +100,27 @@ export function VehicleFormDialog({
       title={isEdit ? 'Edit Vehicle' : 'Add Vehicle'}
     >
       <div className="flex flex-col gap-4">
+        <div>
+          <label
+            htmlFor="vehicle-reg-number"
+            className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+          >
+            Vehicle Registration Number{' '}
+            <span className="font-normal normal-case tracking-normal">
+              ({registrationNumber.length}/15)
+            </span>
+          </label>
+          <input
+            id="vehicle-reg-number"
+            type="text"
+            maxLength={15}
+            value={registrationNumber}
+            onChange={(e) => setRegistrationNumber(e.target.value)}
+            placeholder="e.g. SBC1234Z"
+            className={inputClass}
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label
