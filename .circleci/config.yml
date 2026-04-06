@@ -202,14 +202,14 @@ jobs:
           service: << parameters.service >>
 
   deploy-staging:
-    executor: machine-executor
+    executor: node-executor
     steps:
       - run:
           name: Trigger Coolify staging deploy
           command: curl -fsSL -X POST "$COOLIFY_STAGING_WEBHOOK_URL"
 
   deploy-production:
-    executor: machine-executor
+    executor: node-executor
     steps:
       - run:
           name: Trigger Coolify production deploy
