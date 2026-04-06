@@ -27,6 +27,7 @@ function toResDTO(vehicle: VehicleEntity): IVehicleResDTO {
     mileage: vehicle.mileage,
     mileageUnit: vehicle.mileageUnit,
     mileageLastUpdatedAt: vehicle.mileageLastUpdatedAt?.toISOString() ?? null,
+    registrationNumber: vehicle.registrationNumber,
     createdAt: vehicle.createdAt.toISOString(),
     updatedAt: vehicle.updatedAt.toISOString(),
   };
