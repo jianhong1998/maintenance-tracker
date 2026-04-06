@@ -16,7 +16,6 @@ RUN npm install -g pnpm@9.0.0
 WORKDIR /app
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY turbo.json ./
 COPY packages/types/package.json ./packages/types/
 COPY backend/package.json ./backend/
 
@@ -29,6 +28,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts
 # ===========================================================
 FROM deps AS build
 
+COPY turbo.json ./
 COPY packages/ ./packages/
 COPY backend/ ./backend/
 
