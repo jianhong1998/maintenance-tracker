@@ -40,6 +40,7 @@ const mockVehicle: IVehicleResDTO = {
   mileage: 50000,
   mileageUnit: 'km',
   mileageLastUpdatedAt: null,
+  registrationNumber: null,
   createdAt: '2024-01-01T00:00:00.000Z',
   updatedAt: '2024-01-01T00:00:00.000Z',
 };
@@ -122,5 +123,28 @@ describe('VehicleCard', () => {
       mockVehicle.mileageUnit,
       thresholdKm,
     );
+  });
+
+  it('shows registrationNumber as the primary label and brand+model as secondary when set', () => {
+    const vehicleWithReg = { ...mockVehicle, registrationNumber: 'FBA1234Z' };
+    render(
+      <VehicleCard
+        vehicle={vehicleWithReg}
+        thresholdKm={500}
+      />,
+    );
+    expect(screen.getByText('FBA1234Z')).toBeInTheDocument();
+    expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
+  });
+
+  it('does not render brand+model as a secondary line when registrationNumber is null', () => {
+    render(
+      <VehicleCard
+        vehicle={mockVehicle}
+        thresholdKm={500}
+      />,
+    );
+    // Toyota Camry appears exactly once (as primary)
+    expect(screen.getAllByText('Toyota Camry')).toHaveLength(1);
   });
 });
