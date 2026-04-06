@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { MILEAGE_UNITS } from '@project/types';
+import { MILEAGE_UNITS, MileageUnit } from '@project/types';
 import { Dialog } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -15,13 +15,13 @@ type VehicleFormDialogPresentationProps = {
   model: string;
   colour: string;
   mileage: string;
-  mileageUnit: 'km' | 'mile';
+  mileageUnit: MileageUnit;
   onRegistrationNumberChange: (v: string) => void;
   onBrandChange: (v: string) => void;
   onModelChange: (v: string) => void;
   onColourChange: (v: string) => void;
   onMileageChange: (v: string) => void;
-  onMileageUnitChange: (unit: 'km' | 'mile') => void;
+  onMileageUnitChange: (unit: MileageUnit) => void;
   isEdit: boolean;
   isValid: boolean;
   isPending: boolean;
