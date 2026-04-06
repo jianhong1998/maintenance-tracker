@@ -53,9 +53,6 @@ export const useVehicleForm = ({
     parsedMileage < vehicle.mileage;
 
   const trimmedReg = registrationNumber.trim();
-  // registrationNumber is optional; if provided it must be at least 1 character (mirrors backend @MinLength(1))
-  const isRegistrationNumberValid =
-    trimmedReg.length === 0 || trimmedReg.length >= 1;
 
   const isValid =
     brand.trim().length > 0 &&
@@ -63,8 +60,7 @@ export const useVehicleForm = ({
     colour.trim().length > 0 &&
     !isNaN(parsedMileage) &&
     parsedMileage >= 0 &&
-    !isMileageBelowCurrent &&
-    isRegistrationNumberValid;
+    !isMileageBelowCurrent;
 
   const isPending = createMutation.isPending || patchMutation.isPending;
   const unitLocked = isEdit && hasCards;
