@@ -148,8 +148,8 @@ Sensitive values are never in this file. They live as CircleCI project environme
 
 | Command                  | Parameters              | Purpose                                                                                   |
 | ------------------------ | ----------------------- | ----------------------------------------------------------------------------------------- |
+| `install-pnpm`           | —                       | Standalone pnpm installer (no npm dependency); works on both node and machine executors. Sets `PNPM_HOME` in `$BASH_ENV`. |
 | `ecr-login`              | —                       | `aws ecr get-login-password \| docker login` using `aws-ecr-context` credentials         |
-| `install-just`           | —                       | Install the `just` command runner on the machine executor                                 |
 | `docker-build-and-push`  | `service`, `dockerfile` | BuildKit build with `--cache-from` / `--cache-to` ECR cache repos; push with commit hash |
 | `docker-retag-and-push`  | `service`, `tags`       | Pull image by commit hash, apply additional tags, push all                                |
 
@@ -161,7 +161,7 @@ Sensitive values are never in this file. They live as CircleCI project environme
 | `unit-test`          | node      | checkout, install deps, `just test-unit`                                                                |
 | `ui-test`            | node      | checkout, install deps, `just test-ui`                                                                  |
 | `build-service`      | machine   | checkout, `ecr-login`, `docker-build-and-push` (parameterised on `service` + `dockerfile`)             |
-| `api-test`           | machine   | checkout, `ecr-login`, `install-just`, install deps, `docker compose -f docker-compose.pipeline.yml up -d`, wait-for-healthy, `just test-api`, tear down |
+| `api-test`           | machine   | checkout, `ecr-login`, install deps, `docker compose -f docker-compose.pipeline.yml up -d`, wait-for-healthy, `cd api-test && pnpm run test`, tear down |
 | `push-service`       | machine   | checkout, `ecr-login`, `docker-retag-and-push` (parameterised on `service` + `extra_tags`)             |
 | `deploy-staging`     | machine   | `curl -X POST $COOLIFY_STAGING_WEBHOOK_URL`                                                             |
 | `deploy-production`  | machine   | `curl -X POST $COOLIFY_PRODUCTION_WEBHOOK_URL`                                                          |

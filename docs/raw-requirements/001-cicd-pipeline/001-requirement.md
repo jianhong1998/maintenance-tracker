@@ -136,4 +136,4 @@ Sensitive values are injected via CircleCI at runtime. The pipeline generates th
 | Lint Test | `just lint`                                                      |
 | Unit Test | `just test-unit` (Vitest, `backend/src/**/*.spec.ts`)            |
 | UI Test   | `just test-ui` (Vitest + Testing Library, `frontend/`)           |
-| API Test  | `just test-api` (Vitest, `api-test/`, requires running services) |
+| API Test  | `cd api-test && pnpm run test` (Vitest, `api-test/`, requires running services) |

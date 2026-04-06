@@ -565,7 +565,10 @@ commands:
     steps:
       - run:
           name: Install pnpm
-          command: npm install -g pnpm@latest
+          command: |
+            curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=9.0.0 SHELL=bash sh -
+            echo 'export PNPM_HOME="$HOME/.local/share/pnpm"' >> $BASH_ENV
+            echo 'export PATH="$PNPM_HOME:$PATH"' >> $BASH_ENV
 
   install-just:
     steps:
@@ -701,7 +704,6 @@ jobs:
       - set-short-sha
       - ecr-login
       - install-pnpm
-      - install-just
       - run:
           name: Install dependencies
           command: pnpm install --frozen-lockfile
@@ -729,7 +731,7 @@ jobs:
             timeout 120 bash -c 'until curl -sf http://localhost:3001/health; do sleep 3; done'
       - run:
           name: Run API tests
-          command: just test-api
+          command: cd api-test && pnpm run test
       - run:
           name: Tear down services
           command: docker compose -f docker-compose.pipeline.yml down --volumes

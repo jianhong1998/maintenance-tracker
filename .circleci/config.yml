@@ -168,7 +168,6 @@ jobs:
       - set-short-sha
       - ecr-login
       - install-pnpm
-      - install-just
       - run:
           name: Install dependencies
           command: pnpm install --frozen-lockfile --ignore-scripts
@@ -196,7 +195,7 @@ jobs:
             timeout 120 bash -c 'until curl -sf http://localhost:3001/health; do sleep 3; done'
       - run:
           name: Run API tests
-          command: just test-api
+          command: cd api-test && pnpm run test
       - run:
           name: Tear down services
           command: docker compose -f docker-compose.pipeline.yml down --volumes
