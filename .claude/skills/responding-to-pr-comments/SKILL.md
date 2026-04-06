@@ -26,15 +26,31 @@ This prevents "fixing" things that were intentionally done a certain way.
 
 **Step 2 — Fetch all PR comments**
 
-Use the built-in `/pr-comments` slash command. It auto-detects the PR for the current branch, or you can pass a PR number or URL:
+Use `gh api` to fetch both review comments (inline, on diff lines) and PR-level comments:
 
-```
-/pr-comments              # auto-detect PR for current branch
-/pr-comments 123          # by PR number
-/pr-comments <URL>        # by full PR URL
+```bash
+# Get PR number first
+PR_NUMBER=$(gh pr view --json number --jq '.number')
+
+# Inline review comments (on specific lines/files)
+gh api repos/{owner}/{repo}/pulls/${PR_NUMBER}/comments \
+  --jq '.[] | "---\nAuthor: \(.user.login)\nFile: \(.path)\nLine: \(.line)\nComment: \(.body)\n"'
+
+# PR-level comments (general discussion)
+gh api repos/{owner}/{repo}/issues/${PR_NUMBER}/comments \
+  --jq '.[] | "---\nAuthor: \(.user.login)\nComment: \(.body)\n"'
 ```
 
-This requires `gh` CLI to be installed and authenticated. The command fetches and injects all PR comments into context.
+Or combined in one command (replace owner/repo with actual values from `gh repo view --json nameWithOwner`):
+
+```bash
+PR=$(gh pr view --json number,url); PR_NUM=$(echo $PR | jq '.number'); \
+  REPO=$(gh repo view --json nameWithOwner --jq '.nameWithOwner'); \
+  gh api repos/${REPO}/pulls/${PR_NUM}/comments --jq '.[] | "---\nFile: \(.path)\nComment: \(.body)\n"' && \
+  gh api repos/${REPO}/issues/${PR_NUM}/comments --jq '.[] | "---\nComment: \(.body)\n"'
+```
+
+> **Note:** If running interactively as a user (not as Claude executing a skill), the `/pr-comments` Claude Code slash command is a convenient shortcut. However, Claude cannot invoke Claude Code slash commands programmatically — always use `gh api` above when executing this skill.
 
 **Step 3 — Evaluate validity for EACH comment**
 
@@ -106,7 +122,8 @@ This is a **summary comment**, not individual replies. One comment, complete pic
 
 | Mistake | Fix |
 |---------|-----|
-| Using `gh pr view --comments` or raw REST API | Use `/pr-comments` instead — it handles auth and formatting |
+| Using `gh pr view --comments` (wrong endpoint) | Use `gh api .../pulls/N/comments` + `gh api .../issues/N/comments` — two separate calls for inline vs PR-level comments |
+| Invoking `/pr-comments` via the `Skill` tool | `/pr-comments` is a Claude Code slash command, not a skill — Claude cannot invoke it programmatically; use `gh api` directly |
 | Reading comments before reading PR description + commit history | Always read context first |
 | "Fixing" something the reviewer flagged without checking if it was intentional | Check git log for the rationale |
 | Writing tests after the fix | Write the failing test first, always |
