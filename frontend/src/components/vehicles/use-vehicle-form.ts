@@ -48,7 +48,14 @@ export const useVehicleForm = ({
 
   const parsedMileage = parseFloat(mileage);
   const isMileageBelowCurrent =
-    isEdit && !isNaN(parsedMileage) && parsedMileage < vehicle!.mileage;
+    vehicle !== undefined &&
+    !isNaN(parsedMileage) &&
+    parsedMileage < vehicle.mileage;
+
+  const trimmedReg = registrationNumber.trim();
+  // registrationNumber is optional; if provided it must be at least 1 character (mirrors backend @MinLength(1))
+  const isRegistrationNumberValid =
+    trimmedReg.length === 0 || trimmedReg.length >= 1;
 
   const isValid =
     brand.trim().length > 0 &&
@@ -56,13 +63,14 @@ export const useVehicleForm = ({
     colour.trim().length > 0 &&
     !isNaN(parsedMileage) &&
     parsedMileage >= 0 &&
-    !isMileageBelowCurrent;
+    !isMileageBelowCurrent &&
+    isRegistrationNumberValid;
 
   const isPending = createMutation.isPending || patchMutation.isPending;
   const unitLocked = isEdit && hasCards;
 
   const handleSave = () => {
-    const trimmedReg = registrationNumber.trim();
+    if (!isValid) return;
     const commonPayload = {
       brand: brand.trim(),
       model: model.trim(),

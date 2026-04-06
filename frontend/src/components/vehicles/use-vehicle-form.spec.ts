@@ -320,6 +320,23 @@ describe('useVehicleForm', () => {
   });
 
   describe('handleSave', () => {
+    it('does not call any mutation when form is invalid', () => {
+      const { result } = renderHook(() =>
+        useVehicleForm({
+          open: true,
+          vehicle: undefined,
+          hasCards: false,
+          onOpenChange: vi.fn(),
+        }),
+      );
+      // brand/model/colour empty → isValid is false
+      act(() => {
+        result.current.handleSave();
+      });
+      expect(mockCreateMutate).not.toHaveBeenCalled();
+      expect(mockPatchMutate).not.toHaveBeenCalled();
+    });
+
     it('calls createMutation.mutate with correct payload in create mode', () => {
       const onOpenChange = vi.fn();
       const { result } = renderHook(() =>
