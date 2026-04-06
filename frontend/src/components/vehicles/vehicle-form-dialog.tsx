@@ -65,32 +65,38 @@ export function VehicleFormDialog({
   const isPending = createMutation.isPending || patchMutation.isPending;
   const unitLocked = isEdit && hasCards;
 
-  const mutation = isEdit ? patchMutation : createMutation;
   const successMsg = isEdit ? 'Vehicle updated' : 'Vehicle created';
 
   const handleSave = () => {
     const trimmedReg = registrationNumber.trim();
-    mutation.mutate(
-      {
-        brand: brand.trim(),
-        model: model.trim(),
-        colour: colour.trim(),
-        mileage: parsedMileage,
-        mileageUnit,
-        registrationNumber: isEdit
-          ? trimmedReg || null
-          : trimmedReg || undefined,
+    const commonPayload = {
+      brand: brand.trim(),
+      model: model.trim(),
+      colour: colour.trim(),
+      mileage: parsedMileage,
+      mileageUnit,
+    };
+    const callbacks = {
+      onSuccess: () => {
+        toast.success(successMsg);
+        onOpenChange(false);
       },
-      {
-        onSuccess: () => {
-          toast.success(successMsg);
-          onOpenChange(false);
-        },
-        onError: (err) => {
-          toast.error(err.message || 'Something went wrong');
-        },
+      onError: (err: Error) => {
+        toast.error(err.message || 'Something went wrong');
       },
-    );
+    };
+
+    if (isEdit) {
+      patchMutation.mutate(
+        { ...commonPayload, registrationNumber: trimmedReg || null },
+        callbacks,
+      );
+    } else {
+      createMutation.mutate(
+        { ...commonPayload, registrationNumber: trimmedReg || undefined },
+        callbacks,
+      );
+    }
   };
 
   return (
