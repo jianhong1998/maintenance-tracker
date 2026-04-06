@@ -58,6 +58,49 @@ describe('#Vehicles', () => {
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
+
+    it('returns 201 with registrationNumber when provided', async () => {
+      const res = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        { ...baseVehiclePayload, registrationNumber: 'ABC-1234' },
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(201);
+      expect(res.data.registrationNumber).toBe('ABC-1234');
+
+      await axiosInstance
+        .delete(`/vehicles/${res.data.id}`, authHeaders())
+        .catch(() => undefined);
+    });
+
+    it('returns 201 with registrationNumber null when not provided', async () => {
+      const res = await axiosInstance.post<IVehicleResDTO>(
+        '/vehicles',
+        baseVehiclePayload,
+        authHeaders(),
+      );
+
+      expect(res.status).toBe(201);
+      expect(res.data.registrationNumber).toBeNull();
+
+      await axiosInstance
+        .delete(`/vehicles/${res.data.id}`, authHeaders())
+        .catch(() => undefined);
+    });
+
+    it('returns 400 when registrationNumber exceeds 15 characters', async () => {
+      await expect(
+        axiosInstance.post(
+          '/vehicles',
+          {
+            ...baseVehiclePayload,
+            registrationNumber: 'TOOLONGREGPLATE' + 'X',
+          },
+          authHeaders(),
+        ),
+      ).rejects.toMatchObject({ response: { status: 400 } });
+    });
   });
 
   describe('GET /vehicles', () => {
