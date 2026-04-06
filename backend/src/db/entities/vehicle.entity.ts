@@ -60,6 +60,14 @@ export class VehicleEntity extends UuidV7BaseEntity {
   })
   mileageLastUpdatedAt: Date | null;
 
+  @Column({
+    type: 'varchar',
+    name: 'registration_number',
+    nullable: true,
+    default: null,
+  })
+  registrationNumber: string | null;
+
   @OneToMany(() => MaintenanceCardEntity, (card) => card.vehicle, {
     cascade: ['soft-remove'],
   })
