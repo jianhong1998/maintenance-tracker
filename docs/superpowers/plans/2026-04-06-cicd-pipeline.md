@@ -12,22 +12,23 @@
 
 ## File Map
 
-| File | Action | Purpose |
-|---|---|---|
-| `docker/deployment/Dockerfile.backend` | Create | Production backend image (NestJS compiled) |
-| `docker/deployment/Dockerfile.background-job` | Create | Production worker image (same as backend, different entrypoint) |
-| `docker/deployment/Dockerfile.frontend` | Create | Production frontend image (Next.js built) |
-| `docker/deployment/Dockerfile.db-migration` | Create | One-shot migration runner (needs ts-node, keeps all deps + source) |
-| `.env.pipeline` | Create | Non-sensitive env defaults committed to repo |
-| `.gitignore` | Modify | Add `!.env.pipeline` exception to the `.env*` rule |
-| `docker-compose.pipeline.yml` | Create | Compose file for the api-test job (image references, no build directives) |
-| `.circleci/config.yml` | Create | Full pipeline definition (executors, commands, jobs, workflows) |
+| File                                          | Action | Purpose                                                                   |
+| --------------------------------------------- | ------ | ------------------------------------------------------------------------- |
+| `docker/deployment/Dockerfile.backend`        | Create | Production backend image (NestJS compiled)                                |
+| `docker/deployment/Dockerfile.background-job` | Create | Production worker image (same as backend, different entrypoint)           |
+| `docker/deployment/Dockerfile.frontend`       | Create | Production frontend image (Next.js built)                                 |
+| `docker/deployment/Dockerfile.db-migration`   | Create | One-shot migration runner (needs ts-node, keeps all deps + source)        |
+| `.env.pipeline`                               | Create | Non-sensitive env defaults committed to repo                              |
+| `.gitignore`                                  | Modify | Add `!.env.pipeline` exception to the `.env*` rule                        |
+| `docker-compose.pipeline.yml`                 | Create | Compose file for the api-test job (image references, no build directives) |
+| `.circleci/config.yml`                        | Create | Full pipeline definition (executors, commands, jobs, workflows)           |
 
 ---
 
 ## Task 1: Production Dockerfile — backend
 
 **Files:**
+
 - Create: `docker/deployment/Dockerfile.backend`
 
 - [ ] **Step 1: Create the file**
@@ -88,9 +89,11 @@ CMD ["node", "dist/backend/src/main"]
 - [ ] **Step 2: Build locally to verify it succeeds**
 
 Run from repo root:
+
 ```bash
 docker build -f docker/deployment/Dockerfile.backend -t backend-prod-test .
 ```
+
 Expected: build completes with no errors, final image tagged `backend-prod-test`.
 
 - [ ] **Step 3: Smoke-test the image exits gracefully without env vars**
@@ -98,6 +101,7 @@ Expected: build completes with no errors, final image tagged `backend-prod-test`
 ```bash
 docker run --rm backend-prod-test node -e "console.log('ok')"
 ```
+
 Expected: prints `ok` and exits 0. (Full runtime test requires a live database, which is the API test job's job.)
 
 - [ ] **Step 4: Commit**
@@ -112,6 +116,7 @@ git commit -m "add production Dockerfile for backend"
 ## Task 2: Production Dockerfile — background-job
 
 **Files:**
+
 - Create: `docker/deployment/Dockerfile.background-job`
 
 - [ ] **Step 1: Create the file**
@@ -167,6 +172,7 @@ CMD ["node", "dist/backend/src/main-worker"]
 ```bash
 docker build -f docker/deployment/Dockerfile.background-job -t bg-job-prod-test .
 ```
+
 Expected: build completes with no errors.
 
 - [ ] **Step 3: Commit**
@@ -181,6 +187,7 @@ git commit -m "add production Dockerfile for background-job"
 ## Task 3: Production Dockerfile — frontend
 
 **Files:**
+
 - Create: `docker/deployment/Dockerfile.frontend`
 
 The frontend needs `build-essential` and `python3` for native module compilation. The production stage does a fresh `--prod` install and copies `.next/`, `public/`, and `next.config.ts` from the build stage.
@@ -257,6 +264,7 @@ CMD ["node_modules/.bin/next", "start"]
 ```bash
 docker build -f docker/deployment/Dockerfile.frontend -t frontend-prod-test .
 ```
+
 Expected: build completes. The `next build` step will take the longest; watch for any compilation errors.
 
 - [ ] **Step 3: Commit**
@@ -271,6 +279,7 @@ git commit -m "add production Dockerfile for frontend"
 ## Task 4: Production Dockerfile — db-migration
 
 **Files:**
+
 - Create: `docker/deployment/Dockerfile.db-migration`
 
 `migration:run` uses `ts-node` (a dev dependency) to execute the TypeScript data source directly. The production stage therefore cannot strip to `--prod` — it retains all dependencies and TypeScript sources. This is a one-shot container (exits after running migrations), so image size is acceptable.
@@ -327,6 +336,7 @@ CMD ["pnpm", "run", "migration:run"]
 ```bash
 docker build -f docker/deployment/Dockerfile.db-migration -t db-migration-prod-test .
 ```
+
 Expected: build completes with no errors.
 
 - [ ] **Step 3: Commit**
@@ -341,6 +351,7 @@ git commit -m "add production Dockerfile for db-migration"
 ## Task 5: Create `.env.pipeline` and update `.gitignore`
 
 **Files:**
+
 - Create: `.env.pipeline`
 - Modify: `.gitignore`
 
@@ -349,12 +360,14 @@ The `.gitignore` currently has `.env*` which would gitignore `.env.pipeline`. Ad
 - [ ] **Step 1: Add `.env.pipeline` exception to `.gitignore`**
 
 Find the line in `.gitignore`:
+
 ```
 .env*
 !.env.template
 ```
 
 Change it to:
+
 ```
 .env*
 !.env.template
@@ -386,6 +399,7 @@ BACKEND_ENABLE_API_TEST_MODE=true
 ```bash
 git status .env.pipeline
 ```
+
 Expected: shows `.env.pipeline` as an untracked file (not silently ignored). If it doesn't appear, check the `.gitignore` edit.
 
 - [ ] **Step 4: Commit**
@@ -400,6 +414,7 @@ git commit -m "add .env.pipeline for pipeline API test environment"
 ## Task 6: Create `docker-compose.pipeline.yml`
 
 **Files:**
+
 - Create: `docker-compose.pipeline.yml`
 
 This compose file is used exclusively by the `api-test` CircleCI job. It references pre-built ECR images (no `build:` directives). The api-test job generates a `.env` file by merging `.env.pipeline` with CircleCI secrets before running `docker compose up`.
@@ -498,6 +513,7 @@ AWS_ECR_REGISTRY=123456789.dkr.ecr.us-east-1.amazonaws.com \
 CIRCLE_SHA1_SHORT=abc1234 \
 docker compose -f docker-compose.pipeline.yml config
 ```
+
 Expected: prints the fully-interpolated compose config with no errors.
 
 - [ ] **Step 3: Commit**
@@ -512,11 +528,13 @@ git commit -m "add docker-compose.pipeline.yml for pipeline API tests"
 ## Task 7: Create `.circleci/config.yml`
 
 **Files:**
+
 - Create: `.circleci/config.yml`
 
 This is the full CircleCI pipeline definition. It uses two executors, six reusable commands, eight job types, and two workflows.
 
 Key design decisions:
+
 - `set-short-sha`: writes `CIRCLE_SHA1_SHORT` to `$BASH_ENV` (persists to subsequent steps in the same job via CircleCI's env file sourcing mechanism)
 - `docker-retag-and-push`: branches on `$CIRCLE_TAG` — if set, applies `<git-tag>` + `prod` tags; otherwise applies `dev`
 - `branch-workflow` triggers when `pipeline.git.tag` is empty; `tag-workflow` triggers when it is non-empty
@@ -917,14 +935,17 @@ workflows:
 - [ ] **Step 2: Validate the config with the CircleCI CLI**
 
 Install the CLI if not already present:
+
 ```bash
 curl -fLSs https://raw.githubusercontent.com/CircleCI-Public/circleci-cli/main/install.sh | bash
 ```
 
 Then validate:
+
 ```bash
 circleci config validate .circleci/config.yml
 ```
+
 Expected: `Config file at .circleci/config.yml is valid.`
 
 - [ ] **Step 3: Commit**
@@ -941,14 +962,14 @@ git commit -m "add CircleCI pipeline config"
 These steps must be done in the AWS and CircleCI consoles before the pipeline runs end-to-end:
 
 1. **Create 8 ECR repositories** in AWS:
-   - `maintenance-tracker/backend`
-   - `maintenance-tracker/frontend`
-   - `maintenance-tracker/background-job`
-   - `maintenance-tracker/db-migration`
-   - `maintenance-tracker/cache/backend`
-   - `maintenance-tracker/cache/frontend`
-   - `maintenance-tracker/cache/background-job`
-   - `maintenance-tracker/cache/db-migration`
+   - [x] `maintenance-tracker/backend`
+   - [x] `maintenance-tracker/frontend`
+   - [x] `maintenance-tracker/background-job`
+   - [x] `maintenance-tracker/db-migration`
+   - [x] `maintenance-tracker/cache/backend`
+   - [x] `maintenance-tracker/cache/frontend`
+   - [x] `maintenance-tracker/cache/background-job`
+   - [x] `maintenance-tracker/cache/db-migration`
 
 2. **Create CircleCI context** named `aws-ecr-context` with:
    - `AWS_ACCESS_KEY_ID`
