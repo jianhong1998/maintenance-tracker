@@ -8,7 +8,6 @@ import {
   MaxLength,
   Min,
   MinLength,
-  ValidateIf,
 } from 'class-validator';
 import { MILEAGE_UNITS } from '@project/types';
 import type { IUpdateVehicleReqDTO, MileageUnit } from '@project/types';
@@ -41,7 +40,6 @@ export class UpdateVehicleDto implements IUpdateVehicleReqDTO {
   mileageUnit?: MileageUnit;
 
   @IsOptional()
-  @ValidateIf((o: UpdateVehicleDto) => o.registrationNumber !== null)
   @IsString()
   @MinLength(1)
   @MaxLength(15)
