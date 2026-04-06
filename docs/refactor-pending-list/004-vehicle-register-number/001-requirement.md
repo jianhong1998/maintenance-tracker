@@ -60,6 +60,6 @@ BRAND *           MODEL *
 
 ## Constraints
 
-- Vehicle registration number should be stored as string (varchar) with max 15 alphanumerics.
+- Vehicle registration number should be stored as string (varchar) with max 15 UTF-8 charecters.
 - Vehicle registration number can be nullable. As user can choose not to record his / her vehicle number in the app.
   - If vehicle registration number is not recorded, the UI display should fallback to the previous behaviour.
