@@ -5,7 +5,7 @@
 **/.turbo
 
 # OS
-**/DS_Store
+**/.DS_Store
 
 # Container Volumes
 postgres-data
