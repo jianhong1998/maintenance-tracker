@@ -215,7 +215,7 @@ jobs:
 
   tag-service:
     executor: machine-executor
-    resource_class: medium
+    resource_class: arm.medium
     parameters:
       service:
         type: string
