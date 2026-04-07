@@ -280,41 +280,41 @@ workflows:
           context: aws-ecr-context
           requires:
             - approve-build
-      - approve-api-test:
-          type: approval
+      - api-test:
+          context: aws-ecr-context
           requires:
             - build-and-push-backend
             - build-and-push-frontend
             - build-and-push-background-job
             - build-and-push-db-migration
-      - api-test:
-          context: aws-ecr-context
+      - approve-deploy-to-dev:
+          type: approval
           requires:
-            - approve-api-test
+            - api-test
       - tag-service:
           name: tag-dev-backend
           service: backend
           context: aws-ecr-context
           requires:
-            - api-test
+            - approve-deploy-to-dev
       - tag-service:
           name: tag-dev-frontend
           service: frontend
           context: aws-ecr-context
           requires:
-            - api-test
+            - approve-deploy-to-dev
       - tag-service:
           name: tag-dev-background-job
           service: background-job
           context: aws-ecr-context
           requires:
-            - api-test
+            - approve-deploy-to-dev
       - tag-service:
           name: tag-dev-db-migration
           service: db-migration
           context: aws-ecr-context
           requires:
-            - api-test
+            - approve-deploy-to-dev
       - deploy-dev:
           requires:
             - tag-dev-backend

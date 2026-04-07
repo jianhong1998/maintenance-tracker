@@ -4,7 +4,7 @@
 
 **Goal:** Build a CircleCI pipeline that lints, tests, builds Docker images, runs API tests, pushes to AWS ECR, and deploys to Coolify for all four services (backend, frontend, background-job, db-migration).
 
-**Architecture:** Two CircleCI workflows — `branch-workflow` (with two manual approval gates, deploys to staging) and `tag-workflow` (no gates, deploys to production). Build jobs push images to ECR with the commit short-hash tag; push jobs add `dev`/`<git-tag>`+`prod` tags afterward. Reusable CircleCI commands eliminate duplication across the four near-identical build and push jobs.
+**Architecture:** Two CircleCI workflows — `branch-workflow` (`approve-build` before builds, `approve-deploy-to-dev` before push/tag jobs, deploys to staging) and `tag-workflow` (no approval gates, deploys to production). Build jobs push images to ECR with the commit short-hash tag; push jobs add `dev`/`<git-tag>`+`prod` tags afterward. Reusable CircleCI commands eliminate duplication across the four near-identical build and push jobs.
 
 **Tech Stack:** CircleCI 2.1, AWS ECR, Docker BuildKit (registry cache), Docker Compose, Node 22, pnpm, just
 
@@ -809,41 +809,41 @@ workflows:
           context: aws-ecr-context
           requires:
             - approve-build
-      - approve-api-test:
-          type: approval
+      - api-test:
+          context: aws-ecr-context
           requires:
             - build-backend
             - build-frontend
             - build-background-job
             - build-db-migration
-      - api-test:
-          context: aws-ecr-context
+      - approve-deploy-to-dev:
+          type: approval
           requires:
-            - approve-api-test
+            - api-test
       - push-service:
           name: push-backend
           service: backend
           context: aws-ecr-context
           requires:
-            - api-test
+            - approve-deploy-to-dev
       - push-service:
           name: push-frontend
           service: frontend
           context: aws-ecr-context
           requires:
-            - api-test
+            - approve-deploy-to-dev
       - push-service:
           name: push-background-job
           service: background-job
           context: aws-ecr-context
           requires:
-            - api-test
+            - approve-deploy-to-dev
       - push-service:
           name: push-db-migration
           service: db-migration
           context: aws-ecr-context
           requires:
-            - api-test
+            - approve-deploy-to-dev
       - deploy-staging:
           requires:
             - push-backend

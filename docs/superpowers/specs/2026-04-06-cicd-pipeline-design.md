@@ -21,10 +21,10 @@ Two CircleCI workflows handle all pipeline scenarios:
 ```
 [lint-test]   ─┐
 [unit-test]   ─┤─→ (approve-build) ─→ [build-backend]     ─┐
-[ui-test]     ─┘                       [build-frontend]    ─┤─→ (approve-api-test) ─→ [api-test] ─→ [push-backend]     ─┐
-                                        [build-bg-job]      ─┤                                        [push-frontend]    ─┤─→ [deploy-staging]
-                                        [build-db-migration]─┘                                        [push-bg-job]      ─┤
-                                                                                                       [push-db-migration]─┘
+[ui-test]     ─┘                       [build-frontend]    ─┤─→ [api-test] ─→ (approve-deploy-to-dev) ─→ [push-backend]     ─┐
+                                        [build-bg-job]      ─┤                                           [push-frontend]    ─┤─→ [deploy-staging]
+                                        [build-db-migration]─┘                                           [push-bg-job]      ─┤
+                                                                                                          [push-db-migration]─┘
 ```
 
 ### Tag workflow

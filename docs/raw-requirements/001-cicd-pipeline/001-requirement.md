@@ -18,8 +18,8 @@ Write production-grade dockerfiles in `docker/deployment/` by following best pra
 ```
 # For all pushes in all branches
 
-Lint Test -> Pending Approval   -> Build backend         -> Pending approval -> API test  -> Push backend         -> Trigger Coolify staging deploy
-Unit Test                       -> Build frontend                                         -> Push frontend
+Lint Test -> Pending Approval   -> Build backend         -> API test  -> Pending Approval -> Push backend         -> Trigger Coolify staging deploy
+Unit Test                       -> Build frontend                                          -> Push frontend
 UI Test                         -> Build background-job                                   -> Push background-job
                                 -> Build db-migration                                     -> Push db-migration
 
