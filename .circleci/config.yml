@@ -195,6 +195,12 @@ jobs:
           name: Start services
           command: docker compose -f docker-compose.pipeline.yml up -d
       - run:
+          name: Verify all services are running
+          command: docker ps -a
+      - run:
+          name: Print backend service logs
+          command: docker compose -f docker-compose.pipeline.yml logs server
+      - run:
           name: Wait for backend to be ready
           command: |
             timeout 120 bash -c 'until curl -sf http://localhost:3001/; do sleep 3; done'
