@@ -129,6 +129,7 @@ DATABASE_DB=project_db
 REDIS_PORT=6379
 REDIS_URL=redis://localhost:6379
 BACKEND_ENABLE_API_TEST_MODE=true
+BACKEND_CLIENT_HOST=http://localhost:3000
 ```
 
 Sensitive values are never in this file. They live as CircleCI project environment variables and are injected at runtime.
