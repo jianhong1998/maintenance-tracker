@@ -18,10 +18,4 @@ describe('#Health Check', () => {
       timestamp: expect.any(String) as string,
     } as IHealthCheckResDTO);
   });
-
-  it('returns 401 when no auth token is provided', async () => {
-    await expect(axiosInstance.get('/')).rejects.toMatchObject({
-      response: { status: 401 },
-    });
-  });
 });

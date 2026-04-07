@@ -199,7 +199,7 @@ jobs:
           command: docker ps -a
       - run:
           name: Print backend service logs
-          command: docker compose -f docker-compose.pipeline.yml logs server
+          command: sleep 5 && docker compose -f docker-compose.pipeline.yml logs server
       - run:
           name: Wait for backend to be ready
           command: |
