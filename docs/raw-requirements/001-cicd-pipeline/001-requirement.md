@@ -117,7 +117,7 @@ Sensitive values are injected via CircleCI at runtime. The pipeline generates th
 | `AWS_SECRET_ACCESS_KEY`          | CircleCI context: `aws-ecr-context`   |
 | `AWS_DEFAULT_REGION`             | CircleCI context: `aws-ecr-context`   |
 | `AWS_ECR_REGISTRY`               | CircleCI context: `aws-ecr-context`   |
-| `COOLIFY_STAGING_WEBHOOK_URL`    | CircleCI project environment variable |
+| `COOLIFY_DEV_WEBHOOK_URL`        | CircleCI project environment variable |
 | `COOLIFY_PRODUCTION_WEBHOOK_URL` | CircleCI project environment variable |
 | `BACKEND_COOKIE_SECRET`          | CircleCI project environment variable |
 | `FIREBASE_PROJECT_ID`            | CircleCI project environment variable |
@@ -131,9 +131,9 @@ Sensitive values are injected via CircleCI at runtime. The pipeline generates th
 
 ## Test commands reference
 
-| Job       | Command                                                          |
-| --------- | ---------------------------------------------------------------- |
-| Lint Test | `just lint`                                                      |
-| Unit Test | `just test-unit` (Vitest, `backend/src/**/*.spec.ts`)            |
-| UI Test   | `just test-ui` (Vitest + Testing Library, `frontend/`)           |
+| Job       | Command                                                                         |
+| --------- | ------------------------------------------------------------------------------- |
+| Lint Test | `just lint`                                                                     |
+| Unit Test | `just test-unit` (Vitest, `backend/src/**/*.spec.ts`)                           |
+| UI Test   | `just test-ui` (Vitest + Testing Library, `frontend/`)                          |
 | API Test  | `cd api-test && pnpm run test` (Vitest, `api-test/`, requires running services) |

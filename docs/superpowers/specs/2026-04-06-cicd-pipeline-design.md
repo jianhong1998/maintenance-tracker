@@ -40,11 +40,11 @@ Two CircleCI workflows handle all pipeline scenarios:
 
 ### Parallelism rules
 
-| Stage        | Jobs run in parallel                                                         |
-| ------------ | ---------------------------------------------------------------------------- |
-| Test         | lint-test, unit-test, ui-test                                                |
-| Build        | build-backend, build-frontend, build-bg-job, build-db-migration              |
-| Push         | push-backend, push-frontend, push-bg-job, push-db-migration                  |
+| Stage | Jobs run in parallel                                            |
+| ----- | --------------------------------------------------------------- |
+| Test  | lint-test, unit-test, ui-test                                   |
+| Build | build-backend, build-frontend, build-bg-job, build-db-migration |
+| Push  | push-backend, push-frontend, push-bg-job, push-db-migration     |
 
 ---
 
@@ -54,10 +54,10 @@ Every image always receives the **commit short hash** tag (e.g. `3452ce8`).
 
 Build jobs push this tag to ECR immediately after building. Push jobs add the canonical tags:
 
-| Trigger      | Tags added by push jobs                        |
-| ------------ | ---------------------------------------------- |
-| Branch push  | `dev`                                          |
-| Git tag      | `<git-tag>` (e.g. `1.0.0`) and `prod`          |
+| Trigger     | Tags added by push jobs               |
+| ----------- | ------------------------------------- |
+| Branch push | `dev`                                 |
+| Git tag     | `<git-tag>` (e.g. `1.0.0`) and `prod` |
 
 The commit short hash tag serves as the handoff between build jobs and the api-test/push jobs — no separate temporary tag needed.
 
@@ -65,12 +65,12 @@ The commit short hash tag serves as the handoff between build jobs and the api-t
 
 ## 4. ECR Repository Structure
 
-| Service        | Image repository                        | Cache repository                              |
-| -------------- | --------------------------------------- | --------------------------------------------- |
-| backend        | `maintenance-tracker/backend`           | `maintenance-tracker/cache/backend`           |
-| frontend       | `maintenance-tracker/frontend`          | `maintenance-tracker/cache/frontend`          |
-| background-job | `maintenance-tracker/background-job`    | `maintenance-tracker/cache/background-job`    |
-| db-migration   | `maintenance-tracker/db-migration`      | `maintenance-tracker/cache/db-migration`      |
+| Service        | Image repository                     | Cache repository                           |
+| -------------- | ------------------------------------ | ------------------------------------------ |
+| backend        | `maintenance-tracker/backend`        | `maintenance-tracker/cache/backend`        |
+| frontend       | `maintenance-tracker/frontend`       | `maintenance-tracker/cache/frontend`       |
+| background-job | `maintenance-tracker/background-job` | `maintenance-tracker/cache/background-job` |
+| db-migration   | `maintenance-tracker/db-migration`   | `maintenance-tracker/cache/db-migration`   |
 
 ---
 
@@ -79,19 +79,23 @@ The commit short hash tag serves as the handoff between build jobs and the api-t
 All four Dockerfiles follow a multi-stage `deps → build → production` pattern using `node:22.14.0-slim`. The production stage contains no dev dependencies and no source code.
 
 ### `Dockerfile.backend`
+
 - `deps`: install all deps (dev included, needed for build)
 - `build`: `nest build` → compiles to `dist/`
 - `production`: fresh slim image, `pnpm install --prod`, copy `dist/`, `CMD ["node", "dist/backend/src/main"]`
 
 ### `Dockerfile.background-job`
+
 - Identical to backend except `CMD ["node", "dist/backend/src/main-worker"]`
 
 ### `Dockerfile.frontend`
+
 - `deps`: install all deps
 - `build`: `next build`
 - `production`: copy `.next/`, `public/`, `node_modules/`, `CMD ["node_modules/.bin/next", "start"]`
 
 ### `Dockerfile.db-migration`
+
 - `deps → build`: compile TypeScript
 - No separate production stage — this is a one-shot container
 - `CMD ["pnpm", "run", "migration:run"]`
@@ -140,63 +144,63 @@ Sensitive values are never in this file. They live as CircleCI project environme
 
 ### Executors
 
-| Executor           | Type                           | Used by                                   |
-| ------------------ | ------------------------------ | ----------------------------------------- |
-| `node-executor`    | `docker: node:22.14.0-slim`    | lint-test, unit-test, ui-test             |
-| `machine-executor` | `machine: ubuntu-2204:current` | all build, push, api-test, deploy jobs    |
+| Executor           | Type                           | Used by                                |
+| ------------------ | ------------------------------ | -------------------------------------- |
+| `node-executor`    | `docker: node:22.14.0-slim`    | lint-test, unit-test, ui-test          |
+| `machine-executor` | `machine: ubuntu-2204:current` | all build, push, api-test, deploy jobs |
 
 ### Reusable commands
 
-| Command                  | Parameters              | Purpose                                                                                   |
-| ------------------------ | ----------------------- | ----------------------------------------------------------------------------------------- |
-| `install-pnpm`           | —                       | Standalone pnpm installer (no npm dependency); works on both node and machine executors. Sets `PNPM_HOME` in `$BASH_ENV`. |
-| `ecr-login`              | —                       | `aws ecr get-login-password \| docker login` using `aws-ecr-context` credentials         |
-| `docker-build-and-push`  | `service`, `dockerfile` | BuildKit build with `--cache-from` / `--cache-to` ECR cache repos; push with commit hash |
-| `docker-retag-and-push`  | `service`, `tags`       | Pull image by commit hash, apply additional tags, push all                                |
+| Command                 | Parameters              | Purpose                                                                                                                   |
+| ----------------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `install-pnpm`          | —                       | Standalone pnpm installer (no npm dependency); works on both node and machine executors. Sets `PNPM_HOME` in `$BASH_ENV`. |
+| `ecr-login`             | —                       | `aws ecr get-login-password \| docker login` using `aws-ecr-context` credentials                                          |
+| `docker-build-and-push` | `service`, `dockerfile` | BuildKit build with `--cache-from` / `--cache-to` ECR cache repos; push with commit hash                                  |
+| `docker-retag-and-push` | `service`, `tags`       | Pull image by commit hash, apply additional tags, push all                                                                |
 
 ### Jobs
 
-| Job                  | Executor  | Steps                                                                                                   |
-| -------------------- | --------- | ------------------------------------------------------------------------------------------------------- |
-| `lint-test`          | node      | checkout, install deps, `just lint`                                                                     |
-| `unit-test`          | node      | checkout, install deps, `just test-unit`                                                                |
-| `ui-test`            | node      | checkout, install deps, `just test-ui`                                                                  |
-| `build-service`      | machine   | checkout, `ecr-login`, `docker-build-and-push` (parameterised on `service` + `dockerfile`)             |
-| `api-test`           | machine   | checkout, `ecr-login`, install deps, `docker compose -f docker-compose.pipeline.yml up -d`, wait-for-healthy, `cd api-test && pnpm run test`, tear down |
-| `push-service`       | machine   | checkout, `ecr-login`, `docker-retag-and-push` (parameterised on `service` + `extra_tags`)             |
-| `deploy-staging`     | machine   | `curl -X POST $COOLIFY_STAGING_WEBHOOK_URL`                                                             |
-| `deploy-production`  | machine   | `curl -X POST $COOLIFY_PRODUCTION_WEBHOOK_URL`                                                          |
+| Job                 | Executor | Steps                                                                                                                                                   |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lint-test`         | node     | checkout, install deps, `just lint`                                                                                                                     |
+| `unit-test`         | node     | checkout, install deps, `just test-unit`                                                                                                                |
+| `ui-test`           | node     | checkout, install deps, `just test-ui`                                                                                                                  |
+| `build-service`     | machine  | checkout, `ecr-login`, `docker-build-and-push` (parameterised on `service` + `dockerfile`)                                                              |
+| `api-test`          | machine  | checkout, `ecr-login`, install deps, `docker compose -f docker-compose.pipeline.yml up -d`, wait-for-healthy, `cd api-test && pnpm run test`, tear down |
+| `push-service`      | machine  | checkout, `ecr-login`, `docker-retag-and-push` (parameterised on `service` + `extra_tags`)                                                              |
+| `deploy-dev`        | machine  | `curl -X POST $COOLIFY_DEV_WEBHOOK_URL`                                                                                                                 |
+| `deploy-production` | machine  | `curl -X POST $COOLIFY_PRODUCTION_WEBHOOK_URL`                                                                                                          |
 
 ### CircleCI contexts and secrets
 
-| Secret                           | Storage                               |
-| -------------------------------- | ------------------------------------- |
-| `AWS_ACCESS_KEY_ID`              | CircleCI context: `aws-ecr-context`   |
-| `AWS_SECRET_ACCESS_KEY`          | CircleCI context: `aws-ecr-context`   |
-| `AWS_DEFAULT_REGION`             | CircleCI context: `aws-ecr-context`   |
-| `AWS_ECR_REGISTRY`               | CircleCI context: `aws-ecr-context`   |
-| `COOLIFY_STAGING_WEBHOOK_URL`    | CircleCI project env var              |
-| `COOLIFY_PRODUCTION_WEBHOOK_URL` | CircleCI project env var              |
-| `BACKEND_COOKIE_SECRET`          | CircleCI project env var              |
-| `FIREBASE_PROJECT_ID`            | CircleCI project env var              |
-| `FIREBASE_CLIENT_EMAIL`          | CircleCI project env var              |
-| `FIREBASE_PRIVATE_KEY`           | CircleCI project env var              |
-| `FRONTEND_FIREBASE_API_KEY`      | CircleCI project env var              |
-| `FRONTEND_FIREBASE_AUTH_DOMAIN`  | CircleCI project env var              |
-| `FRONTEND_FIREBASE_PROJECT_ID`   | CircleCI project env var              |
-| `POSTMARK_API_KEY`               | CircleCI project env var              |
-| `POSTMARK_FROM_ADDRESS`          | CircleCI project env var              |
+| Secret                           | Storage                             |
+| -------------------------------- | ----------------------------------- |
+| `AWS_ACCESS_KEY_ID`              | CircleCI context: `aws-ecr-context` |
+| `AWS_SECRET_ACCESS_KEY`          | CircleCI context: `aws-ecr-context` |
+| `AWS_DEFAULT_REGION`             | CircleCI context: `aws-ecr-context` |
+| `AWS_ECR_REGISTRY`               | CircleCI context: `aws-ecr-context` |
+| `COOLIFY_DEV_WEBHOOK_URL`        | CircleCI project env var            |
+| `COOLIFY_PRODUCTION_WEBHOOK_URL` | CircleCI project env var            |
+| `BACKEND_COOKIE_SECRET`          | CircleCI project env var            |
+| `FIREBASE_PROJECT_ID`            | CircleCI project env var            |
+| `FIREBASE_CLIENT_EMAIL`          | CircleCI project env var            |
+| `FIREBASE_PRIVATE_KEY`           | CircleCI project env var            |
+| `FRONTEND_FIREBASE_API_KEY`      | CircleCI project env var            |
+| `FRONTEND_FIREBASE_AUTH_DOMAIN`  | CircleCI project env var            |
+| `FRONTEND_FIREBASE_PROJECT_ID`   | CircleCI project env var            |
+| `POSTMARK_API_KEY`               | CircleCI project env var            |
+| `POSTMARK_FROM_ADDRESS`          | CircleCI project env var            |
 
 ---
 
 ## 9. Files to Create
 
-| File                                        | Purpose                                              |
-| ------------------------------------------- | ---------------------------------------------------- |
-| `.circleci/config.yml`                      | Full pipeline definition                             |
-| `docker/deployment/Dockerfile.backend`      | Production backend image                             |
-| `docker/deployment/Dockerfile.frontend`     | Production frontend image                            |
-| `docker/deployment/Dockerfile.background-job` | Production background-job image                    |
-| `docker/deployment/Dockerfile.db-migration` | Production db-migration image                        |
-| `docker-compose.pipeline.yml`               | Compose file for API test job                        |
-| `.env.pipeline`                             | Non-sensitive env defaults for pipeline              |
+| File                                          | Purpose                                 |
+| --------------------------------------------- | --------------------------------------- |
+| `.circleci/config.yml`                        | Full pipeline definition                |
+| `docker/deployment/Dockerfile.backend`        | Production backend image                |
+| `docker/deployment/Dockerfile.frontend`       | Production frontend image               |
+| `docker/deployment/Dockerfile.background-job` | Production background-job image         |
+| `docker/deployment/Dockerfile.db-migration`   | Production db-migration image           |
+| `docker-compose.pipeline.yml`                 | Compose file for API test job           |
+| `.env.pipeline`                               | Non-sensitive env defaults for pipeline |

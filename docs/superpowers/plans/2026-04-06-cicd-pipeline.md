@@ -749,12 +749,12 @@ jobs:
       - docker-retag-and-push:
           service: << parameters.service >>
 
-  deploy-staging:
+  deploy-dev:
     executor: machine-executor
     steps:
       - run:
-          name: Trigger Coolify staging deploy
-          command: curl -fsSL -X POST "$COOLIFY_STAGING_WEBHOOK_URL"
+          name: Trigger Coolify dev deploy
+          command: curl -fsSL -X POST "$COOLIFY_DEV_WEBHOOK_URL"
 
   deploy-production:
     executor: machine-executor
@@ -981,7 +981,7 @@ These steps must be done in the AWS and CircleCI consoles before the pipeline ru
    - `AWS_ECR_REGISTRY`
 
 3. **Set CircleCI project environment variables**:
-   - `COOLIFY_STAGING_WEBHOOK_URL`
+   - `COOLIFY_DEV_WEBHOOK_URL`
    - `COOLIFY_PRODUCTION_WEBHOOK_URL`
    - `BACKEND_COOKIE_SECRET`
    - `FIREBASE_PROJECT_ID`

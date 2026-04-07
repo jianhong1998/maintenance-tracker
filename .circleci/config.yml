@@ -149,7 +149,7 @@ jobs:
           name: UI tests
           command: cd frontend && pnpm run test
 
-  build-service:
+  build-and-push-service:
     executor: machine-executor
     resource_class: large
     parameters:
@@ -206,7 +206,7 @@ jobs:
           command: docker compose -f docker-compose.pipeline.yml down --volumes
           when: always
 
-  push-service:
+  tag-service:
     executor: machine-executor
     resource_class: medium
     parameters:
@@ -218,13 +218,13 @@ jobs:
       - docker-retag-and-push:
           service: << parameters.service >>
 
-  deploy-staging:
+  deploy-dev:
     executor: node-executor
     resource_class: medium
     steps:
       - run:
-          name: Trigger Coolify staging deploy
-          command: curl -fsSL -X POST "$COOLIFY_STAGING_WEBHOOK_URL"
+          name: Trigger Coolify dev deploy
+          command: curl -fsSL -X POST "$COOLIFY_DEV_WEBHOOK_URL"
 
   deploy-production:
     executor: node-executor
@@ -252,29 +252,29 @@ workflows:
             - lint-test
             - unit-test
             - ui-test
-      - build-service:
-          name: build-backend
+      - build-and-push-service:
+          name: build-and-push-backend
           service: backend
           dockerfile: Dockerfile.backend
           context: aws-ecr-context
           requires:
             - approve-build
-      - build-service:
-          name: build-frontend
+      - build-and-push-service:
+          name: build-and-push-frontend
           service: frontend
           dockerfile: Dockerfile.frontend
           context: aws-ecr-context
           requires:
             - approve-build
-      - build-service:
-          name: build-background-job
+      - build-and-push-service:
+          name: build-and-push-background-job
           service: background-job
           dockerfile: Dockerfile.background-job
           context: aws-ecr-context
           requires:
             - approve-build
-      - build-service:
-          name: build-db-migration
+      - build-and-push-service:
+          name: build-and-push-db-migration
           service: db-migration
           dockerfile: Dockerfile.db-migration
           context: aws-ecr-context
@@ -283,44 +283,44 @@ workflows:
       - approve-api-test:
           type: approval
           requires:
-            - build-backend
-            - build-frontend
-            - build-background-job
-            - build-db-migration
+            - build-and-push-backend
+            - build-and-push-frontend
+            - build-and-push-background-job
+            - build-and-push-db-migration
       - api-test:
           context: aws-ecr-context
           requires:
             - approve-api-test
-      - push-service:
-          name: push-backend
+      - tag-service:
+          name: tag-dev-backend
           service: backend
           context: aws-ecr-context
           requires:
             - api-test
-      - push-service:
-          name: push-frontend
+      - tag-service:
+          name: tag-dev-frontend
           service: frontend
           context: aws-ecr-context
           requires:
             - api-test
-      - push-service:
-          name: push-background-job
+      - tag-service:
+          name: tag-dev-background-job
           service: background-job
           context: aws-ecr-context
           requires:
             - api-test
-      - push-service:
-          name: push-db-migration
+      - tag-service:
+          name: tag-dev-db-migration
           service: db-migration
           context: aws-ecr-context
           requires:
             - api-test
-      - deploy-staging:
+      - deploy-dev:
           requires:
-            - push-backend
-            - push-frontend
-            - push-background-job
-            - push-db-migration
+            - tag-dev-backend
+            - tag-dev-frontend
+            - tag-dev-background-job
+            - tag-dev-db-migration
 
   # Triggered only on git tag creation
   tag-workflow:
@@ -331,8 +331,8 @@ workflows:
       - lint-test
       - unit-test
       - ui-test
-      - build-service:
-          name: build-backend
+      - build-and-push-service:
+          name: build-and-push-backend
           service: backend
           dockerfile: Dockerfile.backend
           context: aws-ecr-context
@@ -340,8 +340,8 @@ workflows:
             - lint-test
             - unit-test
             - ui-test
-      - build-service:
-          name: build-frontend
+      - build-and-push-service:
+          name: build-and-push-frontend
           service: frontend
           dockerfile: Dockerfile.frontend
           context: aws-ecr-context
@@ -349,8 +349,8 @@ workflows:
             - lint-test
             - unit-test
             - ui-test
-      - build-service:
-          name: build-background-job
+      - build-and-push-service:
+          name: build-and-push-background-job
           service: background-job
           dockerfile: Dockerfile.background-job
           context: aws-ecr-context
@@ -358,8 +358,8 @@ workflows:
             - lint-test
             - unit-test
             - ui-test
-      - build-service:
-          name: build-db-migration
+      - build-and-push-service:
+          name: build-and-push-db-migration
           service: db-migration
           dockerfile: Dockerfile.db-migration
           context: aws-ecr-context
@@ -370,37 +370,37 @@ workflows:
       - api-test:
           context: aws-ecr-context
           requires:
-            - build-backend
-            - build-frontend
-            - build-background-job
-            - build-db-migration
-      - push-service:
-          name: push-backend
+            - build-and-push-backend
+            - build-and-push-frontend
+            - build-and-push-background-job
+            - build-and-push-db-migration
+      - tag-service:
+          name: tag-prod-backend
           service: backend
           context: aws-ecr-context
           requires:
             - api-test
-      - push-service:
-          name: push-frontend
+      - tag-service:
+          name: tag-prod-frontend
           service: frontend
           context: aws-ecr-context
           requires:
             - api-test
-      - push-service:
-          name: push-background-job
+      - tag-service:
+          name: tag-prod-background-job
           service: background-job
           context: aws-ecr-context
           requires:
             - api-test
-      - push-service:
-          name: push-db-migration
+      - tag-service:
+          name: tag-prod-db-migration
           service: db-migration
           context: aws-ecr-context
           requires:
             - api-test
       - deploy-production:
           requires:
-            - push-backend
-            - push-frontend
-            - push-background-job
-            - push-db-migration
+            - tag-prod-backend
+            - tag-prod-frontend
+            - tag-prod-background-job
+            - tag-prod-db-migration
