@@ -230,7 +230,8 @@ jobs:
     steps:
       - run:
           name: Trigger Coolify dev deploy
-          command: curl -fsSL -X POST "$COOLIFY_DEV_WEBHOOK_URL"
+          command: |
+            curl -fsSL -X POST "$COOLIFY_DEV_WEBHOOK_URL" -H "Authorization: Bearer $COOLIFY_API_TOKEN"
 
   deploy-production:
     executor: node-executor
@@ -238,7 +239,8 @@ jobs:
     steps:
       - run:
           name: Trigger Coolify production deploy
-          command: curl -fsSL -X POST "$COOLIFY_PRODUCTION_WEBHOOK_URL"
+          command: |
+            curl -fsSL -X POST "$COOLIFY_PRODUCTION_WEBHOOK_URL" -H "Authorization: Bearer $COOLIFY_API_TOKEN"
 
 # ===========================================================
 # Workflows
