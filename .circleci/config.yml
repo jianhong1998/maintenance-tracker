@@ -168,7 +168,7 @@ jobs:
 
   api-test:
     executor: machine-executor
-    resource_class: large
+    resource_class: arm.large
     steps:
       - checkout
       - set-short-sha
