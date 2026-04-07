@@ -103,6 +103,7 @@ commands:
 jobs:
   lint-test:
     executor: node-executor
+    resource_class: medium
     steps:
       - checkout
       - install-pnpm
@@ -118,6 +119,7 @@ jobs:
 
   unit-test:
     executor: node-executor
+    resource_class: medium
     steps:
       - checkout
       - install-pnpm
@@ -133,6 +135,7 @@ jobs:
 
   ui-test:
     executor: node-executor
+    resource_class: medium
     steps:
       - checkout
       - install-pnpm
@@ -148,6 +151,7 @@ jobs:
 
   build-service:
     executor: machine-executor
+    resource_class: large
     parameters:
       service:
         type: string
@@ -163,6 +167,7 @@ jobs:
 
   api-test:
     executor: machine-executor
+    resource_class: large
     steps:
       - checkout
       - set-short-sha
@@ -192,7 +197,7 @@ jobs:
       - run:
           name: Wait for backend to be ready
           command: |
-            timeout 120 bash -c 'until curl -sf http://localhost:3001/health; do sleep 3; done'
+            timeout 120 bash -c 'until curl -sf http://localhost:3001/; do sleep 3; done'
       - run:
           name: Run API tests
           command: cd api-test && pnpm run test
@@ -203,6 +208,7 @@ jobs:
 
   push-service:
     executor: machine-executor
+    resource_class: medium
     parameters:
       service:
         type: string
@@ -214,6 +220,7 @@ jobs:
 
   deploy-staging:
     executor: node-executor
+    resource_class: medium
     steps:
       - run:
           name: Trigger Coolify staging deploy
@@ -221,6 +228,7 @@ jobs:
 
   deploy-production:
     executor: node-executor
+    resource_class: medium
     steps:
       - run:
           name: Trigger Coolify production deploy
