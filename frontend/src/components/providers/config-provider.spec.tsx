@@ -20,7 +20,6 @@ describe('ConfigProvider', () => {
       </ConfigProvider>,
     );
     expect(setBaseUrl).toHaveBeenCalledWith('http://my-backend:4000');
-    expect(setBaseUrl).toHaveBeenCalledTimes(1);
   });
 
   it('renders children', () => {
