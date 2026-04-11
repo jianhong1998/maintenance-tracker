@@ -220,7 +220,7 @@ export default function RootLayout({
 }
 ```
 
-- [ ] **Step 2: Run the full frontend check**
+- [x] **Step 2: Run the full frontend check**
 
 ```bash
 just check-implementation-frontend
@@ -228,7 +228,7 @@ just check-implementation-frontend
 
 Expected: format passes, lint passes, build passes, all tests pass
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/app/layout.tsx
