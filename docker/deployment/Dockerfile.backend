@@ -53,4 +53,10 @@ COPY --from=build /app/packages/types/dist ./packages/types/dist
 
 WORKDIR /app/backend
 
-CMD ["node", "dist/backend/src/main"]
+# NODE_ENTRYPOINT selects the entry module at build time.
+# background-job passes --build-arg NODE_ENTRYPOINT=dist/backend/src/main-worker.
+# Default is the HTTP server entrypoint.
+ARG NODE_ENTRYPOINT=dist/backend/src/main
+ENV NODE_ENTRYPOINT=${NODE_ENTRYPOINT}
+# exec replaces the shell so node is PID 1 and receives signals correctly.
+CMD exec node $NODE_ENTRYPOINT

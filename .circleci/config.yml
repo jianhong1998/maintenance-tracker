@@ -61,6 +61,9 @@ commands:
         type: string
       dockerfile:
         type: string
+      build_args:
+        type: string
+        default: ""
     steps:
       - set-short-sha
       - run:
@@ -68,8 +71,13 @@ commands:
           command: |
             CACHE_REPO="$AWS_ECR_REGISTRY/maintenance-tracker/cache/<< parameters.service >>"
             IMAGE_REPO="$AWS_ECR_REGISTRY/maintenance-tracker/<< parameters.service >>"
+            BUILD_ARGS_FLAG=""
+            if [ -n "<< parameters.build_args >>" ]; then
+              BUILD_ARGS_FLAG="--build-arg << parameters.build_args >>"
+            fi
             docker buildx build \
               --platform linux/arm64 \
+              $BUILD_ARGS_FLAG \
               --cache-from "type=registry,ref=$CACHE_REPO" \
               --cache-to "type=registry,ref=$CACHE_REPO,mode=max" \
               --tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" \
@@ -78,6 +86,9 @@ commands:
               .
 
   docker-retag-and-push:
+    # This command is shared by both branch-workflow and tag-workflow.
+    # In branch-workflow, $CIRCLE_TAG is always empty so the else-branch always runs (tags as :dev).
+    # In tag-workflow, $CIRCLE_TAG is set so the if-branch runs (tags as :$CIRCLE_TAG and :prod).
     parameters:
       service:
         type: string
@@ -151,6 +162,9 @@ jobs:
           command: cd frontend && pnpm run test
 
   build-and-push-service:
+    # NOTE: This uses an x86 machine to cross-compile ARM64 images via QEMU (buildx).
+    # Native ARM compilation would be faster but x86 large machines are used for
+    # consistent availability. Future optimization: switch to arm.large executor.
     executor: machine-executor
     resource_class: large
     parameters:
@@ -158,6 +172,9 @@ jobs:
         type: string
       dockerfile:
         type: string
+      build_args:
+        type: string
+        default: ""
     steps:
       - checkout
       - ecr-login
@@ -165,6 +182,7 @@ jobs:
       - docker-build-and-push:
           service: << parameters.service >>
           dockerfile: << parameters.dockerfile >>
+          build_args: << parameters.build_args >>
 
   api-test:
     executor: machine-executor
@@ -278,7 +296,8 @@ workflows:
       - build-and-push-service:
           name: build-and-push-background-job
           service: background-job
-          dockerfile: Dockerfile.background-job
+          dockerfile: Dockerfile.backend
+          build_args: "NODE_ENTRYPOINT=dist/backend/src/main-worker"
           context: aws-ecr-context
           requires:
             - approve-build
@@ -331,7 +350,10 @@ workflows:
             - tag-dev-background-job
             - tag-dev-db-migration
 
-  # Triggered only on git tag creation
+  # Triggered only on git tag creation.
+  # Intentionally has no approval gate before deploy-production — this is a solo project
+  # and every git tag is considered a deliberate production release decision.
+  # If multi-person tagging is ever introduced, add an approve-deploy-to-production step.
   tag-workflow:
     when:
       not:
@@ -361,7 +383,8 @@ workflows:
       - build-and-push-service:
           name: build-and-push-background-job
           service: background-job
-          dockerfile: Dockerfile.background-job
+          dockerfile: Dockerfile.backend
+          build_args: "NODE_ENTRYPOINT=dist/backend/src/main-worker"
           context: aws-ecr-context
           requires:
             - lint-test
