@@ -22,7 +22,8 @@ Next.js 15 App Router with TanStack Query for server state.
 - `src/components/ui/` — shadcn/ui style presentational components
 - `src/components/pages/` — Page-level components
 - `src/components/providers/` — React context providers
-- `src/constants/` — App-wide constants; `BACKEND_BASE_URL` reads from `FRONTEND_BACKEND_BASE_URL` env var (defaults to `http://localhost:3001`)
+- `src/constants/` — App-wide constants
+- Backend URL configuration: `src/lib/api-client.ts` exports `setBaseUrl(url: string)`, which is called by `ConfigProvider` at render time to set the backend URL dynamically (no env var read at import time)
 
 ## Conventions
 
