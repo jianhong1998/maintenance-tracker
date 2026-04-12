@@ -58,4 +58,6 @@ COPY --from=build /app/frontend/public ./frontend/public
 
 WORKDIR /app/frontend
 
+EXPOSE 3000
+USER node
 CMD ["node", "server.js"]
