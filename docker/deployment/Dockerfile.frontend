@@ -43,24 +43,19 @@ RUN pnpm run build --filter=frontend
 # ===========================================================
 # Stage 4: production — minimal runtime image
 # ===========================================================
-FROM base AS production
+FROM node:22.14.0-slim AS production
 
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
-COPY packages/types/package.json ./packages/types/
-COPY frontend/package.json ./frontend/
-
-# --ignore-scripts skips the root `prepare` (husky) script which fails inside
-# Docker because there is no .git directory. No runtime postinstall scripts
-# in this project require execution, so this is safe.
-RUN pnpm install --frozen-lockfile --prod --ignore-scripts
-
-COPY --from=build /app/frontend/.next ./frontend/.next
+# Standalone output bundles its own node_modules — no pnpm install needed.
+# outputFileTracingRoot points to monorepo root, so standalone mirrors the
+# monorepo directory structure under .next/standalone/.
+COPY --from=build /app/frontend/.next/standalone ./
+# Next.js standalone excludes .next/static (meant for CDN) and public/ —
+# copy them into the location the standalone server expects.
+COPY --from=build /app/frontend/.next/static ./frontend/.next/static
 COPY --from=build /app/frontend/public ./frontend/public
-COPY --from=build /app/packages/types/dist ./packages/types/dist
-COPY frontend/next.config.mjs ./frontend/
 
 WORKDIR /app/frontend
 
-CMD ["node_modules/.bin/next", "start"]
+CMD ["node", "server.js"]
