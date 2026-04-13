@@ -5,19 +5,25 @@
 
 ## Problem
 
-The frontend Docker container cannot read `FRONTEND_BACKEND_BASE_URL` (and other `FRONTEND_*` env vars) at runtime. The env vars exist in the container shell but Next.js returns `undefined` for them.
+The frontend Docker container cannot read `FRONTEND_BACKEND_BASE_URL` (and other `FRONTEND_*` env vars) at runtime. The env vars exist in the container shell but the app uses `http://localhost:3001` instead.
 
-**Root cause:** Next.js inlines `process.env.*` references at build time via string replacement. In the deployment Dockerfile, the build stage has no env vars set, so all `process.env.FRONTEND_*` calls compile to `undefined` and get baked into the `.next` output. Setting env vars at container start (via docker-compose) is too late.
+**Root cause (corrected — 2026-04-13):** Next.js 15 is "static by default." Because `layout.tsx` used no dynamic functions, Next.js pre-rendered all routes at `next build` time. During the build, `FRONTEND_BACKEND_BASE_URL` is `undefined`, so the fallback `'http://localhost:3001'` is baked into the pre-rendered `index.html` / `index.rsc` files. At runtime, `node server.js` serves these cached files directly and never re-executes the layout function — the container's env vars are irrelevant.
+
+The server bundle (`*.js` chunks) does retain a live `process.env.FRONTEND_BACKEND_BASE_URL` lookup. The problem is that for statically pre-rendered routes, those chunks are never called at request time.
+
+> **Note:** The original diagnosis ("Next.js inlines `process.env.*` at build time via string replacement") was wrong. Next.js does NOT replace non-`NEXT_PUBLIC_` references in the server bundle. The actual issue is static pre-rendering, not compile-time string replacement.
+
+**Firebase env vars** (`FRONTEND_FIREBASE_*`) are read inside a `'use server'` Server Action (`firebase-config.ts`). Server Actions are always dynamically executed — never pre-rendered. They were not affected by this bug.
 
 **Affected env vars:**
-- `FRONTEND_BACKEND_BASE_URL` (read in `layout.tsx`)
-- `FRONTEND_FIREBASE_API_KEY` (read in `firebase-config.ts`)
-- `FRONTEND_FIREBASE_AUTH_DOMAIN` (read in `firebase-config.ts`)
-- `FRONTEND_FIREBASE_PROJECT_ID` (read in `firebase-config.ts`)
+- `FRONTEND_BACKEND_BASE_URL` (read in `layout.tsx`) ← actual affected var
 
 ## Solution
 
-Switch to Next.js `output: 'standalone'` mode. This produces a self-contained `server.js` that reads `process.env` at actual runtime — the officially recommended approach for Docker deployments.
+Two changes were required:
+
+1. Switch to Next.js `output: 'standalone'` mode — produces a self-contained `server.js`, the recommended approach for Docker deployments.
+2. Add `export const dynamic = 'force-dynamic'` to `src/app/layout.tsx` — prevents static pre-rendering so the layout function runs on every request, reading `process.env.FRONTEND_BACKEND_BASE_URL` from the live container environment.
 
 ## Changes
 

@@ -24,6 +24,7 @@ Next.js 15 App Router with TanStack Query for server state.
 - `src/components/providers/` — React context providers
 - `src/constants/` — App-wide constants
 - Backend URL configuration: `src/lib/api-client.ts` exports `setBaseUrl(url: string)`, which is called by `ConfigProvider` at render time to set the backend URL dynamically (no env var read at import time)
+- **`src/app/layout.tsx` must keep `export const dynamic = 'force-dynamic'`** — without it, Next.js 15 pre-renders all routes at build time, baking `FRONTEND_BACKEND_BASE_URL=undefined` into the static HTML. The env var is only available at container runtime; removing this export will silently break the backend URL for all environments.
 
 ## Conventions
 
