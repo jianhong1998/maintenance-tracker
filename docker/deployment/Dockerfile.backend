@@ -58,5 +58,7 @@ WORKDIR /app/backend
 # Default is the HTTP server entrypoint.
 ARG NODE_ENTRYPOINT=dist/backend/src/main
 ENV NODE_ENTRYPOINT=${NODE_ENTRYPOINT}
+
+USER node
 # exec replaces the shell so node is PID 1 and receives signals correctly.
 CMD exec node $NODE_ENTRYPOINT
