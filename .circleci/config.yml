@@ -85,28 +85,52 @@ commands:
               --push \
               .
 
-  docker-retag-and-push:
-    # This command is shared by both branch-workflow and tag-workflow.
-    # In branch-workflow, $CIRCLE_TAG is always empty so the else-branch always runs (tags as :dev).
-    # In tag-workflow, $CIRCLE_TAG is set so the if-branch runs (tags as :$CIRCLE_TAG and :prod).
+  ecr-retag:
+    # Retags an existing ECR image by copying its manifest verbatim via the ECR API.
+    # This guarantees the new tag shares the exact same digest as the source tag —
+    # no docker pull/push, no manifest re-serialization, zero data transfer.
     parameters:
       service:
         type: string
     steps:
       - set-short-sha
       - run:
-          name: Retag and push << parameters.service >>
+          name: Retag << parameters.service >> via ECR API
           command: |
-            IMAGE_REPO="$AWS_ECR_REGISTRY/maintenance-tracker/<< parameters.service >>"
-            docker pull "$IMAGE_REPO:$CIRCLE_SHA1_SHORT"
+            REPO="maintenance-tracker/<< parameters.service >>"
+            IMAGE_INFO=$(aws ecr batch-get-image \
+              --repository-name "$REPO" \
+              --image-ids imageTag="$CIRCLE_SHA1_SHORT" \
+              --output json)
+            MANIFEST=$(echo "$IMAGE_INFO" | jq -r '.images[0].imageManifest')
+            MEDIA_TYPE=$(echo "$IMAGE_INFO" | jq -r '.images[0].imageManifestMediaType')
+            FAILURES=$(echo "$IMAGE_INFO" | jq -r '.failures | length')
+            if [ "$FAILURES" -gt 0 ]; then
+              echo "ERROR: batch-get-image returned failures:"
+              echo "$IMAGE_INFO" | jq '.failures'
+              exit 1
+            fi
+            if [ -z "$MANIFEST" ] || [ "$MANIFEST" = "null" ]; then
+              echo "ERROR: source image not found: $REPO:$CIRCLE_SHA1_SHORT"
+              exit 1
+            fi
             if [ -n "$CIRCLE_TAG" ]; then
-              docker tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" "$IMAGE_REPO:$CIRCLE_TAG"
-              docker push "$IMAGE_REPO:$CIRCLE_TAG"
-              docker tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" "$IMAGE_REPO:prod"
-              docker push "$IMAGE_REPO:prod"
+              aws ecr put-image \
+                --repository-name "$REPO" \
+                --image-tag "$CIRCLE_TAG" \
+                --image-manifest "$MANIFEST" \
+                --image-manifest-media-type "$MEDIA_TYPE"
+              aws ecr put-image \
+                --repository-name "$REPO" \
+                --image-tag prod \
+                --image-manifest "$MANIFEST" \
+                --image-manifest-media-type "$MEDIA_TYPE"
             else
-              docker tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" "$IMAGE_REPO:dev"
-              docker push "$IMAGE_REPO:dev"
+              aws ecr put-image \
+                --repository-name "$REPO" \
+                --image-tag dev \
+                --image-manifest "$MANIFEST" \
+                --image-manifest-media-type "$MEDIA_TYPE"
             fi
 
 # ===========================================================
@@ -238,9 +262,7 @@ jobs:
       service:
         type: string
     steps:
-      - checkout
-      - ecr-login
-      - docker-retag-and-push:
+      - ecr-retag:
           service: << parameters.service >>
 
   deploy-dev:
