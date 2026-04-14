@@ -11,7 +11,11 @@ import { DeleteConfirmDialog } from '@/components/maintenance-cards/delete-confi
 import { VehicleFormDialog } from '@/components/vehicles/vehicle-form-dialog';
 import { VehicleDeleteConfirmDialog } from '@/components/vehicles/vehicle-delete-confirm-dialog';
 import { Button } from '@/components/ui/button';
-import { getVehicleDisplayLabels } from '@/lib/vehicle-display';
+import Link from 'next/link';
+import {
+  getVehicleDisplayLabels,
+  getVehicleMetaLine,
+} from '@/lib/vehicle-display';
 import { useVehicle } from '@/hooks/queries/vehicles/useVehicle';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
 import type { IMaintenanceCardResDTO } from '@project/types';
@@ -66,7 +70,8 @@ const DashboardContent: FC<VehicleDashboardPageProps> = ({ vehicleId }) => {
     return null;
   }
 
-  const { primary, secondary } = getVehicleDisplayLabels(vehicle);
+  const { primary } = getVehicleDisplayLabels(vehicle);
+  const metaLine = getVehicleMetaLine(vehicle);
 
   const handleEdit = (card: IMaintenanceCardResDTO) => {
     setActiveDropdownId(null);
@@ -84,95 +89,109 @@ const DashboardContent: FC<VehicleDashboardPageProps> = ({ vehicleId }) => {
   };
 
   return (
-    <main className="flex flex-col gap-6 p-6">
-      <div className="flex items-start gap-3">
-        <div>
-          <h1 className="text-xl font-semibold">{primary}</h1>
-          {secondary && (
-            <p className="text-muted-foreground text-sm">{secondary}</p>
+    <div className="flex flex-col min-h-screen">
+      {/* Vehicle header */}
+      <div className="bg-gradient-to-b from-[color:var(--bg-surface)] to-[color:var(--bg-base)] px-[12px] pt-[10px] pb-[8px]">
+        {/* Back nav — hidden on desktop where the split pane owns navigation */}
+        <Link
+          href="/"
+          aria-label="Back to fleet"
+          className="inline-flex items-center gap-1 text-primary text-eyebrow mb-1 xl:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5ff40] rounded"
+        >
+          <span aria-hidden="true">←</span>
+          <span>FLEET</span>
+        </Link>
+
+        <div className="flex items-start justify-between gap-3 mb-1">
+          <div className="min-w-0">
+            <h1 className="text-page-title truncate">{primary}</h1>
+            <p className="text-[color:var(--text-muted)] text-[0.625rem]">
+              {metaLine}
+            </p>
+          </div>
+          <div className="flex gap-2 flex-shrink-0 pt-1">
+            <Button
+              size="sm"
+              variant="secondary"
+              aria-label="Edit vehicle"
+              onClick={() => setEditVehicleOpen(true)}
+              className="text-xs"
+            >
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary-destructive"
+              aria-label="Delete vehicle"
+              onClick={() => setDeleteVehicleOpen(true)}
+              className="text-xs"
+            >
+              Delete
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col">
+        <MileagePrompt
+          vehicleId={vehicleId}
+          currentMileage={vehicle.mileage}
+          mileageLastUpdatedAt={vehicle.mileageLastUpdatedAt}
+        />
+
+        {/* Sort toggle */}
+        <div className="flex gap-2 mx-[10px] mb-[6px]">
+          <Button
+            size="sm"
+            variant={sort === 'urgency' ? 'default' : 'secondary'}
+            onClick={() => setSort('urgency')}
+            className="text-xs tracking-widest"
+          >
+            URGENCY
+          </Button>
+          <Button
+            size="sm"
+            variant={sort === 'name' ? 'default' : 'secondary'}
+            onClick={() => setSort('name')}
+            className="text-xs tracking-widest"
+          >
+            NAME
+          </Button>
+        </div>
+
+        {/* Card list */}
+        <div className="flex flex-col gap-[5px] px-[10px] pb-4">
+          <Button
+            variant="dashed-ghost"
+            aria-label="Add maintenance card"
+            onClick={() => setCreateOpen(true)}
+            className="w-full py-4 text-xs tracking-widest"
+          >
+            + ADD MAINTENANCE CARD
+          </Button>
+
+          {cardsLoading ? (
+            <p className="text-[#555] text-sm">Loading cards…</p>
+          ) : cards.length === 0 ? (
+            <p className="text-[#555] text-sm">No maintenance cards yet.</p>
+          ) : (
+            cards.map((card) => (
+              <MaintenanceCardRow
+                key={card.id}
+                card={card}
+                vehicle={vehicle}
+                isDropdownOpen={activeDropdownId === card.id}
+                onDropdownToggle={setActiveDropdownId}
+                onEdit={handleEdit}
+                onMarkDone={handleMarkDone}
+                onDelete={handleDelete}
+              />
+            ))
           )}
-          <p className="text-muted-foreground text-sm">
-            {vehicle.colour} &middot; {vehicle.mileage.toLocaleString()}{' '}
-            {vehicle.mileageUnit}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            aria-label="Edit vehicle"
-            onClick={() => setEditVehicleOpen(true)}
-          >
-            Edit
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            aria-label="Delete vehicle"
-            onClick={() => setDeleteVehicleOpen(true)}
-            className="text-destructive"
-          >
-            Delete
-          </Button>
         </div>
       </div>
 
-      <MileagePrompt
-        vehicleId={vehicleId}
-        currentMileage={vehicle.mileage}
-        mileageLastUpdatedAt={vehicle.mileageLastUpdatedAt}
-      />
-
-      <div className="flex gap-2">
-        <Button
-          size="sm"
-          variant={sort === 'urgency' ? 'default' : 'outline'}
-          onClick={() => setSort('urgency')}
-        >
-          Urgency
-        </Button>
-        <Button
-          size="sm"
-          variant={sort === 'name' ? 'default' : 'outline'}
-          onClick={() => setSort('name')}
-        >
-          Name
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          aria-label="Add maintenance card"
-          onClick={() => setCreateOpen(true)}
-          className="flex w-full items-center justify-center rounded-md border-2 border-dashed border-muted-foreground/30 py-4 text-muted-foreground hover:bg-muted"
-        >
-          <span className="text-2xl font-light leading-none">+</span>
-        </button>
-
-        {cardsLoading ? (
-          <p className="text-muted-foreground text-sm">Loading cards…</p>
-        ) : cards.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No maintenance cards yet.
-          </p>
-        ) : (
-          cards.map((card) => (
-            <MaintenanceCardRow
-              key={card.id}
-              card={card}
-              vehicle={vehicle}
-              isDropdownOpen={activeDropdownId === card.id}
-              onDropdownToggle={setActiveDropdownId}
-              onEdit={handleEdit}
-              onMarkDone={handleMarkDone}
-              onDelete={handleDelete}
-            />
-          ))
-        )}
-      </div>
-
-      {/* Maintenance card dialogs */}
+      {/* Dialogs — unchanged */}
       <MaintenanceCardFormDialog
         open={createOpen || !!editingCard}
         onOpenChange={(open) => {
@@ -210,7 +229,6 @@ const DashboardContent: FC<VehicleDashboardPageProps> = ({ vehicleId }) => {
         />
       )}
 
-      {/* Vehicle dialogs */}
       <VehicleFormDialog
         open={editVehicleOpen}
         onOpenChange={setEditVehicleOpen}
@@ -223,7 +241,7 @@ const DashboardContent: FC<VehicleDashboardPageProps> = ({ vehicleId }) => {
         onOpenChange={setDeleteVehicleOpen}
         vehicle={vehicle}
       />
-    </main>
+    </div>
   );
 };
 

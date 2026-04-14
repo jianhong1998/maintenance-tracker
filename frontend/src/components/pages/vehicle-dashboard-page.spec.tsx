@@ -107,6 +107,24 @@ const mockReplace = vi.fn();
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn(() => ({ replace: mockReplace })),
 }));
+vi.mock('next/link', () => ({
+  default: ({
+    href,
+    children,
+    ...props
+  }: {
+    href: string;
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }) => (
+    <a
+      href={href}
+      {...props}
+    >
+      {children}
+    </a>
+  ),
+}));
 
 import { useVehicle } from '@/hooks/queries/vehicles/useVehicle';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
@@ -337,7 +355,7 @@ describe('VehicleDashboardPage', () => {
     );
   });
 
-  it('shows registrationNumber as h1 and brand+model as secondary line when set', () => {
+  it('shows registrationNumber as h1 when set', () => {
     vi.mocked(useVehicle).mockReturnValue({
       data: { ...mockVehicle, registrationNumber: 'FBA1234Z' },
       isLoading: false,
@@ -353,7 +371,6 @@ describe('VehicleDashboardPage', () => {
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
       'FBA1234Z',
     );
-    expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
   });
 
   it('does not render brand+model as a secondary line when registrationNumber is null', () => {
@@ -361,5 +378,27 @@ describe('VehicleDashboardPage', () => {
     render(<VehicleDashboardPage vehicleId="vehicle-1" />);
     // Toyota Camry appears once (as the h1 content)
     expect(screen.getAllByText('Toyota Camry')).toHaveLength(1);
+  });
+
+  it('renders back navigation as a Link to /', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    const backLink = screen.getByLabelText('Back to fleet');
+    expect(backLink).toHaveAttribute('href', '/');
+  });
+
+  it('renders the meta line with registration number', () => {
+    vi.mocked(useVehicle).mockReturnValue({
+      data: { ...mockVehicle, registrationNumber: 'FBA1234Z' },
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useVehicle>);
+    vi.mocked(useMaintenanceCards).mockReturnValue({
+      data: [],
+      isLoading: false,
+    } as unknown as ReturnType<typeof useMaintenanceCards>);
+
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    expect(screen.getByText(/Plate:/)).toBeInTheDocument();
   });
 });
