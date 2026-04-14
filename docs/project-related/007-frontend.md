@@ -237,3 +237,107 @@
 ### Key files
 - `frontend/src/components/pages/vehicle-dashboard-page.tsx` (modified)
 - `frontend/src/components/pages/vehicle-dashboard-page.spec.tsx` (modified)
+
+---
+
+## Plan 16 — Dark Terminal UI Redesign
+
+**Goal:** Full visual redesign from stock shadcn/ui white to a Dark Terminal aesthetic with Electric Cyan (`#00e5ff`) accent, mobile-first responsive layout, and progress-bar maintenance cards.
+
+**Spec:** `docs/superpowers/specs/2026-04-14-ui-redesign-design.md`
+
+**Scope:** Pure frontend styling — no backend changes, no new data fields.
+
+### Design Philosophy
+
+**Dark Terminal aesthetic.** Inspired by crypto trading dashboards and AI developer tools. The app is dark-only — no light mode, no `dark:` prefixes anywhere. `color-scheme: dark` on `<html>` ensures browser-native controls (scrollbars, autofill) match.
+
+**Token-first styling.** All colors are declared as CSS custom properties in `globals.css` under `:root`, exposed to Tailwind via `@theme inline` bindings. Downstream components reference token classes (`bg-background`, `border-border-accent`, `text-primary`) rather than hardcoded hex literals. Direct hex literals are only acceptable for values that have no token equivalent.
+
+**Mobile-first responsive layout.** Three breakpoints:
+- Mobile `< 768px` (default): bottom tab bar navigation, single-column grid
+- Tablet `768px – 1279px` (`md:`): 52px icon sidebar (hidden bottom bar), 2-column grid
+- Desktop `≥ 1280px` (`xl:`): 140px full sidebar with labels, 3-column grid, split-pane vehicle detail
+
+The `xl:` prefix (1280px) is used for desktop-only layouts — NOT the default `lg:` (1024px).
+
+**Pointer-only hover.** Mobile Safari leaves a sticky hover state after a tap. A `@custom-variant hover-pointer` in `globals.css` wraps all hover styles in `@media (hover: hover) and (pointer: fine)`, so hover effects only fire on real pointer devices.
+
+### What was implemented
+
+**`globals.css`:**
+- Full dark palette tokens (`--bg-base`, `--bg-surface`, `--bg-card`, `--primary`, `--danger`, `--warning`, etc.)
+- `@theme inline` bindings exposing all tokens to Tailwind
+- Typography utility classes in `@layer components`: `.text-page-title`, `.text-eyebrow`, `.text-eyebrow-primary`, `.text-card-title`, `.text-meta`, `.text-status-chip`
+- `body { font-family: var(--font-mono) }` — Geist Mono globally
+- `@custom-variant hover-pointer` — pointer-only hover suppression
+
+**`Button` component (`button.tsx`):**
+- New variants: `secondary-destructive` (red outline, used by Delete on Vehicle Detail), `dashed-ghost` (dashed cyan border, used by "+ ADD VEHICLE" and "+ ADD MAINTENANCE CARD")
+- New size: `icon-xs` (16×16px, `rounded-[4px]`) — used by the ⋮ action button on maintenance cards
+- All `dark:` prefixes removed
+
+**New primitives:**
+- **`VehicleStatusChip`** (`vehicle-status-chip.tsx`) — reusable chip: "ALL GOOD" (cyan) or "{N} OVERDUE" (red). Single source of truth used in `VehicleCard`, `VehicleListItem` (split pane), and any future surfaces.
+- **`getVehicleMetaLine(vehicle)`** in `vehicle-display.ts` — formats the detail-page meta line: `"Colour · Mileage unit · Plate: XXX"`. Distinct from `getVehicleDisplayLabels` (card-list brevity).
+
+**`AppShell` + `AppShellPresentation`:**
+- New responsive shell wrapping all authenticated pages
+- `NAV_ITEMS` array holds three peers: Fleet, History, Profile (no hardcoded special cases)
+- Active-match: segment-boundary — `pathname === href || pathname.startsWith(`${href}/`)` — prevents `/history-foo` matching `/history`
+- `aria-current="page"` on active links
+- Safe-area insets: `pb-[env(safe-area-inset-bottom)]` on mobile tab bar, `viewport-fit=cover` in `Viewport` export
+
+**Restyled pages/components:**
+- Login page: 52px logo mark with radial-gradient glow (not `blur-2xl`), cyan CTA, 0.5rem terms text
+- Home page: gradient header, alert pill with English pluralization (`"1 ITEM NEEDS ATTENTION"` vs `"N ITEMS NEED ATTENTION"`), `md:grid-cols-2 xl:grid-cols-3` vehicle grid
+- Vehicle Card: single meta line `"colour · mileage unit"` (brand/model removed from card), `VehicleStatusChip`, pointer-only hover
+- Vehicle Dashboard: functional `<Link href="/">` back nav (`xl:hidden`), `getVehicleMetaLine` for header, `secondary-destructive` Delete button
+- Mileage Prompt: dark input with `border-primary-dim`, focus ring `#00e5ff40`, eyebrow label
+- Maintenance Card Row: progress bar with locked piecewise-linear formula, single top-right sub-label ("N unit past due" / "N unit left"), no status text below the bar, `icon-xs` ⋮ button
+- Dialog shell: dark surface, mobile bottom sheet with drag-handle grabber, centered modal on `sm:` and up
+- All form dialogs: dark inputs, eyebrow labels, correct button variants
+
+**New layouts:**
+- `VehiclesLayout` + `frontend/src/app/vehicles/layout.tsx` — desktop split pane: 220px vehicle list panel (`xl:flex`) using `VehicleStatusChip`, plus detail content
+
+**Placeholder routes:**
+- `/history` and `/profile` — "Coming soon" pages wrapped in `AuthGuard`
+
+### Progress bar formula (locked)
+
+Let `threshold` = warning-threshold km (or miles native), `remaining` = `nextDueMileage - currentMileage`:
+
+- **Overdue** (`remaining ≤ 0`): fill = `100%`, solid red. Magnitude communicated via text only.
+- **Warning** (`0 < remaining ≤ threshold`): `fill = 60 + ((threshold - remaining) / threshold) × 39`. Linear 60% → 99%.
+- **Healthy** (`remaining > threshold`): `lookahead = 5 × threshold`. `fill = (1 - min(remaining, lookahead) / lookahead) × 59`. Linear 0% → 59%.
+
+### Healthy label color rule
+
+- `remaining > 3 × threshold`: color = `--text-disabled` (`#555555`) — far from due, muted
+- `threshold < remaining ≤ 3 × threshold`: color = `--primary` (`#00e5ff`) — approaching, cyan
+
+### Key files
+
+New:
+- `frontend/src/app/globals.css` (rewritten)
+- `frontend/src/components/ui/button.tsx` (rewritten)
+- `frontend/src/components/vehicles/vehicle-status-chip.tsx`
+- `frontend/src/components/layout/app-shell.tsx`
+- `frontend/src/components/layout/app-shell-presentation.tsx`
+- `frontend/src/components/layout/vehicles-layout.tsx`
+- `frontend/src/app/vehicles/layout.tsx`
+- `frontend/src/app/history/page.tsx`
+- `frontend/src/app/profile/page.tsx`
+
+Modified:
+- `frontend/src/lib/vehicle-display.ts` (added `getVehicleMetaLine`)
+- `frontend/src/app/layout.tsx` (added `AppShell`, `Viewport` with `viewportFit: 'cover'`)
+- `frontend/src/app/login/page.tsx`
+- `frontend/src/components/pages/home-page.tsx`
+- `frontend/src/components/vehicles/vehicle-card.tsx`
+- `frontend/src/components/pages/vehicle-dashboard-page.tsx`
+- `frontend/src/components/vehicles/mileage-prompt-presentation.tsx`
+- `frontend/src/components/maintenance-cards/maintenance-card-row.tsx`
+- `frontend/src/components/ui/dialog.tsx`
+- All form dialogs (vehicle-form-dialog-presentation, maintenance-card-form-dialog, mark-done-dialog, vehicle-delete-confirm-dialog, delete-confirm-dialog)

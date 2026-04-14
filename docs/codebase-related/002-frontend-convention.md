@@ -197,3 +197,110 @@ onSuccess: (updatedVehicle) => {
 ```
 
 Use `exact: true` on every `invalidateQueries` call to prevent unintended cascade to unrelated query keys.
+
+---
+
+# UI / Styling Conventions
+
+## Dark-only theme
+
+The app is dark-only. There is no light mode and no `.dark` class toggle. Consequences:
+
+- **Never add `dark:` prefixes** to class names. All styles are written for dark backgrounds directly.
+- `color-scheme: dark` is set on `<html>` so browser-native controls (scrollbars, autofill) match the theme.
+
+## Design tokens — always prefer tokens over hex literals
+
+All palette values are declared as CSS custom properties in `frontend/src/app/globals.css` under `:root` and exposed to Tailwind via `@theme inline`. Downstream components must use token-based Tailwind classes rather than hardcoded hex values where a token exists.
+
+| Token class | Value | Usage |
+|---|---|---|
+| `bg-background` | `#07090f` | Page background |
+| `bg-[color:var(--bg-surface)]` | `#0d1117` | Sidebar, popover surfaces |
+| `bg-[color:var(--bg-card)]` | `#0f1923` | Cards, inputs, secondary buttons |
+| `text-primary` / `border-primary` | `#00e5ff` | Primary interactive (cyan) |
+| `border-primary-dim` | `#00e5ff20` | Subtle accent borders, input borders |
+| `text-destructive` | `#ff4444` | Overdue status, destructive actions |
+| `text-[color:var(--text-secondary)]` | `#888888` | Labels, meta text |
+| `text-[color:var(--text-muted)]` | `#444444` | Inactive items, placeholders |
+| `text-[color:var(--text-disabled)]` | `#555555` | Type badges, far-from-due labels |
+
+Direct hex literals (e.g. `bg-[#ff44440d]`) are acceptable only for values that have no named token — for example, semi-transparent overlays that are one-off.
+
+## Typography utility classes
+
+These classes are defined in `@layer components` of `globals.css`. Use them instead of inlining the same font-size/tracking/color combinations:
+
+| Class | Role |
+|---|---|
+| `.text-page-title` | `text-xl font-extrabold text-white` — page headings |
+| `.text-eyebrow` | `0.6rem`, `0.15em` letter-spacing, uppercase, `--text-secondary` — section labels |
+| `.text-eyebrow-primary` | Same as eyebrow but color `--primary` (cyan) — mileage prompt label |
+| `.text-card-title` | `0.6875rem`, `font-weight: 700`, `--text-primary` — card name |
+| `.text-meta` | `0.625rem`, `--text-secondary` — sub-labels, meta lines |
+| `.text-status-chip` | `0.5rem`, `font-weight: 700`, uppercase — chip text |
+
+Never inline `text-[0.6rem] tracking-[0.15em] uppercase` when `.text-eyebrow` already encodes it.
+
+## Responsive layout breakpoints
+
+| Name | Tailwind prefix | Width |
+|---|---|---|
+| Mobile (default) | _(none)_ | `< 768px` |
+| Tablet | `md:` | `768px – 1279px` |
+| Desktop | `xl:` | `≥ 1280px` |
+
+**Use `xl:` for desktop-only layout.** The default `lg:` (1024px) is not used for structural layout decisions. Features that are desktop-only (full sidebar, split-pane vehicle detail, 3-column grid) gate on `xl:`.
+
+## Pointer-only hover
+
+Touch devices (mobile Safari) leave a sticky hover state after a tap. Never apply hover background/color changes with plain `hover:` on interactive cards or rows. Use the `hover-pointer:` custom variant instead:
+
+```tsx
+// ❌ Triggers on tap on mobile
+className="hover:bg-[#111d2b]"
+
+// ✅ Only triggers on real pointer devices
+className="hover-pointer:bg-[#111d2b]"
+```
+
+The variant is declared once in `globals.css`:
+```css
+@custom-variant hover-pointer (&:where(@media (hover: hover) and (pointer: fine)):hover);
+```
+
+## Button variants
+
+| Variant | Usage |
+|---|---|
+| `default` | Primary CTA — cyan background, dark text, `font-extrabold` |
+| `secondary` | Secondary action — dark card background, `#333` border |
+| `secondary-destructive` | Destructive action that isn't a full confirm (Delete button on Vehicle Detail header) |
+| `dashed-ghost` | Add-entity actions — dashed cyan border, transparent background (`+ ADD VEHICLE`, `+ ADD MAINTENANCE CARD`) |
+| `destructive` | Confirm-delete dialogs |
+| `ghost` | Low-emphasis (Dismiss on mileage prompt) |
+
+`size="icon-xs"` (16×16px) is used for the ⋮ action button on maintenance card rows.
+
+## AppShell navigation
+
+`AppShellPresentation` owns all three nav tabs (Fleet, History, Profile) in a single `NAV_ITEMS` array. Never add a hardcoded Profile link outside this array. Active-state uses segment-boundary matching:
+
+```typescript
+const isActive = (pathname: string, href: string): boolean => {
+  if (href === '/') return pathname === '/';
+  return pathname === href || pathname.startsWith(`${href}/`);
+};
+```
+
+This prevents `/history-foo` from matching `/history`.
+
+## Safe-area insets (iOS)
+
+The root layout exports `viewportFit: 'cover'` in the `Viewport` object, which enables `env(safe-area-inset-*)` on iOS. Components that sit at the bottom of the screen must account for the home indicator:
+
+- Bottom tab bar: `pb-[env(safe-area-inset-bottom)]`
+- Page content wrapper (mobile): `pb-[calc(3rem+env(safe-area-inset-bottom))]`
+- Mobile dialog bottom sheets: `pb-[calc(1.25rem+env(safe-area-inset-bottom))]`
+
+Do not remove `viewportFit: 'cover'` from `layout.tsx` — the safe-area padding only works when this is set.
