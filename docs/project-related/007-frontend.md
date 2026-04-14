@@ -292,7 +292,7 @@ The `xl:` prefix (1280px) is used for desktop-only layouts — NOT the default `
 - Login page: 52px logo mark with radial-gradient glow (not `blur-2xl`), cyan CTA, 0.5rem terms text
 - Home page: gradient header, alert pill with English pluralization (`"1 ITEM NEEDS ATTENTION"` vs `"N ITEMS NEED ATTENTION"`), `md:grid-cols-2 xl:grid-cols-3` vehicle grid
 - Vehicle Card: single meta line `"colour · mileage unit"` (brand/model removed from card), `VehicleStatusChip`, pointer-only hover
-- Vehicle Dashboard: functional `<Link href="/">` back nav (`xl:hidden`), `getVehicleMetaLine` for header, `secondary-destructive` Delete button
+- Vehicle Dashboard: functional `<Link href="/">` back nav labeled `← GO BACK` (`xl:hidden`), `getVehicleMetaLine` for header, `secondary-destructive` Delete button
 - Mileage Prompt: dark input with `border-primary-dim`, focus ring `#00e5ff40`, eyebrow label
 - Maintenance Card Row: progress bar with locked piecewise-linear formula, single top-right sub-label ("N unit past due" / "N unit left"), no status text below the bar, `icon-xs` ⋮ button
 - Dialog shell: dark surface, mobile bottom sheet with drag-handle grabber, centered modal on `sm:` and up

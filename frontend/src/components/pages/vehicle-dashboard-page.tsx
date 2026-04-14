@@ -99,7 +99,7 @@ const DashboardContent: FC<VehicleDashboardPageProps> = ({ vehicleId }) => {
           className="inline-flex items-center gap-1 text-primary text-eyebrow mb-1 xl:hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5ff40] rounded"
         >
           <span aria-hidden="true">←</span>
-          <span>FLEET</span>
+          <span>GO BACK</span>
         </Link>
 
         <div className="flex items-start justify-between gap-3 mb-1">
