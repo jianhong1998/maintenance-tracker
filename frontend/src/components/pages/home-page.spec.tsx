@@ -83,17 +83,6 @@ describe('HomePage', () => {
     expect(screen.getByText(/loading vehicles/i)).toBeInTheDocument();
   });
 
-  it('shows "No vehicles yet" message when vehicles array is empty', () => {
-    vi.mocked(useVehicles).mockReturnValue({
-      data: [] as IVehicleResDTO[],
-      isLoading: false,
-    } as ReturnType<typeof useVehicles>);
-
-    render(<HomePage />);
-
-    expect(screen.getByText(/no vehicles yet/i)).toBeInTheDocument();
-  });
-
   it('renders a VehicleCard for each vehicle when data is available', () => {
     vi.mocked(useVehicles).mockReturnValue({
       data: [mockVehicle, mockVehicle2],
@@ -108,7 +97,7 @@ describe('HomePage', () => {
     expect(screen.getByText('Honda')).toBeInTheDocument();
   });
 
-  it('shows "All good" message when global warning count is 0', () => {
+  it('does not show attention pill when global warning count is 0', () => {
     vi.mocked(useVehicles).mockReturnValue({
       data: [mockVehicle],
       isLoading: false,
@@ -117,10 +106,10 @@ describe('HomePage', () => {
 
     render(<HomePage />);
 
-    expect(screen.getByText(/all good/i)).toBeInTheDocument();
+    expect(screen.queryByText(/need attention/i)).not.toBeInTheDocument();
   });
 
-  it('shows "X card(s) need attention" when global warning count > 0', () => {
+  it('shows plural attention pill when global warning count > 1', () => {
     vi.mocked(useVehicles).mockReturnValue({
       data: [mockVehicle, mockVehicle2],
       isLoading: false,
@@ -129,7 +118,31 @@ describe('HomePage', () => {
 
     render(<HomePage />);
 
-    expect(screen.getByText(/4 cards need attention/i)).toBeInTheDocument();
+    expect(screen.getByText('4 ITEMS NEED ATTENTION')).toBeInTheDocument();
+  });
+
+  it('shows singular attention pill when global warning count is 1', () => {
+    vi.mocked(useVehicles).mockReturnValue({
+      data: [mockVehicle],
+      isLoading: false,
+    } as ReturnType<typeof useVehicles>);
+    vi.mocked(useGlobalWarningCount).mockReturnValue(1);
+
+    render(<HomePage />);
+
+    expect(screen.getByText('1 ITEM NEEDS ATTENTION')).toBeInTheDocument();
+  });
+
+  it('does not show attention pill when vehicles array is empty even if count > 0', () => {
+    vi.mocked(useVehicles).mockReturnValue({
+      data: [] as IVehicleResDTO[],
+      isLoading: false,
+    } as ReturnType<typeof useVehicles>);
+    vi.mocked(useGlobalWarningCount).mockReturnValue(2);
+
+    render(<HomePage />);
+
+    expect(screen.queryByText(/need attention/i)).not.toBeInTheDocument();
   });
 
   it('renders inside AuthGuard', () => {
@@ -140,11 +153,11 @@ describe('HomePage', () => {
 
     render(<HomePage />);
 
-    // AuthGuard is mocked to render children — if it renders, AuthGuard was used
-    expect(screen.getByRole('main')).toBeInTheDocument();
+    // AuthGuard is mocked to render children — if heading renders, AuthGuard was used
+    expect(screen.getByText('Your Vehicles')).toBeInTheDocument();
   });
 
-  it('renders "Add Vehicle" button', () => {
+  it('renders "ADD VEHICLE" button when not loading', () => {
     vi.mocked(useVehicles).mockReturnValue({
       data: [] as IVehicleResDTO[],
       isLoading: false,
@@ -157,7 +170,7 @@ describe('HomePage', () => {
     ).toBeInTheDocument();
   });
 
-  it('renders "Add Vehicle" button even while loading', () => {
+  it('does not render "ADD VEHICLE" button while loading', () => {
     vi.mocked(useVehicles).mockReturnValue({
       data: undefined,
       isLoading: true,
@@ -166,11 +179,11 @@ describe('HomePage', () => {
     render(<HomePage />);
 
     expect(
-      screen.getByRole('button', { name: /add vehicle/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole('button', { name: /add vehicle/i }),
+    ).not.toBeInTheDocument();
   });
 
-  it('opens VehicleFormDialog when "Add Vehicle" button is clicked', () => {
+  it('opens VehicleFormDialog when "ADD VEHICLE" button is clicked', () => {
     vi.mocked(useVehicles).mockReturnValue({
       data: [] as IVehicleResDTO[],
       isLoading: false,
