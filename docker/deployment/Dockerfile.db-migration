@@ -1,0 +1,44 @@
+# ===========================================================
+# Production DB Migration Dockerfile
+# ===========================================================
+# Note: migration:run uses ts-node with TypeScript source files,
+# so this image retains all dependencies and source code.
+# This is intentional — db-migration is a one-shot container.
+# ===========================================================
+
+# ===========================================================
+# Stage 1: deps — install all workspace dependencies
+# ===========================================================
+FROM node:22.14.0-slim AS deps
+
+RUN npm install -g pnpm@9.0.0
+
+WORKDIR /app
+
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY packages/types/package.json ./packages/types/
+COPY backend/package.json ./backend/
+
+# --ignore-scripts skips the root `prepare` (husky) script which fails inside
+# Docker because there is no .git directory.
+RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# ===========================================================
+# Stage 2: build — compile TypeScript and copy sources
+# ===========================================================
+FROM deps AS build
+
+COPY turbo.json ./
+COPY packages/ ./packages/
+COPY backend/ ./backend/
+
+RUN pnpm run build --filter=backend
+
+# ===========================================================
+# Stage 3: production — run migrations on container start
+# ===========================================================
+FROM build AS production
+
+WORKDIR /app/backend
+
+CMD ["pnpm", "run", "migration:run"]

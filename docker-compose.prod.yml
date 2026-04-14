@@ -1,0 +1,126 @@
+services:
+  postgres:
+    image: postgres:16.4-alpine3.20
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_DB: ${DATABASE_DB:-project_db}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DATABASE_USER:-postgres} -d ${DATABASE_DB:-project_db}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-migration-service:
+    image: ${AWS_ECR_REGISTRY:-383373959609.dkr.ecr.ap-southeast-1.amazonaws.com}/maintenance-tracker/db-migration:prod
+    restart: 'no'
+    environment:
+      NODE_ENV: production
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_DB: ${DATABASE_DB:-project_db}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  server:
+    image: ${AWS_ECR_REGISTRY:-383373959609.dkr.ecr.ap-southeast-1.amazonaws.com}/maintenance-tracker/backend:prod
+    ports:
+      - '3015:3015'
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      BACKEND_PORT: 3015
+      BACKEND_CLIENT_HOST: ${BACKEND_CLIENT_HOST}
+      BACKEND_COOKIE_SECRET: ${BACKEND_COOKIE_SECRET}
+      BACKEND_COOKIE_DOMAIN_NAME: ${BACKEND_COOKIE_DOMAIN_NAME}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_DB: ${DATABASE_DB:-project_db}
+      REDIS_URL: redis://redis:6379
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-postmark}
+      POSTMARK_API_KEY: ${POSTMARK_API_KEY}
+      POSTMARK_FROM_ADDRESS: ${POSTMARK_FROM_ADDRESS}
+      MILEAGE_WARNING_THRESHOLD_KM: ${MILEAGE_WARNING_THRESHOLD_KM:-500}
+      NOTIFICATION_DAYS_BEFORE: ${NOTIFICATION_DAYS_BEFORE:-7}
+      NOTIFICATION_CRON_SCHEDULE: ${NOTIFICATION_CRON_SCHEDULE:-0 8 * * *}
+    depends_on:
+      db-migration-service:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+
+  client:
+    image: ${AWS_ECR_REGISTRY:-383373959609.dkr.ecr.ap-southeast-1.amazonaws.com}/maintenance-tracker/frontend:prod
+    ports:
+      - '3014:3014'
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      # Setting NextJS app running on port
+      PORT: 3014
+      FRONTEND_BACKEND_BASE_URL: ${FRONTEND_BACKEND_BASE_URL}
+      FRONTEND_FIREBASE_API_KEY: ${FRONTEND_FIREBASE_API_KEY}
+      FRONTEND_FIREBASE_AUTH_DOMAIN: ${FRONTEND_FIREBASE_AUTH_DOMAIN}
+      FRONTEND_FIREBASE_PROJECT_ID: ${FRONTEND_FIREBASE_PROJECT_ID}
+    depends_on:
+      db-migration-service:
+        condition: service_completed_successfully
+
+  worker:
+    image: ${AWS_ECR_REGISTRY:-383373959609.dkr.ecr.ap-southeast-1.amazonaws.com}/maintenance-tracker/background-job:prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_USER: ${DATABASE_USER:-postgres}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      DATABASE_DB: ${DATABASE_DB:-project_db}
+      REDIS_URL: redis://redis:6379
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+      FIREBASE_CLIENT_EMAIL: ${FIREBASE_CLIENT_EMAIL}
+      FIREBASE_PRIVATE_KEY: ${FIREBASE_PRIVATE_KEY}
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-postmark}
+      POSTMARK_API_KEY: ${POSTMARK_API_KEY}
+      POSTMARK_FROM_ADDRESS: ${POSTMARK_FROM_ADDRESS}
+      MILEAGE_WARNING_THRESHOLD_KM: ${MILEAGE_WARNING_THRESHOLD_KM:-500}
+      NOTIFICATION_DAYS_BEFORE: ${NOTIFICATION_DAYS_BEFORE:-7}
+      NOTIFICATION_CRON_SCHEDULE: ${NOTIFICATION_CRON_SCHEDULE:-0 8 * * *}
+    depends_on:
+      db-migration-service:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+
+volumes:
+  postgres-data:

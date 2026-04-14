@@ -1,4 +1,3 @@
-import { BACKEND_BASE_URL } from '@/constants';
 import axios from 'axios';
 
 export class ApiError extends Error {
@@ -23,12 +22,15 @@ export function setAuthTokenGetter(fn: () => Promise<string | null>): void {
 }
 
 const axiosInstance = axios.create({
-  baseURL: BACKEND_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 10000,
 });
+
+export function setBaseUrl(url: string): void {
+  axiosInstance.defaults.baseURL = url;
+}
 
 axiosInstance.interceptors.request.use(async (config) => {
   if (getToken) {

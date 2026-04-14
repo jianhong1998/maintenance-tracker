@@ -6,6 +6,7 @@
 - All frontend environment variables should have prefix `FRONTEND_`.
 - Never using `NEXT_` prefix for environment variable. Because NextJS will fix the value at build time. All the environment variable in this project must have the flexibility at runtime.
 - **`FRONTEND_` variables are only accessible in Server Components and server-side code.** In Client Components (`'use client'`), `process.env.FRONTEND_*` returns `undefined` at runtime — Next.js does not inline non-`NEXT_PUBLIC_` variables into the client bundle. Access these variables only in server-side code (Server Components, API routes, server actions, or `src/constants/index.ts` which is used server-side).
+- **Server Components reading `FRONTEND_*` env vars must be in dynamically-rendered routes.** Next.js 15 is "static by default" — if a Server Component has no dynamic functions (`cookies()`, `headers()`, etc.), Next.js pre-renders it at `next build` time, where all `FRONTEND_*` vars are `undefined`. The pre-rendered HTML is then served as-is at runtime, ignoring the container's env vars. The root layout (`src/app/layout.tsx`) addresses this with `export const dynamic = 'force-dynamic'`, which forces server-side rendering on every request. Do not remove this export.
 
 # Component Convention
 

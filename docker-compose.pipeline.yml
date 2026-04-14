@@ -1,0 +1,76 @@
+services:
+  postgres:
+    image: postgres:16.4-alpine3.20
+    network_mode: host
+    environment:
+      POSTGRES_USER: ${DATABASE_USER:-postgres}
+      POSTGRES_DB: ${DATABASE_DB:-project_db}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-Password1234}
+    env_file:
+      - .env
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'pg_isready -U ${DATABASE_USER:-postgres} -d ${DATABASE_DB:-project_db}',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    network_mode: host
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  db-migration-service:
+    image: ${AWS_ECR_REGISTRY}/maintenance-tracker/db-migration:${CIRCLE_SHA1_SHORT}
+    network_mode: host
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  server:
+    image: ${AWS_ECR_REGISTRY}/maintenance-tracker/backend:${CIRCLE_SHA1_SHORT}
+    network_mode: host
+    env_file:
+      - .env
+    depends_on:
+      db-migration-service:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
+
+  client:
+    image: ${AWS_ECR_REGISTRY}/maintenance-tracker/frontend:${CIRCLE_SHA1_SHORT}
+    network_mode: host
+    env_file:
+      - .env
+    depends_on:
+      db-migration-service:
+        condition: service_completed_successfully
+
+  worker:
+    image: ${AWS_ECR_REGISTRY}/maintenance-tracker/background-job:${CIRCLE_SHA1_SHORT}
+    network_mode: host
+    env_file:
+      - .env
+    depends_on:
+      db-migration-service:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+        restart: true
+      redis:
+        condition: service_healthy
+        restart: true
