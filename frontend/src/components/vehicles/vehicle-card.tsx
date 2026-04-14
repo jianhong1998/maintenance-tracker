@@ -1,11 +1,14 @@
 'use client';
 
-import { FC } from 'react';
+import type { FC } from 'react';
 import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 import type { IVehicleResDTO } from '@project/types';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
 import { countWarningCards } from '@/lib/warning';
 import { getVehicleDisplayLabels } from '@/lib/vehicle-display';
+import { VehicleStatusChip } from './vehicle-status-chip';
+import { cn } from '@/lib/utils';
 
 type VehicleCardProps = {
   vehicle: IVehicleResDTO;
@@ -22,29 +25,34 @@ export const VehicleCard: FC<VehicleCardProps> = ({ vehicle, thresholdKm }) => {
     thresholdKm,
   );
 
-  const { primary, secondary } = getVehicleDisplayLabels(vehicle);
+  const { primary } = getVehicleDisplayLabels(vehicle);
+  const hasWarning = warningCount > 0;
+
+  const metaLine = `${vehicle.colour} · ${vehicle.mileage.toLocaleString()} ${vehicle.mileageUnit}`;
 
   return (
     <Link
       href={`/vehicles/${vehicle.id}`}
-      className="block rounded-lg border p-4 hover:bg-accent transition-colors"
+      className={cn(
+        'block rounded-[10px] border p-[11px] transition-colors hover-pointer:bg-[#111d2b]',
+        hasWarning
+          ? 'bg-[color:var(--bg-card)] border-[#ff444328]'
+          : 'bg-[color:var(--bg-card)] border-border-accent',
+      )}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="font-semibold">{primary}</p>
-          {secondary && (
-            <p className="text-muted-foreground text-sm">{secondary}</p>
-          )}
-          <p className="text-muted-foreground text-sm">{vehicle.colour}</p>
-          <p className="text-muted-foreground text-sm">
-            {vehicle.mileage.toLocaleString()} {vehicle.mileageUnit}
-          </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-card-title truncate">{primary}</p>
+          <p className="text-meta truncate">{metaLine}</p>
         </div>
-        {warningCount > 0 && (
-          <span className="rounded-full bg-destructive px-2.5 py-0.5 text-xs font-semibold text-destructive-foreground">
-            {warningCount}
-          </span>
-        )}
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <VehicleStatusChip count={warningCount} />
+          <ChevronRight
+            size={14}
+            className="text-[#444]"
+          />
+        </div>
       </div>
     </Link>
   );
