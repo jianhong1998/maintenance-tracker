@@ -195,6 +195,16 @@ Sensitive values are never in this file. They live as CircleCI project environme
 
 ## 9. Architectural Decisions
 
+### `tag-workflow`: Job-level `filters` required for tag-triggered execution
+
+**Decision:** Every job in `tag-workflow` carries explicit `filters.branches.ignore: /.*/` and `filters.tags.only: /^\d+\.\d+\.\d+$/`.
+
+**Why:** CircleCI jobs do not run on tags by default — the absence of a `filters.tags` entry means the job is silently skipped on tag pushes, regardless of the workflow-level `when` condition. The `when` condition at the workflow level is necessary but not sufficient; without job-level tag filters the pipeline creates with "No workflow" status in the CircleCI UI.
+
+**Tag pattern:** `/^\d+\.\d+\.\d+$/` matches semantic version tags (`1.0.0`, `2.3.4`) with no `v` prefix. Any other tag format (e.g. `v1.0.0`) will not trigger this workflow.
+
+---
+
 ### `tag-workflow`: Rebuild over artifact promotion
 
 **Decision:** `tag-workflow` rebuilds all images from source and re-runs API tests before deploying to production. It does **not** promote the SHA-tagged images that were built in `branch-workflow`.
