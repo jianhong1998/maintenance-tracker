@@ -193,7 +193,27 @@ Sensitive values are never in this file. They live as CircleCI project environme
 
 ---
 
-## 9. Files to Create
+## 9. Architectural Decisions
+
+### `tag-workflow`: Rebuild over artifact promotion
+
+**Decision:** `tag-workflow` rebuilds all images from source and re-runs API tests before deploying to production. It does **not** promote the SHA-tagged images that were built in `branch-workflow`.
+
+**Alternatives considered:** Promote the branch-workflow artifacts by retagging the existing `$CIRCLE_SHA1_SHORT` ECR image via `ecr-retag` (no rebuild, no re-test). This was implemented, reviewed, and then reverted.
+
+**Reasons for rejecting promotion:**
+
+1. **Artifact fidelity concern is theoretical here.** The argument for promotion is that a rebuild could silently produce different bytes if an external dependency changes between the branch push and the tag push. This does not apply: `pnpm-lock.yaml` pins every dependency to an exact version and base Docker images are pinned by version tag — deterministic builds are guaranteed.
+
+2. **Independent API test gate on the production build is a feature, not waste.** Re-running the full test suite against freshly-built images gives an independent verification pass on the exact artifacts going to production. This catches any environment or build tooling regressions that might have crept in since the branch-workflow ran.
+
+3. **CI cost is acceptable for this project's scale.**
+
+**When to revisit:** If builds become slow enough that the rebuild cost is materially painful, or if the project grows to a scale where strict artifact provenance tracking is required (e.g. image signing, SBOM), promotion becomes the right call.
+
+---
+
+## 10. Files to Create
 
 | File                                          | Purpose                                 |
 | --------------------------------------------- | --------------------------------------- |
