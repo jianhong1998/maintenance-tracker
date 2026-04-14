@@ -372,18 +372,37 @@ workflows:
             - tag-dev-background-job
             - tag-dev-db-migration
 
-  # Triggered only on git tag creation.
+  # Triggered only on git tag creation (semantic version tags: 1.0.0, 2.3.4, etc.).
   # Intentionally has no approval gate before deploy-production — this is a solo project
   # and every git tag is considered a deliberate production release decision.
   # If multi-person tagging is ever introduced, add an approve-deploy-to-production step.
+  #
+  # NOTE: workflow-level `when` alone is insufficient — CircleCI jobs do not run on tags
+  # by default regardless of the workflow condition. Every job must carry explicit
+  # filters.tags.only to opt in to tag-triggered execution.
   tag-workflow:
     when:
       not:
         equal: ['', << pipeline.git.tag >>]
     jobs:
-      - lint-test
-      - unit-test
-      - ui-test
+      - lint-test:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - unit-test:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
+      - ui-test:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - build-and-push-service:
           name: build-and-push-backend
           service: backend
@@ -393,6 +412,11 @@ workflows:
             - lint-test
             - unit-test
             - ui-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - build-and-push-service:
           name: build-and-push-frontend
           service: frontend
@@ -402,6 +426,11 @@ workflows:
             - lint-test
             - unit-test
             - ui-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - build-and-push-service:
           name: build-and-push-background-job
           service: background-job
@@ -412,6 +441,11 @@ workflows:
             - lint-test
             - unit-test
             - ui-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - build-and-push-service:
           name: build-and-push-db-migration
           service: db-migration
@@ -421,6 +455,11 @@ workflows:
             - lint-test
             - unit-test
             - ui-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - api-test:
           context: aws-ecr-context
           requires:
@@ -428,33 +467,63 @@ workflows:
             - build-and-push-frontend
             - build-and-push-background-job
             - build-and-push-db-migration
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - tag-service:
           name: tag-prod-backend
           service: backend
           context: aws-ecr-context
           requires:
             - api-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - tag-service:
           name: tag-prod-frontend
           service: frontend
           context: aws-ecr-context
           requires:
             - api-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - tag-service:
           name: tag-prod-background-job
           service: background-job
           context: aws-ecr-context
           requires:
             - api-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - tag-service:
           name: tag-prod-db-migration
           service: db-migration
           context: aws-ecr-context
           requires:
             - api-test
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
       - deploy-production:
           requires:
             - tag-prod-backend
             - tag-prod-frontend
             - tag-prod-background-job
             - tag-prod-db-migration
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^\d+\.\d+\.\d+$/
