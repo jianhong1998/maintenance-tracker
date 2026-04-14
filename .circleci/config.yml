@@ -63,7 +63,7 @@ commands:
         type: string
       build_args:
         type: string
-        default: ""
+        default: ''
     steps:
       - set-short-sha
       - run:
@@ -198,7 +198,7 @@ jobs:
         type: string
       build_args:
         type: string
-        default: ""
+        default: ''
     steps:
       - checkout
       - ecr-login
@@ -319,7 +319,7 @@ workflows:
           name: build-and-push-background-job
           service: background-job
           dockerfile: Dockerfile.backend
-          build_args: "NODE_ENTRYPOINT=dist/backend/src/main-worker"
+          build_args: 'NODE_ENTRYPOINT=dist/backend/src/main-worker'
           context: aws-ecr-context
           requires:
             - approve-build
@@ -381,9 +381,6 @@ workflows:
   # by default regardless of the workflow condition. Every job must carry explicit
   # filters.tags.only to opt in to tag-triggered execution.
   tag-workflow:
-    when:
-      not:
-        equal: ['', << pipeline.git.tag >>]
     jobs:
       - lint-test:
           filters:
@@ -435,7 +432,7 @@ workflows:
           name: build-and-push-background-job
           service: background-job
           dockerfile: Dockerfile.backend
-          build_args: "NODE_ENTRYPOINT=dist/backend/src/main-worker"
+          build_args: 'NODE_ENTRYPOINT=dist/backend/src/main-worker'
           context: aws-ecr-context
           requires:
             - lint-test
