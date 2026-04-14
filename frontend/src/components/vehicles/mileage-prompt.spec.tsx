@@ -40,9 +40,7 @@ describe('MileagePrompt', () => {
       renderPrompt(null);
 
       await waitFor(() => {
-        expect(
-          screen.getByText("What's your current odometer reading?"),
-        ).toBeInTheDocument();
+        expect(screen.getByText('UPDATE ODOMETER')).toBeInTheDocument();
       });
     });
 
@@ -54,9 +52,7 @@ describe('MileagePrompt', () => {
       renderPrompt('2026-04-04T06:00:00.000Z'); // Apr 4 in any timezone
 
       await waitFor(() => {
-        expect(
-          screen.getByText("What's your current odometer reading?"),
-        ).toBeInTheDocument();
+        expect(screen.getByText('UPDATE ODOMETER')).toBeInTheDocument();
       });
 
       vi.useRealTimers();
@@ -83,9 +79,7 @@ describe('MileagePrompt', () => {
       const { rerender } = renderPrompt(null); // initially visible
 
       await waitFor(() => {
-        expect(
-          screen.getByText("What's your current odometer reading?"),
-        ).toBeInTheDocument();
+        expect(screen.getByText('UPDATE ODOMETER')).toBeInTheDocument();
       });
 
       // Simulate query refetch returning today's timestamp
@@ -98,9 +92,7 @@ describe('MileagePrompt', () => {
       );
 
       await waitFor(() => {
-        expect(
-          screen.queryByText("What's your current odometer reading?"),
-        ).not.toBeInTheDocument();
+        expect(screen.queryByText('UPDATE ODOMETER')).not.toBeInTheDocument();
       });
 
       vi.useRealTimers();
@@ -127,9 +119,7 @@ describe('MileagePrompt', () => {
       renderPrompt(null);
 
       await waitFor(() => {
-        expect(
-          screen.getByText("What's your current odometer reading?"),
-        ).toBeInTheDocument();
+        expect(screen.getByText('UPDATE ODOMETER')).toBeInTheDocument();
       });
     });
   });
@@ -145,9 +135,7 @@ describe('MileagePrompt', () => {
       fireEvent.click(screen.getByText('Dismiss'));
 
       await waitFor(() => {
-        expect(
-          screen.queryByText("What's your current odometer reading?"),
-        ).not.toBeInTheDocument();
+        expect(screen.queryByText('UPDATE ODOMETER')).not.toBeInTheDocument();
       });
 
       expect(localStorage.getItem(getDismissKey(VEHICLE_ID))).toBe(
@@ -169,7 +157,7 @@ describe('MileagePrompt', () => {
       fireEvent.change(screen.getByPlaceholderText('Enter mileage'), {
         target: { value: '60000' },
       });
-      fireEvent.click(screen.getByText('Update'));
+      fireEvent.click(screen.getByText('OK'));
 
       expect(mockMutate).toHaveBeenCalledWith(
         { mileage: 60000 },
@@ -177,9 +165,7 @@ describe('MileagePrompt', () => {
       );
       // localStorage must NOT be written on submit (DB is source of truth)
       expect(localStorage.getItem(getDismissKey(VEHICLE_ID))).toBeNull();
-      expect(
-        screen.queryByText("What's your current odometer reading?"),
-      ).toBeInTheDocument();
+      expect(screen.queryByText('UPDATE ODOMETER')).toBeInTheDocument();
     });
 
     it('hides prompt after successful submit without writing localStorage', async () => {
@@ -200,13 +186,11 @@ describe('MileagePrompt', () => {
       fireEvent.change(screen.getByPlaceholderText('Enter mileage'), {
         target: { value: '60000' },
       });
-      fireEvent.click(screen.getByText('Update'));
+      fireEvent.click(screen.getByText('OK'));
 
       expect(localStorage.getItem(getDismissKey(VEHICLE_ID))).toBeNull();
       await waitFor(() => {
-        expect(
-          screen.queryByText("What's your current odometer reading?"),
-        ).not.toBeInTheDocument();
+        expect(screen.queryByText('UPDATE ODOMETER')).not.toBeInTheDocument();
       });
     });
 
@@ -223,7 +207,7 @@ describe('MileagePrompt', () => {
         target: { value: '49999' },
       });
 
-      expect(screen.getByRole('button', { name: /update/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /^ok$/i })).toBeDisabled();
     });
 
     it('shows inline validation error when entered value is less than currentMileage', async () => {
@@ -273,7 +257,7 @@ describe('MileagePrompt', () => {
         target: { value: 'abc' },
       });
 
-      expect(screen.getByRole('button', { name: /update/i })).toBeDisabled();
+      expect(screen.getByRole('button', { name: /^ok$/i })).toBeDisabled();
     });
 
     it('enables Update button when entered value equals currentMileage', async () => {
@@ -289,9 +273,7 @@ describe('MileagePrompt', () => {
         target: { value: '50000' },
       });
 
-      expect(
-        screen.getByRole('button', { name: /update/i }),
-      ).not.toBeDisabled();
+      expect(screen.getByRole('button', { name: /^ok$/i })).not.toBeDisabled();
     });
   });
 
