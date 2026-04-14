@@ -85,28 +85,98 @@ describe('MaintenanceCardRow', () => {
     expect(screen.getByText('Item')).toBeInTheDocument();
   });
 
-  it('applies overdue classes when status is overdue', () => {
+  it('applies overdue dark classes when status is overdue', () => {
     vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
     const { container } = render(<MaintenanceCardRow {...defaultProps} />);
     const row = container.firstChild as HTMLElement;
-    expect(row.className).toContain('bg-destructive/10');
-    expect(row.className).toContain('border-destructive/40');
+    expect(row.className).toContain('bg-[#ff44440a]');
+    expect(row.className).toContain('border-[#ff444328]');
   });
 
-  it('applies warning classes when status is warning', () => {
+  it('applies warning dark classes when status is warning', () => {
     vi.mocked(getCardWarningStatus).mockReturnValue('warning');
     const { container } = render(<MaintenanceCardRow {...defaultProps} />);
     const row = container.firstChild as HTMLElement;
-    expect(row.className).toContain('bg-yellow-50');
-    expect(row.className).toContain('border-yellow-300');
+    expect(row.className).toContain('border-[#f59e0b28]');
   });
 
-  it('does not apply overdue or warning classes when status is ok', () => {
+  it('applies healthy dark classes when status is ok', () => {
     vi.mocked(getCardWarningStatus).mockReturnValue('ok');
     const { container } = render(<MaintenanceCardRow {...defaultProps} />);
     const row = container.firstChild as HTMLElement;
-    expect(row.className).not.toContain('bg-destructive/10');
-    expect(row.className).not.toContain('bg-yellow-50');
+    expect(row.className).toContain('border-[#00e5ff15]');
+    expect(row.className).not.toContain('bg-[#ff44440a]');
+  });
+
+  it('renders a progress bar track when nextDueMileage is set', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 51000 }}
+      />,
+    );
+    const track = document.querySelector('.bg-\\[\\#1a1a2e\\]');
+    expect(track).toBeInTheDocument();
+  });
+
+  it('renders progress bar at 100% width when card is overdue', () => {
+    vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 49000 }}
+      />,
+    );
+    const fill = document.querySelector('[style*="width: 100%"]');
+    expect(fill).toBeInTheDocument();
+  });
+
+  it('does not render a progress bar when nextDueMileage is null', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null }}
+      />,
+    );
+    const track = document.querySelector('.bg-\\[\\#1a1a2e\\]');
+    expect(track).not.toBeInTheDocument();
+  });
+
+  it('renders "N unit past due" sub-label when overdue', () => {
+    vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 49880 }}
+      />,
+    );
+    // currentMileage is 50000 in defaultProps mockVehicle
+    expect(screen.getByText(/past due/i)).toBeInTheDocument();
+  });
+
+  it('renders "N unit left" sub-label when warning or healthy', () => {
+    vi.mocked(getCardWarningStatus).mockReturnValue('ok');
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 52000 }}
+      />,
+    );
+    expect(screen.getByText(/left/i)).toBeInTheDocument();
+  });
+
+  it('does not render "On track" text below the progress bar', () => {
+    vi.mocked(getCardWarningStatus).mockReturnValue('ok');
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 52000 }}
+      />,
+    );
+    expect(screen.queryByText(/on track/i)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/within warning threshold/i),
+    ).not.toBeInTheDocument();
   });
 
   it('shows remaining mileage label when nextDueMileage is set and remaining > 0', () => {
@@ -119,7 +189,7 @@ describe('MaintenanceCardRow', () => {
     expect(screen.getByText('1,000 km left')).toBeInTheDocument();
   });
 
-  it('shows OVERDUE label when remaining <= 0', () => {
+  it('shows past due label when remaining <= 0', () => {
     vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
     render(
       <MaintenanceCardRow
@@ -127,7 +197,7 @@ describe('MaintenanceCardRow', () => {
         card={{ ...mockCard, nextDueMileage: 49000 }}
       />,
     );
-    expect(screen.getByText('OVERDUE')).toBeInTheDocument();
+    expect(screen.getByText(/past due/i)).toBeInTheDocument();
   });
 
   it('shows no mileage label when nextDueMileage is null', () => {
@@ -138,7 +208,7 @@ describe('MaintenanceCardRow', () => {
       />,
     );
     expect(screen.queryByText(/left/)).not.toBeInTheDocument();
-    expect(screen.queryByText('OVERDUE')).not.toBeInTheDocument();
+    expect(screen.queryByText(/past due/i)).not.toBeInTheDocument();
   });
 
   it('uses mileageWarningThresholdKm from config when calling getCardWarningStatus', () => {
@@ -183,7 +253,7 @@ describe('MaintenanceCardRow', () => {
       />,
     );
     expect(
-      screen.queryByRole('button', { name: /mark done/i }),
+      screen.queryByRole('menuitem', { name: /mark done/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -195,10 +265,12 @@ describe('MaintenanceCardRow', () => {
       />,
     );
     expect(
-      screen.getByRole('button', { name: /mark done/i }),
+      screen.getByRole('menuitem', { name: /mark done/i }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /edit/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole('menuitem', { name: /delete/i }),
+    ).toBeInTheDocument();
   });
 
   it('calls onDropdownToggle with cardId when ⋮ button is clicked and dropdown is closed', () => {
@@ -236,7 +308,7 @@ describe('MaintenanceCardRow', () => {
         onMarkDone={onMarkDone}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /mark done/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /mark done/i }));
     expect(onMarkDone).toHaveBeenCalledWith(mockCard);
   });
 
@@ -249,7 +321,7 @@ describe('MaintenanceCardRow', () => {
         onEdit={onEdit}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /edit/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /edit/i }));
     expect(onEdit).toHaveBeenCalledWith(mockCard);
   });
 
@@ -262,7 +334,7 @@ describe('MaintenanceCardRow', () => {
         onDelete={onDelete}
       />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /delete/i }));
+    fireEvent.click(screen.getByRole('menuitem', { name: /delete/i }));
     expect(onDelete).toHaveBeenCalledWith(mockCard);
   });
 });
