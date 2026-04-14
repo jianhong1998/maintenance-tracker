@@ -11,6 +11,7 @@ import { countWarningCards } from '@/lib/warning';
 import { getVehicleDisplayLabels } from '@/lib/vehicle-display';
 import { VehicleStatusChip } from '@/components/vehicles/vehicle-status-chip';
 import { cn } from '@/lib/utils';
+import { DEFAULT_MILEAGE_WARNING_THRESHOLD_KM } from '@/constants';
 
 type VehicleListItemProps = {
   vehicle: IVehicleResDTO;
@@ -23,6 +24,12 @@ const VehicleListItem: FC<VehicleListItemProps> = ({
   thresholdKm,
   isActive,
 }) => {
+  // N+1 assumption: each VehicleListItem fires its own useMaintenanceCards query.
+  // This is acceptable only because TanStack Query caches per-vehicle card data
+  // after the user visits VehicleDashboardPage — subsequent sidebar renders hit
+  // the cache, not the network. On a cold-load with many vehicles this is N
+  // parallel requests; consider fetching a summary count from the backend if
+  // fleet sizes grow beyond ~10 vehicles.
   const { data: cards = [] } = useMaintenanceCards(vehicle.id);
   const warningCount = countWarningCards(
     cards,
@@ -63,7 +70,8 @@ export const VehiclesLayout: FC<VehiclesLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const { data: vehicles = [], isLoading } = useVehicles();
   const { data: config } = useAppConfig();
-  const thresholdKm = config?.mileageWarningThresholdKm ?? 0;
+  const thresholdKm =
+    config?.mileageWarningThresholdKm ?? DEFAULT_MILEAGE_WARNING_THRESHOLD_KM;
 
   return (
     <div className="flex min-h-screen">

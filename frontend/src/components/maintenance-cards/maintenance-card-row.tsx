@@ -1,11 +1,13 @@
 'use client';
 
+import type { FC } from 'react';
 import type { IMaintenanceCardResDTO, IVehicleResDTO } from '@project/types';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import { getCardWarningStatus } from '@/lib/warning';
 import type { CardWarningStatus } from '@/lib/warning';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { DEFAULT_MILEAGE_WARNING_THRESHOLD_KM } from '@/constants';
 
 const MILES_TO_KM = 1.60934;
 
@@ -49,7 +51,7 @@ const getHealthyLabelColor = (
   return remaining > 3 * thresholdNative ? 'muted' : 'primary';
 };
 
-interface MaintenanceCardRowProps {
+type MaintenanceCardRowProps = {
   card: IMaintenanceCardResDTO;
   vehicle: IVehicleResDTO;
   isDropdownOpen: boolean;
@@ -57,9 +59,9 @@ interface MaintenanceCardRowProps {
   onEdit: (card: IMaintenanceCardResDTO) => void;
   onMarkDone: (card: IMaintenanceCardResDTO) => void;
   onDelete: (card: IMaintenanceCardResDTO) => void;
-}
+};
 
-export const MaintenanceCardRow = ({
+export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
   card,
   vehicle,
   isDropdownOpen,
@@ -69,7 +71,8 @@ export const MaintenanceCardRow = ({
   onDelete,
 }: MaintenanceCardRowProps) => {
   const { data: config } = useAppConfig();
-  const thresholdKm = config?.mileageWarningThresholdKm ?? 500;
+  const thresholdKm =
+    config?.mileageWarningThresholdKm ?? DEFAULT_MILEAGE_WARNING_THRESHOLD_KM;
 
   const status = getCardWarningStatus(
     card,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { User } from 'lucide-react';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { VehicleCard } from '@/components/vehicles/vehicle-card';
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import { useGlobalWarningCount } from '@/hooks/queries/vehicles/useGlobalWarningCount';
+import { DEFAULT_MILEAGE_WARNING_THRESHOLD_KM } from '@/constants';
 
 const formatAttentionPill = (count: number): string => {
   if (count === 1) return '1 ITEM NEEDS ATTENTION';
@@ -19,7 +21,8 @@ const HomeContent = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const { data: vehicles = [], isLoading } = useVehicles();
   const { data: config } = useAppConfig();
-  const thresholdKm = config?.mileageWarningThresholdKm ?? 0;
+  const thresholdKm =
+    config?.mileageWarningThresholdKm ?? DEFAULT_MILEAGE_WARNING_THRESHOLD_KM;
   const globalWarningCount = useGlobalWarningCount(vehicles, thresholdKm);
 
   return (
@@ -28,12 +31,16 @@ const HomeContent = () => {
       <div className="bg-gradient-to-b from-[color:var(--bg-surface)] to-[color:var(--bg-base)] px-[12px] pt-[10px] pb-[8px]">
         <div className="flex items-center justify-between mb-4">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#00e5ff] to-[#0066ff] md:hidden" />
-          <div className="w-7 h-7 rounded-full bg-[color:var(--bg-card)] border border-[#ffffff10] flex items-center justify-center ml-auto md:ml-0">
+          <Link
+            href="/profile"
+            aria-label="Profile"
+            className="w-7 h-7 rounded-full bg-[color:var(--bg-card)] border border-[#ffffff10] flex items-center justify-center ml-auto md:ml-0"
+          >
             <User
               size={14}
               className="text-[#444]"
             />
-          </div>
+          </Link>
         </div>
         <p className="text-eyebrow mb-0.5">FLEET OVERVIEW</p>
         <h1 className="text-page-title">Your Vehicles</h1>

@@ -6,7 +6,10 @@ import { ChevronRight } from 'lucide-react';
 import type { IVehicleResDTO } from '@project/types';
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
 import { countWarningCards } from '@/lib/warning';
-import { getVehicleDisplayLabels } from '@/lib/vehicle-display';
+import {
+  getVehicleDisplayLabels,
+  getVehicleCardMetaLine,
+} from '@/lib/vehicle-display';
 import { VehicleStatusChip } from './vehicle-status-chip';
 import { cn } from '@/lib/utils';
 
@@ -27,8 +30,7 @@ export const VehicleCard: FC<VehicleCardProps> = ({ vehicle, thresholdKm }) => {
 
   const { primary } = getVehicleDisplayLabels(vehicle);
   const hasWarning = warningCount > 0;
-
-  const metaLine = `${vehicle.colour} · ${vehicle.mileage.toLocaleString()} ${vehicle.mileageUnit}`;
+  const metaLine = getVehicleCardMetaLine(vehicle);
 
   return (
     <Link

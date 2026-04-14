@@ -194,4 +194,21 @@ describe('HomePage', () => {
 
     expect(screen.getByTestId('vehicle-form-dialog')).toBeInTheDocument();
   });
+
+  it('falls back to 500 thresholdKm when config is undefined', () => {
+    vi.mocked(useAppConfig).mockReturnValue({
+      data: undefined,
+    } as ReturnType<typeof useAppConfig>);
+    vi.mocked(useVehicles).mockReturnValue({
+      data: [mockVehicle],
+      isLoading: false,
+    } as ReturnType<typeof useVehicles>);
+
+    render(<HomePage />);
+
+    expect(vi.mocked(useGlobalWarningCount)).toHaveBeenCalledWith(
+      expect.anything(),
+      500,
+    );
+  });
 });

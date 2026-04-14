@@ -34,6 +34,22 @@ describe('AppShellPresentation', () => {
     expect(screen.getAllByText(/profile/i).length).toBeGreaterThan(0);
   });
 
+  it('gives sidebar and mobile nav distinct aria-labels', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    const navs = screen.getAllByRole('navigation');
+    const labels = navs.map((n) => n.getAttribute('aria-label'));
+    const uniqueLabels = new Set(labels.filter(Boolean));
+    expect(uniqueLabels.size).toBe(navs.length);
+  });
+
   it('marks Fleet link as aria-current="page" when pathname is /', () => {
     render(
       <AppShellPresentation

@@ -49,7 +49,7 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
 
         {/* Nav items */}
         <nav
-          aria-label="Primary"
+          aria-label="Primary navigation"
           className="flex flex-col gap-1 px-2"
         >
           {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
@@ -103,7 +103,7 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
 
       {/* Mobile: bottom tab bar */}
       <nav
-        aria-label="Primary"
+        aria-label="Mobile navigation"
         className="md:hidden fixed bottom-0 inset-x-0 h-12 bg-[color:var(--bg-surface)] border-t border-[#00e5ff15] flex items-center justify-around z-40 px-4 pb-[env(safe-area-inset-bottom)]"
       >
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
