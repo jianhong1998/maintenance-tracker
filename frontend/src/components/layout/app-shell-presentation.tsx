@@ -65,7 +65,7 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
                   'xl:flex-row xl:items-center xl:gap-2',
                   active
                     ? 'bg-[#00e5ff12] text-primary'
-                    : 'text-[#444] hover:bg-[#0f1923] hover:text-[#888]',
+                    : 'text-[#444] hover-pointer:bg-[#0f1923] hover-pointer:text-[#888]',
                 )}
               >
                 <Icon

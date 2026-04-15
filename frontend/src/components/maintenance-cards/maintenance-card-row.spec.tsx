@@ -373,4 +373,19 @@ describe('MaintenanceCardRow', () => {
     fireEvent.click(screen.getByRole('menuitem', { name: /delete/i }));
     expect(onDelete).toHaveBeenCalledWith(mockCard);
   });
+
+  it('uses hover-pointer: variant (not plain hover:) on dropdown menu buttons', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        isDropdownOpen={true}
+      />,
+    );
+    const menuItems = screen.getAllByRole('menuitem');
+    menuItems.forEach((item) => {
+      expect(item.className).toContain(
+        'hover-pointer:bg-[color:var(--bg-card)]',
+      );
+    });
+  });
 });

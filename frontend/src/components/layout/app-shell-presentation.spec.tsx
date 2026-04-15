@@ -143,4 +143,21 @@ describe('AppShellPresentation', () => {
       .filter((l) => l.getAttribute('href') === '/');
     expect(fleetLinks[0]).not.toHaveAttribute('aria-current', 'page');
   });
+
+  it('uses hover-pointer: variant (not plain hover:) on inactive sidebar nav links', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+      >
+        <div />
+      </AppShellPresentation>,
+    );
+    // History is inactive when pathname is '/'
+    const historyLinks = screen
+      .getAllByRole('link')
+      .filter((l) => l.getAttribute('href') === '/history');
+    expect(historyLinks[0].className).toContain('hover-pointer:bg-[#0f1923]');
+  });
 });

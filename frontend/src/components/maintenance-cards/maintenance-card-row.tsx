@@ -69,7 +69,7 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
   onEdit,
   onMarkDone,
   onDelete,
-}: MaintenanceCardRowProps) => {
+}) => {
   const { data: config } = useAppConfig();
   const thresholdKm =
     config?.mileageWarningThresholdKm ?? DEFAULT_MILEAGE_WARNING_THRESHOLD_KM;
@@ -178,7 +178,7 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
                     e.stopPropagation();
                     onMarkDone(card);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-[color:var(--bg-card)] rounded-t-xl"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover-pointer:bg-[color:var(--bg-card)] rounded-t-xl"
                 >
                   Mark Done
                 </button>
@@ -189,7 +189,7 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
                     e.stopPropagation();
                     onEdit(card);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover:bg-[color:var(--bg-card)]"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-white hover-pointer:bg-[color:var(--bg-card)]"
                 >
                   Edit
                 </button>
@@ -200,7 +200,7 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
                     e.stopPropagation();
                     onDelete(card);
                   }}
-                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-destructive hover:bg-[color:var(--bg-card)] rounded-b-xl"
+                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-destructive hover-pointer:bg-[color:var(--bg-card)] rounded-b-xl"
                 >
                   Delete
                 </button>
