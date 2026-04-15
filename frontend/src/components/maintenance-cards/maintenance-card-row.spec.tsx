@@ -8,6 +8,7 @@ vi.mock('@/hooks/queries/config/useAppConfig', () => ({
 }));
 vi.mock('@/lib/warning', () => ({
   getCardWarningStatus: vi.fn(),
+  MILES_TO_KM: 1.60934,
 }));
 
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';

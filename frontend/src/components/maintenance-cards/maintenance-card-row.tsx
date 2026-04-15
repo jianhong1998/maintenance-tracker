@@ -3,13 +3,11 @@
 import type { FC } from 'react';
 import type { IMaintenanceCardResDTO, IVehicleResDTO } from '@project/types';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
-import { getCardWarningStatus } from '@/lib/warning';
+import { getCardWarningStatus, MILES_TO_KM } from '@/lib/warning';
 import type { CardWarningStatus } from '@/lib/warning';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { DEFAULT_MILEAGE_WARNING_THRESHOLD_KM } from '@/constants';
-
-const MILES_TO_KM = 1.60934;
 
 const TYPE_LABELS: Record<IMaintenanceCardResDTO['type'], string> = {
   task: 'Task',

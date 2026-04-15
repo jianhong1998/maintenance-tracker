@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import type { FC } from 'react';
 import Link from 'next/link';
 import { User } from 'lucide-react';
 import { AuthGuard } from '@/components/auth/auth-guard';
@@ -17,7 +18,7 @@ const formatAttentionPill = (count: number): string => {
   return `${count} ITEMS NEED ATTENTION`;
 };
 
-const HomeContent = () => {
+const HomeContent: FC = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const { data: vehicles = [], isLoading } = useVehicles();
   const { data: config } = useAppConfig();
