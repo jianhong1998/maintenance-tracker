@@ -153,6 +153,6 @@ describe('VehiclesLayout', () => {
         <div>child</div>
       </VehiclesLayout>,
     );
-    expect(screen.getByText('1 OVERDUE')).toBeInTheDocument();
+    expect(screen.getByText('1 AT RISK')).toBeInTheDocument();
   });
 });
