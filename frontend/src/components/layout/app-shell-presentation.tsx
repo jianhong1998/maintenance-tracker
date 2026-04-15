@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from 'react';
+import type { ComponentType, FC, ReactNode } from 'react';
 import Link from 'next/link';
 import { Car, Clock, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,7 +13,7 @@ type AppShellPresentationProps = {
 type NavItemConfig = {
   href: string;
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: ComponentType<{ size?: number; className?: string }>;
 };
 
 const NAV_ITEMS: NavItemConfig[] = [

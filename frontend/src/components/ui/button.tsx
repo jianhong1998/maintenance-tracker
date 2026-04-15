@@ -10,20 +10,20 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-primary text-primary-foreground font-extrabold tracking-wide rounded-[10px] hover:bg-primary/90',
+          'bg-primary text-primary-foreground font-extrabold tracking-wide rounded-[10px] hover-pointer:bg-primary/90',
         secondary:
-          'bg-secondary text-secondary-foreground border border-[#333] rounded-[10px] hover:bg-[color:var(--bg-card-hover)]',
+          'bg-secondary text-secondary-foreground border border-[#333] rounded-[10px] hover-pointer:bg-[color:var(--bg-card-hover)]',
         'secondary-destructive':
-          'bg-secondary text-destructive border border-[#ff444330] rounded-[10px] hover:bg-[#ff44440d]',
+          'bg-secondary text-destructive border border-[#ff444330] rounded-[10px] hover-pointer:bg-[#ff44440d]',
         'dashed-ghost':
-          'bg-transparent text-primary border border-dashed border-primary-dim rounded-[10px] hover:bg-[#00e5ff08]',
+          'bg-transparent text-primary border border-dashed border-primary-dim rounded-[10px] hover-pointer:bg-[#00e5ff08]',
         destructive:
-          'bg-destructive text-destructive-foreground rounded-[10px] hover:bg-destructive/90',
+          'bg-destructive text-destructive-foreground rounded-[10px] hover-pointer:bg-destructive/90',
         outline:
-          'bg-background text-foreground border border-border rounded-[10px] hover:bg-[color:var(--bg-card-hover)]',
+          'bg-background text-foreground border border-border rounded-[10px] hover-pointer:bg-[color:var(--bg-card-hover)]',
         ghost:
-          'bg-transparent text-foreground rounded-[10px] hover:bg-[color:var(--bg-card-hover)]',
-        link: 'text-primary underline-offset-4 hover:underline',
+          'bg-transparent text-foreground rounded-[10px] hover-pointer:bg-[color:var(--bg-card-hover)]',
+        link: 'text-primary underline-offset-4 hover-pointer:underline',
       },
       size: {
         default: 'h-9 px-4 py-2 has-[>svg]:px-3',
