@@ -1,6 +1,5 @@
 'use client';
 
-import { useId } from 'react';
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
 
@@ -19,8 +18,6 @@ export const Dialog: React.FC<DialogProps> = ({
   children,
   className,
 }) => {
-  const titleId = useId();
-
   return (
     <RadixDialog.Root
       open={open}
@@ -32,7 +29,6 @@ export const Dialog: React.FC<DialogProps> = ({
           data-radix-dialog-overlay=""
         />
         <RadixDialog.Content
-          aria-labelledby={titleId}
           className={cn(
             'fixed z-50 w-full max-w-sm border border-[#ffffff10] bg-[color:var(--bg-surface)] shadow-2xl',
             // Mobile: bottom sheet — pinned to bottom, rounded top only
@@ -47,10 +43,7 @@ export const Dialog: React.FC<DialogProps> = ({
             aria-hidden="true"
             className="sm:hidden mx-auto mb-2 h-[3px] w-8 rounded-full bg-white/20"
           />
-          <RadixDialog.Title
-            id={titleId}
-            className="mb-4 text-sm font-bold text-white tracking-wide uppercase"
-          >
+          <RadixDialog.Title className="mb-4 text-sm font-bold text-white tracking-wide uppercase">
             {title}
           </RadixDialog.Title>
           {children}
