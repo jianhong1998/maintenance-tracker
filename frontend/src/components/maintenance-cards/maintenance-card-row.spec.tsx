@@ -115,8 +115,7 @@ describe('MaintenanceCardRow', () => {
         card={{ ...mockCard, nextDueMileage: 51000 }}
       />,
     );
-    const track = document.querySelector('.bg-\\[\\#1a1a2e\\]');
-    expect(track).toBeInTheDocument();
+    expect(screen.getByTestId('progress-bar-track')).toBeInTheDocument();
   });
 
   it('renders progress bar at 100% width when card is overdue', () => {
@@ -138,8 +137,7 @@ describe('MaintenanceCardRow', () => {
         card={{ ...mockCard, nextDueMileage: null }}
       />,
     );
-    const track = document.querySelector('.bg-\\[\\#1a1a2e\\]');
-    expect(track).not.toBeInTheDocument();
+    expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
   });
 
   it('renders "N unit past due" sub-label when overdue', () => {
@@ -222,6 +220,44 @@ describe('MaintenanceCardRow', () => {
       mockVehicle.mileageUnit,
       750,
     );
+  });
+
+  it('renders progress bar fill between 60–99% when status is warning', () => {
+    vi.mocked(getCardWarningStatus).mockReturnValue('warning');
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 50400 }} // remaining = 400, threshold = 500 → 67.8%
+      />,
+    );
+    const fill = document.querySelector('[style*="width:"]') as HTMLElement;
+    const pct = parseFloat(fill?.style.width ?? '0%');
+    expect(pct).toBeGreaterThanOrEqual(60);
+    expect(pct).toBeLessThan(100);
+  });
+
+  it('applies primary color to sub-label when remaining is below 3x threshold', () => {
+    vi.mocked(getCardWarningStatus).mockReturnValue('ok');
+    // threshold 500, remaining 1499 (below 3×500 = 1500) → primary color
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 51499 }}
+      />,
+    );
+    const label = screen.getByText(/left/i);
+    expect(label.className).toContain('text-[#00e5ff]');
+  });
+
+  it('shows mileage in miles unit for mile-unit vehicles', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        vehicle={{ ...mockVehicle, mileageUnit: 'mile', mileage: 31000 }}
+        card={{ ...mockCard, nextDueMileage: 32000 }}
+      />,
+    );
+    expect(screen.getByText('1,000 mile left')).toBeInTheDocument();
   });
 
   it('falls back to 500 threshold when config is undefined', () => {

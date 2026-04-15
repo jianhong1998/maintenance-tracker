@@ -80,4 +80,43 @@ describe('LoginPage component', () => {
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'));
   });
+
+  it('shows "SIGNING IN..." text on the button while sign-in is in progress', async () => {
+    const signInWithGoogle = vi.fn(() => new Promise<void>(() => {})); // never resolves
+    renderLoginPage({ signInWithGoogle });
+
+    await userEvent.click(
+      screen.getByRole('button', { name: /sign in with google/i }),
+    );
+
+    expect(
+      screen.getByRole('button', { name: /signing in/i }),
+    ).toBeInTheDocument();
+  });
+
+  it('clears previous sign-in error when a new sign-in attempt starts', async () => {
+    const signInWithGoogle = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Auth failed'))
+      .mockReturnValue(new Promise<void>(() => {})); // second call never resolves
+    renderLoginPage({ signInWithGoogle });
+
+    // First click — triggers error
+    await userEvent.click(
+      screen.getByRole('button', { name: /sign in with google/i }),
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByText('Sign-in failed. Please try again.'),
+      ).toBeInTheDocument();
+    });
+
+    // Second click — error should be cleared before new sign-in attempt
+    await userEvent.click(
+      screen.getByRole('button', { name: /sign in with google/i }),
+    );
+    expect(
+      screen.queryByText('Sign-in failed. Please try again.'),
+    ).not.toBeInTheDocument();
+  });
 });

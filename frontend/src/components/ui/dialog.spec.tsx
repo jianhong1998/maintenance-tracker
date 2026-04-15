@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import { Dialog } from './dialog';
 
@@ -43,6 +43,31 @@ describe('Dialog', () => {
       </Dialog>,
     );
     fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+
+  it('calls onOpenChange(false) when the overlay is clicked', () => {
+    // Radix DismissableLayer registers its pointerdown listener after a setTimeout(0).
+    // Use fake timers so we can advance the clock and activate the listener before dispatching.
+    vi.useFakeTimers();
+    const onOpenChange = vi.fn();
+    render(
+      <Dialog
+        open={true}
+        onOpenChange={onOpenChange}
+        title="Test"
+      >
+        <p>content</p>
+      </Dialog>,
+    );
+    // Advance fake timers to trigger Radix's deferred listener registration.
+    act(() => {
+      vi.runAllTimers();
+    });
+    const overlay = document.querySelector('[data-radix-dialog-overlay]');
+    expect(overlay).not.toBeNull();
+    fireEvent.pointerDown(overlay!);
+    vi.useRealTimers();
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 

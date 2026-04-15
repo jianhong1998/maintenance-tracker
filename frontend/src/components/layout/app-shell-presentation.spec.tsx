@@ -111,4 +111,36 @@ describe('AppShellPresentation', () => {
     );
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
+
+  it('marks History as active on /history/123 (deep sub-route)', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/history/123"
+        userDisplayName={null}
+      >
+        <div />
+      </AppShellPresentation>,
+    );
+    const historyLinks = screen
+      .getAllByRole('link')
+      .filter((l) => l.getAttribute('href') === '/history');
+    expect(historyLinks[0]).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('does not mark Fleet or Profile as active when History is the active route', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/history"
+        userDisplayName={null}
+      >
+        <div />
+      </AppShellPresentation>,
+    );
+    const fleetLinks = screen
+      .getAllByRole('link')
+      .filter((l) => l.getAttribute('href') === '/');
+    expect(fleetLinks[0]).not.toHaveAttribute('aria-current', 'page');
+  });
 });

@@ -213,7 +213,10 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
       {/* Progress bar */}
       {remaining !== null && (
         <div className="mt-[5px] mb-[2px]">
-          <div className="h-[3px] w-full bg-[#1a1a2e] rounded-full overflow-hidden">
+          <div
+            data-testid="progress-bar-track"
+            className="h-[3px] w-full bg-[#1a1a2e] rounded-full overflow-hidden"
+          >
             <div
               className={cn('h-full rounded-full transition-all', barClass)}
               style={{ width: `${Math.min(progressFill, 100)}%` }}

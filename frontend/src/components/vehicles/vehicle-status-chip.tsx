@@ -14,6 +14,7 @@ export const VehicleStatusChip: FC<VehicleStatusChipProps> = ({
 
   return (
     <span
+      data-testid={hasWarning ? 'status-chip-overdue' : 'status-chip-ok'}
       className={cn(
         'inline-flex items-center rounded px-1.5 py-0.5 text-status-chip border',
         hasWarning

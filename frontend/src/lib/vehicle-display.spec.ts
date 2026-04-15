@@ -3,6 +3,7 @@ import type { IVehicleResDTO } from '@project/types';
 import {
   getVehicleDisplayLabels,
   getVehicleCardMetaLine,
+  getVehicleMetaLine,
 } from './vehicle-display';
 
 const baseVehicle: IVehicleResDTO = {
@@ -58,5 +59,26 @@ describe('getVehicleCardMetaLine', () => {
   it('includes mileageUnit in the meta line', () => {
     const vehicle = { ...baseVehicle, mileageUnit: 'mile' as const };
     expect(getVehicleCardMetaLine(vehicle)).toBe('Black · 100 mile');
+  });
+});
+
+describe('getVehicleMetaLine', () => {
+  it('returns "colour · mileage unit" when registrationNumber is null', () => {
+    expect(getVehicleMetaLine(baseVehicle)).toBe('Black · 100 km');
+  });
+
+  it('includes "Plate: XXX" when registrationNumber is set', () => {
+    const v = { ...baseVehicle, registrationNumber: 'FBA1234Z' };
+    expect(getVehicleMetaLine(v)).toBe('Black · 100 km · Plate: FBA1234Z');
+  });
+
+  it('formats mileage with locale separators', () => {
+    const v = { ...baseVehicle, mileage: 50000 };
+    expect(getVehicleMetaLine(v)).toBe('Black · 50,000 km');
+  });
+
+  it('uses the mileageUnit in the meta line', () => {
+    const v = { ...baseVehicle, mileageUnit: 'mile' as const };
+    expect(getVehicleMetaLine(v)).toBe('Black · 100 mile');
   });
 });

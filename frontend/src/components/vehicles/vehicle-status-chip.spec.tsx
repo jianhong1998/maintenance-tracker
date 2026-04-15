@@ -12,15 +12,13 @@ describe('VehicleStatusChip', () => {
     expect(screen.getByText('3 OVERDUE')).toBeInTheDocument();
   });
 
-  it('applies danger classes when overdue', () => {
-    const { container } = render(<VehicleStatusChip count={1} />);
-    const chip = container.firstChild as HTMLElement;
-    expect(chip.className).toContain('text-[#ff4444]');
+  it('renders with overdue testid when count is greater than 0', () => {
+    render(<VehicleStatusChip count={1} />);
+    expect(screen.getByTestId('status-chip-overdue')).toBeInTheDocument();
   });
 
-  it('applies primary classes when all good', () => {
-    const { container } = render(<VehicleStatusChip count={0} />);
-    const chip = container.firstChild as HTMLElement;
-    expect(chip.className).toContain('text-[#00e5ff]');
+  it('renders with ok testid when count is 0', () => {
+    render(<VehicleStatusChip count={0} />);
+    expect(screen.getByTestId('status-chip-ok')).toBeInTheDocument();
   });
 });

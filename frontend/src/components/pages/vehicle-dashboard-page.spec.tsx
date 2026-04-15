@@ -190,6 +190,21 @@ describe('VehicleDashboardPage', () => {
   });
 
   // ── existing tests ──────────────────────────────────────────────────
+  it('shows "Loading cards…" when maintenance cards are loading', () => {
+    vi.mocked(useVehicle).mockReturnValue({
+      data: mockVehicle,
+      isLoading: false,
+      isError: false,
+    } as ReturnType<typeof useVehicle>);
+    vi.mocked(useMaintenanceCards).mockReturnValue({
+      data: [],
+      isLoading: true,
+    } as unknown as ReturnType<typeof useMaintenanceCards>);
+
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+    expect(screen.getByText(/loading cards/i)).toBeInTheDocument();
+  });
+
   it('shows loading state when vehicleLoading is true', () => {
     vi.mocked(useVehicle).mockReturnValue({
       data: undefined,
@@ -222,6 +237,23 @@ describe('VehicleDashboardPage', () => {
       'vehicle-1',
       'name',
     );
+  });
+
+  it('activates NAME sort button and deactivates URGENCY after clicking NAME', () => {
+    setupVehicleLoaded();
+    render(<VehicleDashboardPage vehicleId="vehicle-1" />);
+
+    const urgencyBtn = screen.getByRole('button', { name: /^urgency$/i });
+    const nameBtn = screen.getByRole('button', { name: /^name$/i });
+
+    // Initially URGENCY is active (default variant = bg-primary)
+    expect(urgencyBtn.className).toContain('bg-primary');
+    expect(nameBtn.className).not.toContain('bg-primary');
+
+    // After clicking NAME, NAME becomes active
+    fireEvent.click(nameBtn);
+    expect(nameBtn.className).toContain('bg-primary');
+    expect(urgencyBtn.className).not.toContain('bg-primary');
   });
 
   it('renders MaintenanceCardRow for each card', () => {

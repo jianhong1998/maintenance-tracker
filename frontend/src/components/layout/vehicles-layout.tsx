@@ -42,6 +42,7 @@ const VehicleListItem: FC<VehicleListItemProps> = ({
   return (
     <Link
       href={`/vehicles/${vehicle.id}`}
+      aria-current={isActive ? 'page' : undefined}
       className={cn(
         'block rounded-xl border px-3 py-2.5 transition-colors',
         isActive
