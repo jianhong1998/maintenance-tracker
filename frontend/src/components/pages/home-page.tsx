@@ -91,7 +91,7 @@ const HomeContent: FC = () => {
   );
 };
 
-export const HomePage = () => {
+export const HomePage: FC = () => {
   return (
     <AuthGuard>
       <HomeContent />

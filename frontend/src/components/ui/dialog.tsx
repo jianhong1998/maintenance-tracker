@@ -1,5 +1,6 @@
 'use client';
 
+import type { FC, ReactNode } from 'react';
 import * as RadixDialog from '@radix-ui/react-dialog';
 import { cn } from '@/lib/utils';
 
@@ -7,11 +8,11 @@ type DialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
 };
 
-export const Dialog: React.FC<DialogProps> = ({
+export const Dialog: FC<DialogProps> = ({
   open,
   onOpenChange,
   title,
