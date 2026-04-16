@@ -31,11 +31,11 @@ export const Dialog: FC<DialogProps> = ({
         />
         <RadixDialog.Content
           className={cn(
-            'fixed z-50 w-full max-w-sm border border-[#ffffff10] bg-[color:var(--bg-surface)] shadow-2xl',
+            'fixed z-50 w-full border border-[#ffffff10] bg-[color:var(--bg-surface)] shadow-2xl',
             // Mobile: bottom sheet — pinned to bottom, rounded top only
             'bottom-0 left-0 right-0 rounded-t-2xl rounded-b-none p-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]',
             // Tablet+: centered modal — fully rounded, padded all sides
-            'sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:bottom-auto sm:rounded-2xl sm:pb-5',
+            'sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:bottom-auto sm:rounded-2xl sm:pb-5 sm:max-w-sm',
             className,
           )}
         >
