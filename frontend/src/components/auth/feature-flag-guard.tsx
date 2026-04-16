@@ -25,11 +25,7 @@ export const FeatureFlagGuard: FC<FeatureFlagGuardProps> = ({
     }
   }, [isLoading, isError, enabled, router]);
 
-  if (isLoading || isError) {
-    return null;
-  }
-
-  if (!enabled) {
+  if (isLoading || isError || !enabled) {
     return null;
   }
 

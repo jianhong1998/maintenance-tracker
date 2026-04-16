@@ -34,7 +34,7 @@ const HomeContent: FC = () => {
       <div className="bg-gradient-to-b from-[color:var(--bg-surface)] to-[color:var(--bg-base)] px-[12px] pt-[10px] pb-[8px]">
         <div className="flex items-center justify-between mb-4">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#00e5ff] to-[#0066ff] md:hidden" />
-          {featureFlags && featureFlags.enableProfile && (
+          {featureFlags?.enableProfile && (
             <Link
               href="/profile"
               aria-label="Profile"
