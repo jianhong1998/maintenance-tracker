@@ -34,14 +34,9 @@ vi.mock('@/components/vehicles/vehicle-form-dialog', () => ({
   }) => (open ? <div data-testid="vehicle-form-dialog" /> : null),
 }));
 
-vi.mock('@/hooks/queries/feature-flag/useFeatureFlags', () => ({
-  useFeatureFlags: vi.fn(),
-}));
-
 import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import { useGlobalWarningCount } from '@/hooks/queries/vehicles/useGlobalWarningCount';
-import { useFeatureFlags } from '@/hooks/queries/feature-flag/useFeatureFlags';
 import { HomePage } from './home-page';
 
 const mockVehicle: IVehicleResDTO = {
@@ -75,10 +70,6 @@ describe('HomePage', () => {
       data: { mileageWarningThresholdKm: 500 },
     } as ReturnType<typeof useAppConfig>);
     vi.mocked(useGlobalWarningCount).mockReturnValue(0);
-    vi.mocked(useFeatureFlags).mockReturnValue({
-      data: { enableHistory: false, enableProfile: false },
-      isLoading: false,
-    } as ReturnType<typeof useFeatureFlags>);
   });
 
   it('shows loading message when useVehicles is loading', () => {
@@ -219,37 +210,5 @@ describe('HomePage', () => {
       expect.anything(),
       500,
     );
-  });
-
-  it('shows profile button when enableProfile flag is true', () => {
-    vi.mocked(useFeatureFlags).mockReturnValue({
-      data: { enableHistory: false, enableProfile: true },
-      isLoading: false,
-    } as ReturnType<typeof useFeatureFlags>);
-    vi.mocked(useVehicles).mockReturnValue({
-      data: [],
-      isLoading: false,
-    } as ReturnType<typeof useVehicles>);
-
-    render(<HomePage />);
-
-    expect(screen.getByRole('link', { name: /profile/i })).toBeInTheDocument();
-  });
-
-  it('hides profile button when enableProfile flag is false', () => {
-    vi.mocked(useFeatureFlags).mockReturnValue({
-      data: { enableHistory: false, enableProfile: false },
-      isLoading: false,
-    } as ReturnType<typeof useFeatureFlags>);
-    vi.mocked(useVehicles).mockReturnValue({
-      data: [],
-      isLoading: false,
-    } as ReturnType<typeof useVehicles>);
-
-    render(<HomePage />);
-
-    expect(
-      screen.queryByRole('link', { name: /profile/i }),
-    ).not.toBeInTheDocument();
   });
 });

@@ -121,9 +121,9 @@ describe('FeatureFlagGuard', () => {
     );
   });
 
-  it('does not redirect when the API request fails', async () => {
+  it('redirects to / when the API request fails', async () => {
     vi.mocked(apiClient.get).mockRejectedValue(new Error('Network error'));
-    const { wrapper, queryClient } = createWrapper();
+    const { wrapper } = createWrapper();
 
     render(
       <FeatureFlagGuard flagKey="enableHistory">
@@ -132,12 +132,7 @@ describe('FeatureFlagGuard', () => {
       { wrapper },
     );
 
-    // Wait for the query to settle to error state — definitive signal the request failed
-    await waitFor(() => {
-      expect(queryClient.getQueryState(['feature-flag'])?.status).toBe('error');
-    });
-
-    expect(mockReplace).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'));
   });
 
   it('renders null (no content flash) when the API request fails', async () => {

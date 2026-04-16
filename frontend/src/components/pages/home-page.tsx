@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import type { FC } from 'react';
-import Link from 'next/link';
-import { User } from 'lucide-react';
 import { AuthGuard } from '@/components/auth/auth-guard';
 import { VehicleCard } from '@/components/vehicles/vehicle-card';
 import { VehicleFormDialog } from '@/components/vehicles/vehicle-form-dialog';
@@ -12,7 +10,6 @@ import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import { useGlobalWarningCount } from '@/hooks/queries/vehicles/useGlobalWarningCount';
 import { DEFAULT_MILEAGE_WARNING_THRESHOLD_KM } from '@/constants';
-import { useFeatureFlags } from '@/hooks/queries/feature-flag/useFeatureFlags';
 
 const formatAttentionPill = (count: number): string => {
   if (count === 1) return '1 ITEM NEEDS ATTENTION';
@@ -26,7 +23,6 @@ const HomeContent: FC = () => {
   const thresholdKm =
     config?.mileageWarningThresholdKm ?? DEFAULT_MILEAGE_WARNING_THRESHOLD_KM;
   const globalWarningCount = useGlobalWarningCount(vehicles, thresholdKm);
-  const { data: featureFlags } = useFeatureFlags();
 
   return (
     <div className="flex flex-col">
@@ -34,18 +30,6 @@ const HomeContent: FC = () => {
       <div className="bg-gradient-to-b from-[color:var(--bg-surface)] to-[color:var(--bg-base)] px-[12px] pt-[10px] pb-[8px]">
         <div className="flex items-center justify-between mb-4">
           <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-[#00e5ff] to-[#0066ff] md:hidden" />
-          {featureFlags?.enableProfile && (
-            <Link
-              href="/profile"
-              aria-label="Profile"
-              className="w-7 h-7 rounded-full bg-[color:var(--bg-card)] border border-[#ffffff10] flex items-center justify-center ml-auto md:ml-0"
-            >
-              <User
-                size={14}
-                className="text-[#444]"
-              />
-            </Link>
-          )}
         </div>
         <p className="text-eyebrow mb-0.5">FLEET OVERVIEW</p>
         <h1 className="text-page-title">Your Vehicles</h1>
