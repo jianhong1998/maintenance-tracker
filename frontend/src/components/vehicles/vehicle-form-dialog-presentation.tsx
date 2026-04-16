@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 const inputClass =
-  'w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
+  'w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]';
 
 type VehicleFormDialogPresentationProps = {
   open: boolean;
@@ -66,7 +66,7 @@ export const VehicleFormDialogPresentation: FC<
         <div>
           <label
             htmlFor="vehicle-reg-number"
-            className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            className="text-eyebrow mb-1 block"
           >
             Vehicle Registration Number{' '}
             <span className="font-normal normal-case tracking-normal">
@@ -88,7 +88,7 @@ export const VehicleFormDialogPresentation: FC<
           <div>
             <label
               htmlFor="vehicle-brand"
-              className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              className="text-eyebrow mb-1 block"
             >
               Brand <span className="text-destructive">*</span>
             </label>
@@ -104,7 +104,7 @@ export const VehicleFormDialogPresentation: FC<
           <div>
             <label
               htmlFor="vehicle-model"
-              className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              className="text-eyebrow mb-1 block"
             >
               Model <span className="text-destructive">*</span>
             </label>
@@ -122,7 +122,7 @@ export const VehicleFormDialogPresentation: FC<
         <div>
           <label
             htmlFor="vehicle-colour"
-            className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+            className="text-eyebrow mb-1 block"
           >
             Colour <span className="text-destructive">*</span>
           </label>
@@ -140,7 +140,7 @@ export const VehicleFormDialogPresentation: FC<
           <div>
             <label
               htmlFor="vehicle-mileage"
-              className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground"
+              className="text-eyebrow mb-1 block"
             >
               Mileage <span className="text-destructive">*</span>
             </label>
@@ -161,7 +161,7 @@ export const VehicleFormDialogPresentation: FC<
             )}
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <label className="text-eyebrow mb-1 block">
               Unit {!unitLocked && <span className="text-destructive">*</span>}
             </label>
             <div className="flex items-center gap-2">
@@ -195,17 +195,18 @@ export const VehicleFormDialogPresentation: FC<
           </div>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex gap-2 mt-4">
           <Button
-            size="sm"
-            variant="outline"
+            type="button"
+            variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
+            type="button"
+            variant="default"
             onClick={handleSave}
             disabled={!isValid || isPending}
           >

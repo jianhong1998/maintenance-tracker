@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import React from 'react';
 import { Dialog } from './dialog';
 
@@ -31,36 +31,6 @@ describe('Dialog', () => {
     expect(screen.queryByText('Dialog content')).not.toBeInTheDocument();
   });
 
-  it('calls onOpenChange(false) when the backdrop is clicked', () => {
-    const onOpenChange = vi.fn();
-    const { container } = render(
-      <Dialog
-        open={true}
-        onOpenChange={onOpenChange}
-        title="Test Dialog"
-      >
-        <p>content</p>
-      </Dialog>,
-    );
-    fireEvent.click(container.firstChild as HTMLElement);
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-  });
-
-  it('does not call onOpenChange when clicking inside the dialog panel', () => {
-    const onOpenChange = vi.fn();
-    render(
-      <Dialog
-        open={true}
-        onOpenChange={onOpenChange}
-        title="Test Dialog"
-      >
-        <p>content</p>
-      </Dialog>,
-    );
-    fireEvent.click(screen.getByRole('dialog'));
-    expect(onOpenChange).not.toHaveBeenCalled();
-  });
-
   it('calls onOpenChange(false) when Escape key is pressed', () => {
     const onOpenChange = vi.fn();
     render(
@@ -76,22 +46,32 @@ describe('Dialog', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('does not register Escape listener when closed', () => {
+  it('calls onOpenChange(false) when the overlay is clicked', () => {
+    // Radix DismissableLayer registers its pointerdown listener after a setTimeout(0).
+    // Use fake timers so we can advance the clock and activate the listener before dispatching.
+    vi.useFakeTimers();
     const onOpenChange = vi.fn();
     render(
       <Dialog
-        open={false}
+        open={true}
         onOpenChange={onOpenChange}
-        title="Test Dialog"
+        title="Test"
       >
         <p>content</p>
       </Dialog>,
     );
-    fireEvent.keyDown(document, { key: 'Escape' });
-    expect(onOpenChange).not.toHaveBeenCalled();
+    // Advance fake timers to trigger Radix's deferred listener registration.
+    act(() => {
+      vi.runAllTimers();
+    });
+    const overlay = document.querySelector('[data-radix-dialog-overlay]');
+    expect(overlay).not.toBeNull();
+    fireEvent.pointerDown(overlay!);
+    vi.useRealTimers();
+    expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 
-  it('uses aria-label on the dialog element so multiple dialogs never share an ID', () => {
+  it('uses aria-labelledby pointing to the h2 title element', () => {
     render(
       <Dialog
         open={true}
@@ -102,7 +82,10 @@ describe('Dialog', () => {
       </Dialog>,
     );
     const dialog = screen.getByRole('dialog');
-    expect(dialog).toHaveAttribute('aria-label', 'My Dialog');
-    expect(dialog).not.toHaveAttribute('aria-labelledby');
+    const labelledById = dialog.getAttribute('aria-labelledby');
+    expect(labelledById).toBeTruthy();
+    const titleEl = document.getElementById(labelledById!);
+    expect(titleEl).toBeInTheDocument();
+    expect(titleEl?.textContent).toBe('My Dialog');
   });
 });

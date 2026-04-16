@@ -151,7 +151,7 @@ The Fleet Home alert pill uses full English pluralization. Exact copy:
   - `aria-current="page"` on the active link.
   - Safe-area insets: bottom tab bar MUST include `padding-bottom: env(safe-area-inset-bottom)`; content wrapper bottom padding MUST include `calc(3rem + env(safe-area-inset-bottom))`. The root layout's viewport meta MUST include `viewport-fit=cover`.
 - **Fleet Home:** Single-column vehicle card list, full-width.
-- **Vehicle Detail:** Full-screen page, back arrow (`← FLEET`) at top-left as a functional `<Link href="/">`, inline Edit/Delete buttons top-right.
+- **Vehicle Detail:** Full-screen page, back arrow (`← GO BACK`) at top-left as a functional `<Link href="/">`, inline Edit/Delete buttons top-right.
 - **Page transitions:** Standard push navigation (back arrow returns to fleet).
 
 ### Tablet (`768px – 1279px`)
@@ -177,7 +177,7 @@ The Fleet Home alert pill uses full English pluralization. Exact copy:
   - Left panel (`width: 220px`): scrollable vehicle list — all vehicles with name, mileage, and a vehicle status chip (reusing the same chip component as Fleet Home — NO text-only status).
   - Right panel (flex: 1): selected vehicle's full detail — header + mileage prompt + sort toggle + maintenance card list.
   - Selected vehicle highlighted in left panel with accent border.
-  - Back-navigation block (`← FLEET`) MUST be hidden (`xl:hidden`) on the detail page — the left panel replaces it.
+  - Back-navigation block (`← GO BACK`) MUST be hidden (`xl:hidden`) on the detail page — the left panel replaces it.
 
 ---
 
@@ -221,7 +221,7 @@ The Fleet Home alert pill uses full English pluralization. Exact copy:
 ### Vehicle Detail Page
 
 **Header** (`background: linear-gradient(180deg, #0D1117, #07090F)`, `padding: 10px 12px 8px`):
-- Back navigation block (`← FLEET`): rendered as a functional `<Link href="/">`, cyan arrow + `.text-eyebrow` label `"FLEET"`. Hidden on `xl:` where the vehicle list panel replaces it.
+- Back navigation block (`← GO BACK`): rendered as a functional `<Link href="/">`, cyan arrow + `.text-eyebrow` label `"GO BACK"`. Hidden on `xl:` where the vehicle list panel replaces it.
 - Vehicle name: `.text-page-title`.
 - **Meta line (single):** `"{colour} · {mileage.toLocaleString()} {unit} · Plate: {plateNumber}"` in `--text-muted`. Rendered via a new helper `getVehicleMetaLine(vehicle)` in `frontend/src/lib/vehicle-display.ts`. This helper is distinct from the existing `getVehicleDisplayLabels` (which is intentionally terse for card-list brevity).
 - Edit button: `<Button variant="secondary">`.

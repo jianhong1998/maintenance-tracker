@@ -45,17 +45,17 @@ export function VehicleDeleteConfirmDialog({
           Delete &ldquo;{vehicle.brand} {vehicle.model}&rdquo;? This cannot be
           undone.
         </p>
-        <div className="flex justify-end gap-2">
+        <div className="flex gap-2 mt-4">
           <Button
-            size="sm"
-            variant="outline"
+            type="button"
+            variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={deleteMutation.isPending}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
+            type="button"
             variant="destructive"
             onClick={handleDelete}
             disabled={deleteMutation.isPending}

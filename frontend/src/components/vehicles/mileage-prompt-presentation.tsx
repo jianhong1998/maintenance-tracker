@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import type { FC } from 'react';
 import { Button } from '@/components/ui/button';
 
 type MileagePromptPresentationProps = {
@@ -23,10 +23,8 @@ export const MileagePromptPresentation: FC<MileagePromptPresentationProps> = ({
   onDismiss,
 }) => {
   return (
-    <div className="rounded-lg border bg-muted p-4">
-      <p className="mb-2 text-sm font-medium">
-        What&apos;s your current odometer reading?
-      </p>
+    <div className="mx-[10px] mb-[6px] rounded-lg border border-primary-dim bg-[color:var(--bg-card)] p-2">
+      <p className="text-eyebrow-primary mb-2">UPDATE ODOMETER</p>
       {isError && (
         <p className="text-destructive mb-2 text-xs">
           Failed to update mileage. Please try again.
@@ -44,19 +42,21 @@ export const MileagePromptPresentation: FC<MileagePromptPresentationProps> = ({
           value={value}
           onChange={(e) => onValueChange(e.target.value)}
           placeholder="Enter mileage"
-          className="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          className="flex-1 rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
         />
         <Button
           size="sm"
           onClick={onSubmit}
           disabled={isSubmitDisabled}
+          className="text-xs tracking-widest"
         >
-          Update
+          OK
         </Button>
         <Button
           size="sm"
           variant="ghost"
           onClick={onDismiss}
+          className="text-[#555] text-xs"
         >
           Dismiss
         </Button>

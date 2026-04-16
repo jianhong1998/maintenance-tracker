@@ -27,6 +27,13 @@ vi.mock('next/link', () => ({
     </a>
   ),
 }));
+vi.mock('./vehicle-status-chip', () => ({
+  VehicleStatusChip: ({ count }: { count: number }) => (
+    <span data-testid="vehicle-status-chip">
+      {count > 0 ? `${count} OVERDUE` : 'ALL GOOD'}
+    </span>
+  ),
+}));
 
 import { useMaintenanceCards } from '@/hooks/queries/maintenance-cards/useMaintenanceCards';
 import { countWarningCards } from '@/lib/warning';
@@ -56,7 +63,7 @@ describe('VehicleCard', () => {
     vi.mocked(countWarningCards).mockReturnValue(0);
   });
 
-  it('renders vehicle brand, model, colour, and mileage', () => {
+  it('renders vehicle primary label', () => {
     render(
       <VehicleCard
         vehicle={mockVehicle}
@@ -65,11 +72,24 @@ describe('VehicleCard', () => {
     );
 
     expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
-    expect(screen.getByText('Silver')).toBeInTheDocument();
-    expect(screen.getByText('50,000 km')).toBeInTheDocument();
   });
 
-  it('shows a warning badge with count when there are warning/overdue cards', () => {
+  it('renders the meta line as "colour · mileage unit"', () => {
+    render(
+      <VehicleCard
+        vehicle={mockVehicle}
+        thresholdKm={500}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        `${mockVehicle.colour} · ${mockVehicle.mileage.toLocaleString()} ${mockVehicle.mileageUnit}`,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('shows a warning badge with overdue count when there are warning/overdue cards', () => {
     vi.mocked(countWarningCards).mockReturnValue(3);
 
     render(
@@ -79,10 +99,12 @@ describe('VehicleCard', () => {
       />,
     );
 
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByTestId('vehicle-status-chip')).toHaveTextContent(
+      '3 OVERDUE',
+    );
   });
 
-  it('does NOT show a badge when warningCount is 0', () => {
+  it('shows ALL GOOD chip when warningCount is 0', () => {
     vi.mocked(countWarningCards).mockReturnValue(0);
 
     render(
@@ -92,6 +114,9 @@ describe('VehicleCard', () => {
       />,
     );
 
+    expect(screen.getByTestId('vehicle-status-chip')).toHaveTextContent(
+      'ALL GOOD',
+    );
     expect(screen.queryByText('0')).not.toBeInTheDocument();
   });
 
@@ -125,7 +150,7 @@ describe('VehicleCard', () => {
     );
   });
 
-  it('shows registrationNumber as the primary label and brand+model as secondary when set', () => {
+  it('shows registrationNumber as the primary label when set', () => {
     const vehicleWithReg = { ...mockVehicle, registrationNumber: 'FBA1234Z' };
     render(
       <VehicleCard
@@ -134,7 +159,6 @@ describe('VehicleCard', () => {
       />,
     );
     expect(screen.getByText('FBA1234Z')).toBeInTheDocument();
-    expect(screen.getByText('Toyota Camry')).toBeInTheDocument();
   });
 
   it('does not render brand+model as a secondary line when registrationNumber is null', () => {

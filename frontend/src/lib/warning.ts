@@ -1,6 +1,6 @@
 import type { IMaintenanceCardResDTO, MileageUnit } from '@project/types';
 
-const MILES_TO_KM = 1.60934;
+export const MILES_TO_KM = 1.60934;
 
 export type CardWarningStatus = 'overdue' | 'warning' | 'ok';
 

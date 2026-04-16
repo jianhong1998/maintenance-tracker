@@ -142,9 +142,7 @@ export function MaintenanceCardFormDialog({
     >
       <div className="flex flex-col gap-4">
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Type
-          </label>
+          <label className="text-eyebrow mb-1 block">Type</label>
           <div className="flex gap-1.5">
             {TYPES.map(({ value, label }) => (
               <button
@@ -165,7 +163,7 @@ export function MaintenanceCardFormDialog({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <label className="text-eyebrow mb-1 block">
             Name <span className="text-destructive">*</span>
           </label>
           <input
@@ -173,26 +171,24 @@ export function MaintenanceCardFormDialog({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="e.g. Oil Change"
-            className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Description
-          </label>
+          <label className="text-eyebrow mb-1 block">Description</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Optional notes…"
             rows={2}
-            className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <label className="text-eyebrow mb-1 block">
               Every ({vehicleMileageUnit})
             </label>
             <input
@@ -201,20 +197,18 @@ export function MaintenanceCardFormDialog({
               value={intervalMileage}
               onChange={(e) => setIntervalMileage(e.target.value)}
               placeholder="e.g. 5000"
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Every (months)
-            </label>
+            <label className="text-eyebrow mb-1 block">Every (months)</label>
             <input
               type="number"
               min={1}
               value={intervalTimeMonths}
               onChange={(e) => setIntervalTimeMonths(e.target.value)}
               placeholder="e.g. 6"
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
             />
           </div>
         </div>
@@ -224,7 +218,7 @@ export function MaintenanceCardFormDialog({
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <label className="text-eyebrow mb-1 block">
               Next due ({vehicleMileageUnit})
             </label>
             <input
@@ -237,18 +231,16 @@ export function MaintenanceCardFormDialog({
                   ? String(vehicleMileage + parsedIntervalMileage)
                   : 'Auto'
               }
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
             />
           </div>
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Next due (date)
-            </label>
+            <label className="text-eyebrow mb-1 block">Next due (date)</label>
             <input
               type="date"
               value={nextDueDate}
               onChange={(e) => setNextDueDate(e.target.value)}
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
             />
           </div>
         </div>
@@ -256,17 +248,18 @@ export function MaintenanceCardFormDialog({
           Leave next due blank to auto-calculate from intervals.
         </p>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex gap-2 mt-4">
           <Button
-            size="sm"
-            variant="outline"
+            type="button"
+            variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={isPending}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
+            type="button"
+            variant="default"
             onClick={handleSave}
             disabled={!isValid || isPending}
           >

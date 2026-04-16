@@ -64,7 +64,7 @@ export function MarkDoneDialog({
       <div className="flex flex-col gap-4">
         {requiresMileage && (
           <div>
-            <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            <label className="text-eyebrow mb-1 block">
               Done at mileage <span className="text-destructive">*</span>
             </label>
             <input
@@ -73,35 +73,34 @@ export function MarkDoneDialog({
               value={doneAtMileage}
               onChange={(e) => setDoneAtMileage(e.target.value)}
               placeholder="Current odometer reading"
-              className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              className="w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
             />
           </div>
         )}
 
         <div>
-          <label className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Notes
-          </label>
+          <label className="text-eyebrow mb-1 block">Notes</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             placeholder="Optional notes…"
             rows={2}
-            className="w-full rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-full rounded-lg border border-primary-dim bg-[color:var(--bg-base)] px-3 py-2 text-sm text-white placeholder:text-[#444] focus:outline-none focus:ring-2 focus:ring-[#00e5ff40]"
           />
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex gap-2 mt-4">
           <Button
-            size="sm"
-            variant="outline"
+            type="button"
+            variant="secondary"
             onClick={() => onOpenChange(false)}
             disabled={markDone.isPending}
           >
             Cancel
           </Button>
           <Button
-            size="sm"
+            type="button"
+            variant="default"
             onClick={handleDone}
             disabled={!isValid || markDone.isPending}
           >
