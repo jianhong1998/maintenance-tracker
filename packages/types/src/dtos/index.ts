@@ -4,3 +4,4 @@ export * from './vehicle.dto';
 export * from './maintenance-card.dto';
 export * from './maintenance-history.dto';
 export * from './config.dto';
+export * from './feature-flag.dto';
