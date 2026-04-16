@@ -9,6 +9,7 @@ export const QueryGroup = Object.freeze({
   CONFIG: 'config',
   VEHICLES: 'vehicles',
   MAINTENANCE_CARDS: 'maintenance-cards',
+  FEATURE_FLAG: 'feature-flag',
 } as const);
 export type QueryGroup = (typeof QueryGroup)[keyof typeof QueryGroup];
 
