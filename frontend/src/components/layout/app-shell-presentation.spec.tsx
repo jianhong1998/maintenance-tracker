@@ -22,6 +22,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName="Jane Smith"
+        enableHistory={true}
+        enableProfile={true}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -40,6 +42,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
+        enableHistory={true}
+        enableProfile={true}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -56,6 +60,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
+        enableHistory={true}
+        enableProfile={true}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -73,6 +79,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history"
         userDisplayName={null}
+        enableHistory={true}
+        enableProfile={true}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -89,6 +97,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history-foo"
         userDisplayName={null}
+        enableHistory={true}
+        enableProfile={true}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -105,6 +115,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName="Jane Smith"
+        enableHistory={true}
+        enableProfile={true}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -118,6 +130,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history/123"
         userDisplayName={null}
+        enableHistory={true}
+        enableProfile={true}
       >
         <div />
       </AppShellPresentation>,
@@ -134,6 +148,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history"
         userDisplayName={null}
+        enableHistory={true}
+        enableProfile={true}
       >
         <div />
       </AppShellPresentation>,
@@ -150,6 +166,8 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
+        enableHistory={true}
+        enableProfile={true}
       >
         <div />
       </AppShellPresentation>,
@@ -159,5 +177,69 @@ describe('AppShellPresentation', () => {
       .getAllByRole('link')
       .filter((l) => l.getAttribute('href') === '/history');
     expect(historyLinks[0].className).toContain('hover-pointer:bg-[#0f1923]');
+  });
+
+  it('hides History tab when enableHistory is false', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        enableHistory={false}
+        enableProfile={true}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.queryByText(/history/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/profile/i).length).toBeGreaterThan(0);
+  });
+
+  it('hides Profile tab when enableProfile is false', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        enableHistory={true}
+        enableProfile={false}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.getAllByText(/history/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/profile/i)).not.toBeInTheDocument();
+  });
+
+  it('shows both tabs when both flags are true', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        enableHistory={true}
+        enableProfile={true}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.getAllByText(/history/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/profile/i).length).toBeGreaterThan(0);
+  });
+
+  it('hides both tabs when both flags are false', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        enableHistory={false}
+        enableProfile={false}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.queryByText(/history/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/profile/i)).not.toBeInTheDocument();
   });
 });

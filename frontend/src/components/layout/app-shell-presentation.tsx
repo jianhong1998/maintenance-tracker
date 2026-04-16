@@ -7,6 +7,8 @@ type AppShellPresentationProps = {
   showNav: boolean;
   pathname: string;
   userDisplayName: string | null;
+  enableHistory: boolean;
+  enableProfile: boolean;
   children: ReactNode;
 };
 
@@ -31,11 +33,19 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
   showNav,
   pathname,
   userDisplayName,
+  enableHistory,
+  enableProfile,
   children,
 }) => {
   if (!showNav) {
     return <>{children}</>;
   }
+
+  const visibleNavItems = NAV_ITEMS.filter(({ href }) => {
+    if (href === '/history') return enableHistory;
+    if (href === '/profile') return enableProfile;
+    return true;
+  });
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -52,7 +62,7 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
           aria-label="Primary navigation"
           className="flex flex-col gap-1 px-2"
         >
-          {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+          {visibleNavItems.map(({ href, label, icon: Icon }) => {
             const active = isActive(pathname, href);
             return (
               <Link
@@ -89,9 +99,11 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
                 className="text-[#444]"
               />
             </div>
-            <span className="hidden xl:block text-[#888] text-xs truncate max-w-[80px]">
-              {userDisplayName ?? 'Profile'}
-            </span>
+            {userDisplayName !== null && (
+              <span className="hidden xl:block text-[#888] text-xs truncate max-w-[80px]">
+                {userDisplayName}
+              </span>
+            )}
           </div>
         </div>
       </aside>
@@ -106,7 +118,7 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
         aria-label="Mobile navigation"
         className="md:hidden fixed bottom-0 inset-x-0 h-12 bg-[color:var(--bg-surface)] border-t border-[#00e5ff15] flex items-center justify-around z-40 px-4 pb-[env(safe-area-inset-bottom)]"
       >
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
+        {visibleNavItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
             <Link
