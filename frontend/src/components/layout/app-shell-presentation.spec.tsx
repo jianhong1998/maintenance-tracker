@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { AppShellPresentation } from './app-shell-presentation';
 
+const allFlagsEnabled = { enableHistory: true, enableProfile: true };
+const allFlagsDisabled = { enableHistory: false, enableProfile: false };
+
 describe('AppShellPresentation', () => {
   it('renders children without nav when showNav is false', () => {
     render(
@@ -22,8 +25,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName="Jane Smith"
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -42,8 +44,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -60,8 +61,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -79,8 +79,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -97,8 +96,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history-foo"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -115,8 +113,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName="Jane Smith"
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -130,8 +127,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history/123"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div />
       </AppShellPresentation>,
@@ -148,8 +144,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div />
       </AppShellPresentation>,
@@ -166,8 +161,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div />
       </AppShellPresentation>,
@@ -185,8 +179,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
-        enableHistory={false}
-        enableProfile={true}
+        featureFlags={{ enableHistory: false, enableProfile: true }}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -201,8 +194,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={false}
+        featureFlags={{ enableHistory: true, enableProfile: false }}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -217,8 +209,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
-        enableHistory={true}
-        enableProfile={true}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -233,8 +224,22 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
-        enableHistory={false}
-        enableProfile={false}
+        featureFlags={allFlagsDisabled}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.queryByText(/history/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/profile/i)).not.toBeInTheDocument();
+  });
+
+  it('hides flagged tabs when featureFlags is undefined', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        featureFlags={undefined}
       >
         <div>page content</div>
       </AppShellPresentation>,

@@ -15,17 +15,17 @@ export const FeatureFlagGuard: FC<FeatureFlagGuardProps> = ({
   flagKey,
   children,
 }) => {
-  const { data: featureFlags, isLoading } = useFeatureFlags();
+  const { data: featureFlags, isLoading, isError } = useFeatureFlags();
   const router = useRouter();
   const enabled = featureFlags?.[flagKey] ?? false;
 
   useEffect(() => {
-    if (!isLoading && !enabled) {
+    if (!isLoading && !isError && !enabled) {
       router.replace('/');
     }
-  }, [isLoading, enabled, router]);
+  }, [isLoading, isError, enabled, router]);
 
-  if (isLoading) {
+  if (isLoading || isError) {
     return null;
   }
 

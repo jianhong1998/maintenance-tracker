@@ -23,8 +23,7 @@ export const AppShell: FC<AppShellProps> = ({ children }) => {
       showNav={showNav}
       pathname={pathname}
       userDisplayName={userDisplayName}
-      enableHistory={featureFlags?.enableHistory ?? false}
-      enableProfile={featureFlags?.enableProfile ?? false}
+      featureFlags={featureFlags}
     >
       {children}
     </AppShellPresentation>

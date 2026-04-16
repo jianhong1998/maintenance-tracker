@@ -22,10 +22,10 @@ const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
-  const wrapper = ({ children }: { children: React.ReactNode }) =>
+  const Wrapper = ({ children }: { children: React.ReactNode }) =>
     React.createElement(QueryClientProvider, { client: queryClient }, children);
-  wrapper.displayName = 'TestQueryClientWrapper';
-  return wrapper;
+  Wrapper.displayName = 'TestQueryClientWrapper';
+  return { wrapper: Wrapper, queryClient };
 };
 
 describe('FeatureFlagGuard', () => {
@@ -36,12 +36,13 @@ describe('FeatureFlagGuard', () => {
   it('renders null while feature flags are loading', () => {
     // Never resolves — simulates loading state
     vi.mocked(apiClient.get).mockReturnValue(new Promise(() => {}));
+    const { wrapper } = createWrapper();
 
     const { container } = render(
       <FeatureFlagGuard flagKey="enableHistory">
         <div>Protected</div>
       </FeatureFlagGuard>,
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     expect(container.firstChild).toBeNull();
@@ -52,12 +53,13 @@ describe('FeatureFlagGuard', () => {
       enableHistory: true,
       enableProfile: false,
     });
+    const { wrapper } = createWrapper();
 
     render(
       <FeatureFlagGuard flagKey="enableHistory">
         <div>Protected Content</div>
       </FeatureFlagGuard>,
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() =>
@@ -70,12 +72,13 @@ describe('FeatureFlagGuard', () => {
       enableHistory: false,
       enableProfile: false,
     });
+    const { wrapper } = createWrapper();
 
     render(
       <FeatureFlagGuard flagKey="enableHistory">
         <div>Protected Content</div>
       </FeatureFlagGuard>,
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'));
@@ -86,12 +89,13 @@ describe('FeatureFlagGuard', () => {
       enableHistory: false,
       enableProfile: false,
     });
+    const { wrapper } = createWrapper();
 
     const { container } = render(
       <FeatureFlagGuard flagKey="enableHistory">
         <div>Protected Content</div>
       </FeatureFlagGuard>,
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() => expect(mockReplace).toHaveBeenCalledWith('/'));
@@ -103,16 +107,54 @@ describe('FeatureFlagGuard', () => {
       enableHistory: false,
       enableProfile: true,
     });
+    const { wrapper } = createWrapper();
 
     render(
       <FeatureFlagGuard flagKey="enableProfile">
         <div>Profile Content</div>
       </FeatureFlagGuard>,
-      { wrapper: createWrapper() },
+      { wrapper },
     );
 
     await waitFor(() =>
       expect(screen.getByText('Profile Content')).toBeInTheDocument(),
     );
+  });
+
+  it('does not redirect when the API request fails', async () => {
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('Network error'));
+    const { wrapper, queryClient } = createWrapper();
+
+    render(
+      <FeatureFlagGuard flagKey="enableHistory">
+        <div>Protected Content</div>
+      </FeatureFlagGuard>,
+      { wrapper },
+    );
+
+    // Wait for the query to settle to error state — definitive signal the request failed
+    await waitFor(() => {
+      expect(queryClient.getQueryState(['feature-flag'])?.status).toBe('error');
+    });
+
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  it('renders null (no content flash) when the API request fails', async () => {
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('Network error'));
+    const { wrapper, queryClient } = createWrapper();
+
+    const { container } = render(
+      <FeatureFlagGuard flagKey="enableHistory">
+        <div>Protected Content</div>
+      </FeatureFlagGuard>,
+      { wrapper },
+    );
+
+    await waitFor(() => {
+      expect(queryClient.getQueryState(['feature-flag'])?.status).toBe('error');
+    });
+
+    expect(container.firstChild).toBeNull();
   });
 });

@@ -1,14 +1,14 @@
 import type { ComponentType, FC, ReactNode } from 'react';
 import Link from 'next/link';
 import { Car, Clock, User } from 'lucide-react';
+import type { IFeatureFlagResDTO } from '@project/types';
 import { cn } from '@/lib/utils';
 
 type AppShellPresentationProps = {
   showNav: boolean;
   pathname: string;
   userDisplayName: string | null;
-  enableHistory: boolean;
-  enableProfile: boolean;
+  featureFlags?: IFeatureFlagResDTO;
   children: ReactNode;
 };
 
@@ -16,12 +16,13 @@ type NavItemConfig = {
   href: string;
   label: string;
   icon: ComponentType<{ size?: number; className?: string }>;
+  flagKey?: keyof IFeatureFlagResDTO;
 };
 
 const NAV_ITEMS: NavItemConfig[] = [
   { href: '/', label: 'Fleet', icon: Car },
-  { href: '/history', label: 'History', icon: Clock },
-  { href: '/profile', label: 'Profile', icon: User },
+  { href: '/history', label: 'History', icon: Clock, flagKey: 'enableHistory' },
+  { href: '/profile', label: 'Profile', icon: User, flagKey: 'enableProfile' },
 ];
 
 const isActive = (pathname: string, href: string): boolean => {
@@ -33,19 +34,16 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
   showNav,
   pathname,
   userDisplayName,
-  enableHistory,
-  enableProfile,
+  featureFlags,
   children,
 }) => {
   if (!showNav) {
     return <>{children}</>;
   }
 
-  const visibleNavItems = NAV_ITEMS.filter(({ href }) => {
-    if (href === '/history') return enableHistory;
-    if (href === '/profile') return enableProfile;
-    return true;
-  });
+  const visibleNavItems = NAV_ITEMS.filter(({ flagKey }) =>
+    flagKey ? (featureFlags?.[flagKey] ?? false) : true,
+  );
 
   return (
     <div className="flex min-h-screen bg-background">

@@ -1,11 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { vi, describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { ProfilePage } from '@/components/pages/profile-page';
-
-vi.mock('@/components/auth/auth-guard', () => ({
-  AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
 
 describe('ProfilePage component', () => {
   it('renders the PROFILE eyebrow label', () => {
