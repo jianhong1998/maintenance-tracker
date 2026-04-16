@@ -57,4 +57,15 @@ describe('useFeatureFlags', () => {
 
     expect(result.current.data).toEqual(mockFlags);
   });
+
+  it('exposes isError=true and data=undefined when the API call fails', async () => {
+    vi.mocked(apiClient.get).mockRejectedValue(new Error('Network error'));
+
+    const { result } = renderHook(() => useFeatureFlags(), {
+      wrapper: createWrapper(),
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.data).toBeUndefined();
+  });
 });
