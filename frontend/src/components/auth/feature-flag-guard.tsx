@@ -20,10 +20,10 @@ export const FeatureFlagGuard: FC<FeatureFlagGuardProps> = ({
   const enabled = featureFlags?.[flagKey] ?? false;
 
   useEffect(() => {
-    if (!isLoading && !enabled) {
+    if (!isLoading && !isError && !enabled) {
       router.replace('/');
     }
-  }, [isLoading, enabled, router]);
+  }, [isLoading, isError, enabled, router]);
 
   if (isLoading || isError || !enabled) {
     return null;
