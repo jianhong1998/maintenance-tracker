@@ -2,10 +2,15 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { ConfigController } from './config.controller';
+import { EnvironmentVariableUtil } from '../common/utils/environment-variable.util';
 import { IS_PUBLIC_KEY } from '../auth/decorators/public.decorator';
 
 const mockConfigService = {
   get: vi.fn(),
+};
+
+const mockEnvironmentVariableUtil = {
+  getFeatureFlags: vi.fn(),
 };
 
 describe('ConfigController', () => {
@@ -16,7 +21,13 @@ describe('ConfigController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ConfigController],
-      providers: [{ provide: ConfigService, useValue: mockConfigService }],
+      providers: [
+        { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: EnvironmentVariableUtil,
+          useValue: mockEnvironmentVariableUtil,
+        },
+      ],
     }).compile();
 
     controller = module.get<ConfigController>(ConfigController);
@@ -53,6 +64,41 @@ describe('ConfigController', () => {
       const result = controller.getConfig();
 
       expect(result.mileageWarningThresholdKm).toBe(500);
+    });
+  });
+
+  it('getFeatureFlag is decorated with @Public()', () => {
+    const method = Object.getOwnPropertyDescriptor(
+      ConfigController.prototype,
+      'getFeatureFlag',
+    )?.value as object;
+    const isPublic = Reflect.getMetadata(IS_PUBLIC_KEY, method) as boolean;
+    expect(isPublic).toBe(true);
+  });
+
+  describe('#getFeatureFlag', () => {
+    it('returns enableHistory and enableProfile from EnvironmentVariableUtil', () => {
+      mockEnvironmentVariableUtil.getFeatureFlags.mockReturnValue({
+        enableApiTestMode: false,
+        enableHistory: true,
+        enableProfile: false,
+      });
+
+      const result = controller.getFeatureFlag();
+
+      expect(result).toEqual({ enableHistory: true, enableProfile: false });
+    });
+
+    it('returns false for both when flags are disabled', () => {
+      mockEnvironmentVariableUtil.getFeatureFlags.mockReturnValue({
+        enableApiTestMode: false,
+        enableHistory: false,
+        enableProfile: false,
+      });
+
+      const result = controller.getFeatureFlag();
+
+      expect(result).toEqual({ enableHistory: false, enableProfile: false });
     });
   });
 });
