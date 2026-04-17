@@ -13,6 +13,8 @@ type AppShellProps = {
 export const AppShell: FC<AppShellProps> = ({ children }) => {
   const { user, loading } = useAuthContext();
   const pathname = usePathname();
+  // undefined featureFlags (loading or error) intentionally hides flagged tabs;
+  // the guard on flagged routes then returns null so nothing leaks through.
   const { data: featureFlags } = useFeatureFlags();
 
   const showNav = !loading && !!user && pathname !== '/login';

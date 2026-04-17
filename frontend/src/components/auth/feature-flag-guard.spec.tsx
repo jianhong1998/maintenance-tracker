@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FeatureFlagGuard } from './feature-flag-guard';
+import { QueryGroup } from '@/hooks/queries/keys';
 
 const mockReplace = vi.fn();
 
@@ -133,7 +134,9 @@ describe('FeatureFlagGuard', () => {
     );
 
     await waitFor(() => {
-      expect(queryClient.getQueryState(['feature-flag'])?.status).toBe('error');
+      expect(queryClient.getQueryState([QueryGroup.FEATURE_FLAG])?.status).toBe(
+        'error',
+      );
     });
 
     expect(mockReplace).not.toHaveBeenCalled();
@@ -151,7 +154,9 @@ describe('FeatureFlagGuard', () => {
     );
 
     await waitFor(() => {
-      expect(queryClient.getQueryState(['feature-flag'])?.status).toBe('error');
+      expect(queryClient.getQueryState([QueryGroup.FEATURE_FLAG])?.status).toBe(
+        'error',
+      );
     });
 
     expect(container.firstChild).toBeNull();
