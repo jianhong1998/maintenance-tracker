@@ -1,6 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import { AppShellPresentation } from './app-shell-presentation';
 
+const allFlagsEnabled = { enableHistory: true, enableProfile: true };
+const allFlagsDisabled = { enableHistory: false, enableProfile: false };
+
 describe('AppShellPresentation', () => {
   it('renders children without nav when showNav is false', () => {
     render(
@@ -22,6 +25,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName="Jane Smith"
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -40,6 +44,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -56,6 +61,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -73,6 +79,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history"
         userDisplayName={null}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -89,6 +96,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history-foo"
         userDisplayName={null}
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -105,6 +113,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName="Jane Smith"
+        featureFlags={allFlagsEnabled}
       >
         <div>page content</div>
       </AppShellPresentation>,
@@ -118,6 +127,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history/123"
         userDisplayName={null}
+        featureFlags={allFlagsEnabled}
       >
         <div />
       </AppShellPresentation>,
@@ -134,6 +144,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/history"
         userDisplayName={null}
+        featureFlags={allFlagsEnabled}
       >
         <div />
       </AppShellPresentation>,
@@ -150,6 +161,7 @@ describe('AppShellPresentation', () => {
         showNav={true}
         pathname="/"
         userDisplayName={null}
+        featureFlags={allFlagsEnabled}
       >
         <div />
       </AppShellPresentation>,
@@ -159,5 +171,80 @@ describe('AppShellPresentation', () => {
       .getAllByRole('link')
       .filter((l) => l.getAttribute('href') === '/history');
     expect(historyLinks[0].className).toContain('hover-pointer:bg-[#0f1923]');
+  });
+
+  it('hides History tab when enableHistory is false', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        featureFlags={{ enableHistory: false, enableProfile: true }}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.queryByText(/history/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/profile/i).length).toBeGreaterThan(0);
+  });
+
+  it('hides Profile tab when enableProfile is false', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        featureFlags={{ enableHistory: true, enableProfile: false }}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.getAllByText(/history/i).length).toBeGreaterThan(0);
+    expect(screen.queryByText(/profile/i)).not.toBeInTheDocument();
+  });
+
+  it('shows both tabs when both flags are true', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        featureFlags={allFlagsEnabled}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.getAllByText(/history/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/profile/i).length).toBeGreaterThan(0);
+  });
+
+  it('hides both tabs when both flags are false', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        featureFlags={allFlagsDisabled}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.queryByText(/history/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/profile/i)).not.toBeInTheDocument();
+  });
+
+  it('hides flagged tabs when featureFlags is undefined', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName={null}
+        featureFlags={undefined}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.queryByText(/history/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/profile/i)).not.toBeInTheDocument();
   });
 });

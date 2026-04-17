@@ -21,6 +21,8 @@ type IEnvironmentVariableList = {
 type IFeatureFlagList = {
   // Feature Flag Related
   enableApiTestMode: boolean;
+  enableHistory: boolean;
+  enableProfile: boolean;
 };
 
 @Injectable()
@@ -63,15 +65,21 @@ export class EnvironmentVariableUtil {
   }
 
   public getFeatureFlags(): IFeatureFlagList {
-    if (!this.featureFlagList) {
-      this.featureFlagList = {
-        enableApiTestMode:
-          this.configService.get<string>(
-            'BACKEND_ENABLE_API_TEST_MODE',
-            'false',
-          ) === 'true',
-      };
-    }
+    if (this.featureFlagList) return this.featureFlagList;
+
+    this.featureFlagList = {
+      enableApiTestMode:
+        this.configService.get<string>(
+          'BACKEND_ENABLE_API_TEST_MODE',
+          'false',
+        ) === 'true',
+      enableHistory:
+        this.configService.get<string>('BACKEND_ENABLE_HISTORY', 'false') ===
+        'true',
+      enableProfile:
+        this.configService.get<string>('BACKEND_ENABLE_PROFILE', 'false') ===
+        'true',
+    };
 
     return this.featureFlagList;
   }

@@ -1,11 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { vi, describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { HistoryPage } from '@/components/pages/history-page';
-
-vi.mock('@/components/auth/auth-guard', () => ({
-  AuthGuard: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
 
 describe('HistoryPage component', () => {
   it('renders the HISTORY eyebrow label', () => {
