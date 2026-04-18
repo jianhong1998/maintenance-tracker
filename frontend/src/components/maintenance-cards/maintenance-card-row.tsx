@@ -6,7 +6,6 @@ import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import {
   getCardStatus,
   daysUntilDue as computeDaysUntilDue,
-  MILES_TO_KM,
   type CardAxisStatus,
   type CardStatus,
 } from '@/lib/warning';
@@ -23,20 +22,9 @@ const TYPE_LABELS: Record<IMaintenanceCardResDTO['type'], string> = {
   item: 'Item',
 };
 
-const getProgressFill = (params: {
-  remaining: number | null;
-  thresholdNative: number;
-  mileageStatus: CardAxisStatus;
-}): number => {
-  const { remaining, thresholdNative, mileageStatus } = params;
-  if (mileageStatus === 'overdue') return 100;
-  if (remaining === null) return 0;
-  if (mileageStatus === 'warning') {
-    return 60 + ((thresholdNative - remaining) / thresholdNative) * 39;
-  }
-  const lookahead = thresholdNative * 5;
-  if (remaining >= lookahead) return 0;
-  return (1 - remaining / lookahead) * 59;
+const getProgressFill = (remaining: number, interval: number): number => {
+  const progress = 1 - remaining / interval;
+  return Math.max(0, Math.min(1, progress)) * 100;
 };
 
 const pluralise = (value: number, unit: 'day') =>
@@ -124,17 +112,8 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
     today,
   });
 
-  const thresholdNative =
-    vehicle.mileageUnit === 'mile' ? thresholdKm / MILES_TO_KM : thresholdKm;
-
   const remainingMileage =
     card.nextDueMileage !== null ? card.nextDueMileage - vehicle.mileage : null;
-
-  const progressFill = getProgressFill({
-    remaining: remainingMileage,
-    thresholdNative,
-    mileageStatus: status.mileage,
-  });
 
   const mileageLabel = getMileageLabel({
     card,
@@ -242,22 +221,26 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
         </div>
       </div>
 
-      {remainingMileage !== null && (
-        <div className="mt-[5px] mb-[2px]">
-          <div
-            data-testid="progress-bar-track"
-            className="h-[3px] w-full bg-[#1a1a2e] rounded-full overflow-hidden"
-          >
+      {remainingMileage !== null &&
+        card.intervalMileage !== null &&
+        card.intervalMileage > 0 && (
+          <div className="mt-[5px] mb-[2px]">
             <div
-              className={cn(
-                'h-full rounded-full transition-all',
-                getBarClass(status.mileage),
-              )}
-              style={{ width: `${Math.min(progressFill, 100)}%` }}
-            />
+              data-testid="progress-bar-track"
+              className="h-[3px] w-full bg-[#1a1a2e] rounded-full overflow-hidden"
+            >
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  getBarClass(status.mileage),
+                )}
+                style={{
+                  width: `${getProgressFill(remainingMileage, card.intervalMileage)}%`,
+                }}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };

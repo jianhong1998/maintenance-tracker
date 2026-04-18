@@ -274,7 +274,14 @@ describe('MaintenanceCardRow — per-axis label colours', () => {
 });
 
 describe('MaintenanceCardRow — progress bar', () => {
-  it('renders a progress bar track when nextDueMileage is set', () => {
+  const getFillWidth = (): string => {
+    const fill = document.querySelector(
+      '[data-testid="progress-bar-track"] > div',
+    ) as HTMLElement;
+    return fill.style.width;
+  };
+
+  it('renders a progress bar when both nextDueMileage and intervalMileage are set', () => {
     render(
       <MaintenanceCardRow
         {...defaultProps}
@@ -294,13 +301,93 @@ describe('MaintenanceCardRow — progress bar', () => {
     expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
   });
 
+  it('does not render a progress bar when intervalMileage is null', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, intervalMileage: null, nextDueMileage: 51000 }}
+      />,
+    );
+    expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
+  });
+
+  it('does not render a progress bar when intervalMileage is 0', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, intervalMileage: 0, nextDueMileage: 51000 }}
+      />,
+    );
+    expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
+  });
+
+  it('fills 0% when just-serviced (remaining = interval)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 55000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('0%');
+  });
+
+  it('fills 50% at halfway through cycle (remaining = interval / 2)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 52500 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('50%');
+  });
+
+  it('fills 80% when 80% of the cycle is consumed', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 51000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('80%');
+  });
+
+  it('fills 100% at due (remaining = 0)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 50000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('100%');
+  });
+
+  it('fills 100% when overdue (remaining < 0)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 49000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('100%');
+  });
+
+  it('fills 0% when remaining exceeds interval (stale nextDue after interval edit)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 60000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('0%');
+  });
+
   it('bar colour follows the mileage axis even when overall is overdue due to date', () => {
     render(
       <MaintenanceCardRow
         {...defaultProps}
         card={{
           ...mockCard,
-          nextDueMileage: 60000,
+          nextDueMileage: 51000,
           nextDueDate: '2020-01-01',
         }}
       />,
