@@ -43,7 +43,7 @@ const urgencyKey = (params: {
         MS_PER_DAY,
     );
   }
-  return Number.POSITIVE_INFINITY;
+  return Number.MAX_SAFE_INTEGER;
 };
 
 export const compareCardsByUrgency =

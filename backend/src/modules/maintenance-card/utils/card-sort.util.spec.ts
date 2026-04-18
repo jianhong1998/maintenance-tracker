@@ -152,6 +152,27 @@ describe('compareCardsByUrgency', () => {
     expect(sorted.map((c) => c.id)).toEqual(['d1', 'd5']);
   });
 
+  it('two inert cards fall back to name tiebreaker (urgencyKey must not produce NaN)', () => {
+    const zebra = makeCard({
+      id: 'z-id',
+      name: 'Zebra',
+      intervalMileage: null,
+      nextDueMileage: null,
+      nextDueDate: null,
+    });
+    const alpha = makeCard({
+      id: 'a-id',
+      name: 'Alpha',
+      intervalMileage: null,
+      nextDueMileage: null,
+      nextDueDate: null,
+    });
+
+    const sorted = [zebra, alpha].sort(compareCardsByUrgency(baseParams));
+
+    expect(sorted.map((c) => c.id)).toEqual(['a-id', 'z-id']);
+  });
+
   it('falls back to name tiebreaker when tier + driver + urgency are equal', () => {
     const alpha = makeCard({
       id: 'a-id',

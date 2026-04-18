@@ -3,11 +3,7 @@ import {
   type IMaintenanceCardResDTO,
   MAINTENANCE_CARD_TYPES,
 } from '@project/types';
-import {
-  getCardStatus,
-  getCardWarningStatus,
-  countWarningCards,
-} from '@/lib/warning';
+import { getCardStatus, countWarningCards } from '@/lib/warning';
 
 const FIXED_TODAY = new Date('2026-04-18T12:00:00');
 
@@ -132,22 +128,6 @@ describe('getCardStatus — overall', () => {
   });
 });
 
-describe('getCardWarningStatus (back-compat wrapper)', () => {
-  it('returns overall tier', () => {
-    const card = makeCard({ nextDueDate: '2020-01-01' });
-    expect(getCardWarningStatus(card, 50000, 'km', 500)).toBe('overdue');
-  });
-
-  it('does NOT trigger mileage warning when intervalMileage is null', () => {
-    const card = makeCard({
-      intervalMileage: null,
-      nextDueMileage: 50400,
-      nextDueDate: '2099-01-01',
-    });
-    expect(getCardWarningStatus(card, 50000, 'km', 500)).toBe('ok');
-  });
-});
-
 describe('countWarningCards', () => {
   it('returns count of cards that are overdue or warning', () => {
     const cards: IMaintenanceCardResDTO[] = [
@@ -155,6 +135,45 @@ describe('countWarningCards', () => {
       makeCard({ id: '2', nextDueMileage: 40000 }),
       makeCard({ id: '3', nextDueMileage: 60000 }),
     ];
-    expect(countWarningCards(cards, 50000, 'km', 500)).toBe(2);
+    expect(
+      countWarningCards({
+        cards,
+        vehicleMileage: 50000,
+        mileageUnit: 'km',
+        mileageWarningThresholdKm: 500,
+        notificationDaysBefore: 7,
+      }),
+    ).toBe(2);
+  });
+
+  it('respects notificationDaysBefore (does not silently default to 7)', () => {
+    const cards: IMaintenanceCardResDTO[] = [
+      makeCard({
+        id: '1',
+        nextDueMileage: null,
+        intervalMileage: null,
+        nextDueDate: '2026-05-03',
+      }),
+    ];
+
+    expect(
+      countWarningCards({
+        cards,
+        vehicleMileage: 50000,
+        mileageUnit: 'km',
+        mileageWarningThresholdKm: 500,
+        notificationDaysBefore: 7,
+      }),
+    ).toBe(0);
+
+    expect(
+      countWarningCards({
+        cards,
+        vehicleMileage: 50000,
+        mileageUnit: 'km',
+        mileageWarningThresholdKm: 500,
+        notificationDaysBefore: 30,
+      }),
+    ).toBe(1);
   });
 });

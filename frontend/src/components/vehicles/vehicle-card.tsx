@@ -16,17 +16,23 @@ import { cn } from '@/lib/utils';
 type VehicleCardProps = {
   vehicle: IVehicleResDTO;
   thresholdKm: number;
+  notificationDaysBefore: number;
 };
 
-export const VehicleCard: FC<VehicleCardProps> = ({ vehicle, thresholdKm }) => {
+export const VehicleCard: FC<VehicleCardProps> = ({
+  vehicle,
+  thresholdKm,
+  notificationDaysBefore,
+}) => {
   const { data: cards = [] } = useMaintenanceCards(vehicle.id);
 
-  const warningCount = countWarningCards(
+  const warningCount = countWarningCards({
     cards,
-    vehicle.mileage,
-    vehicle.mileageUnit,
-    thresholdKm,
-  );
+    vehicleMileage: vehicle.mileage,
+    mileageUnit: vehicle.mileageUnit,
+    mileageWarningThresholdKm: thresholdKm,
+    notificationDaysBefore,
+  });
 
   const { primary } = getVehicleDisplayLabels(vehicle);
   const hasWarning = warningCount > 0;

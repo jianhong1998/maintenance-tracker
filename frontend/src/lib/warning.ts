@@ -11,7 +11,7 @@ export type CardStatus = {
   overall: 'overdue' | 'warning' | 'ok';
 };
 
-export type CardWarningStatus = 'overdue' | 'warning' | 'ok';
+type CardWarningStatus = 'overdue' | 'warning' | 'ok';
 
 const startOfLocalDay = (date: Date): Date => {
   const d = new Date(date);
@@ -78,32 +78,14 @@ export const getCardStatus = (params: {
   return { mileage, date, overall: worst(mileage, date) };
 };
 
-export const getCardWarningStatus = (
-  card: IMaintenanceCardResDTO,
-  vehicleMileage: number,
-  mileageUnit: MileageUnit,
-  mileageWarningThresholdKm: number,
-): CardWarningStatus =>
-  getCardStatus({
-    card,
-    vehicleMileage,
-    mileageUnit,
-    mileageWarningThresholdKm,
-    notificationDaysBefore: 7,
-  }).overall;
-
-export const countWarningCards = (
-  cards: IMaintenanceCardResDTO[],
-  vehicleMileage: number,
-  mileageUnit: MileageUnit,
-  mileageWarningThresholdKm: number,
-): number =>
-  cards.filter((card) => {
-    const status = getCardWarningStatus(
-      card,
-      vehicleMileage,
-      mileageUnit,
-      mileageWarningThresholdKm,
-    );
-    return status === 'overdue' || status === 'warning';
+export const countWarningCards = (params: {
+  cards: IMaintenanceCardResDTO[];
+  vehicleMileage: number;
+  mileageUnit: MileageUnit;
+  mileageWarningThresholdKm: number;
+  notificationDaysBefore: number;
+}): number =>
+  params.cards.filter((card) => {
+    const { overall } = getCardStatus({ ...params, card });
+    return overall === 'overdue' || overall === 'warning';
   }).length;

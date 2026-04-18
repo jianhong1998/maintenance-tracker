@@ -11,17 +11,22 @@ import { countWarningCards } from '@/lib/warning';
 import { getVehicleDisplayLabels } from '@/lib/vehicle-display';
 import { VehicleStatusChip } from '@/components/vehicles/vehicle-status-chip';
 import { cn } from '@/lib/utils';
-import { DEFAULT_MILEAGE_WARNING_THRESHOLD_KM } from '@/constants';
+import {
+  DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
+  DEFAULT_NOTIFICATION_DAYS_BEFORE,
+} from '@/constants';
 
 type VehicleListItemProps = {
   vehicle: IVehicleResDTO;
   thresholdKm: number;
+  notificationDaysBefore: number;
   isActive: boolean;
 };
 
 const VehicleListItem: FC<VehicleListItemProps> = ({
   vehicle,
   thresholdKm,
+  notificationDaysBefore,
   isActive,
 }) => {
   // N+1 assumption: each VehicleListItem fires its own useMaintenanceCards query.
@@ -31,12 +36,13 @@ const VehicleListItem: FC<VehicleListItemProps> = ({
   // parallel requests; consider fetching a summary count from the backend if
   // fleet sizes grow beyond ~10 vehicles.
   const { data: cards = [] } = useMaintenanceCards(vehicle.id);
-  const warningCount = countWarningCards(
+  const warningCount = countWarningCards({
     cards,
-    vehicle.mileage,
-    vehicle.mileageUnit,
-    thresholdKm,
-  );
+    vehicleMileage: vehicle.mileage,
+    mileageUnit: vehicle.mileageUnit,
+    mileageWarningThresholdKm: thresholdKm,
+    notificationDaysBefore,
+  });
   const { primary } = getVehicleDisplayLabels(vehicle);
 
   return (
@@ -73,6 +79,8 @@ export const VehiclesLayout: FC<VehiclesLayoutProps> = ({ children }) => {
   const { data: config } = useAppConfig();
   const thresholdKm =
     config?.mileageWarningThresholdKm ?? DEFAULT_MILEAGE_WARNING_THRESHOLD_KM;
+  const notificationDaysBefore =
+    config?.notificationDaysBefore ?? DEFAULT_NOTIFICATION_DAYS_BEFORE;
 
   return (
     <div className="flex min-h-screen">
@@ -88,6 +96,7 @@ export const VehiclesLayout: FC<VehiclesLayoutProps> = ({ children }) => {
                 key={vehicle.id}
                 vehicle={vehicle}
                 thresholdKm={thresholdKm}
+                notificationDaysBefore={notificationDaysBefore}
                 isActive={pathname === `/vehicles/${vehicle.id}`}
               />
             ))}

@@ -7,6 +7,10 @@ import { ConfigService } from '@nestjs/config';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import type { IMarkDoneReqDTO } from '@project/types';
+import {
+  DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
+  DEFAULT_NOTIFICATION_DAYS_BEFORE,
+} from '@project/types';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
 import { MaintenanceHistoryEntity } from 'src/db/entities/maintenance-history.entity';
 import { VehicleService } from 'src/modules/vehicle/services/vehicle.service';
@@ -76,12 +80,12 @@ export class MaintenanceCardService {
     const mileageWarningThresholdKm = readNumericEnv({
       configService: this.configService,
       key: 'MILEAGE_WARNING_THRESHOLD_KM',
-      fallback: 500,
+      fallback: DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
     });
     const notificationDaysBefore = readNumericEnv({
       configService: this.configService,
       key: 'NOTIFICATION_DAYS_BEFORE',
-      fallback: 7,
+      fallback: DEFAULT_NOTIFICATION_DAYS_BEFORE,
     });
 
     return [...cards].sort(

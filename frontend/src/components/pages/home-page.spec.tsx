@@ -195,7 +195,7 @@ describe('HomePage', () => {
     expect(screen.getByTestId('vehicle-form-dialog')).toBeInTheDocument();
   });
 
-  it('falls back to 500 thresholdKm when config is undefined', () => {
+  it('falls back to default thresholdKm and notificationDaysBefore when config is undefined', () => {
     vi.mocked(useAppConfig).mockReturnValue({
       data: undefined,
     } as ReturnType<typeof useAppConfig>);
@@ -206,9 +206,10 @@ describe('HomePage', () => {
 
     render(<HomePage />);
 
-    expect(vi.mocked(useGlobalWarningCount)).toHaveBeenCalledWith(
-      expect.anything(),
-      500,
-    );
+    expect(vi.mocked(useGlobalWarningCount)).toHaveBeenCalledWith({
+      vehicles: expect.anything(),
+      thresholdKm: 500,
+      notificationDaysBefore: 7,
+    });
   });
 });

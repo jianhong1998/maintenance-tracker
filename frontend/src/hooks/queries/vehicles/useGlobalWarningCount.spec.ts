@@ -58,9 +58,15 @@ describe('useGlobalWarningCount', () => {
 
   it('returns 0 immediately when vehicles array is empty', () => {
     const { wrapper } = createWrapperWithClient();
-    const { result } = renderHook(() => useGlobalWarningCount([], 500), {
-      wrapper,
-    });
+    const { result } = renderHook(
+      () =>
+        useGlobalWarningCount({
+          vehicles: [],
+          thresholdKm: 500,
+          notificationDaysBefore: 7,
+        }),
+      { wrapper },
+    );
     expect(result.current).toBe(0);
   });
 
@@ -79,7 +85,12 @@ describe('useGlobalWarningCount', () => {
 
     const { wrapper } = createWrapperWithClient();
     const { result } = renderHook(
-      () => useGlobalWarningCount([vehicle1, vehicle2], 500),
+      () =>
+        useGlobalWarningCount({
+          vehicles: [vehicle1, vehicle2],
+          thresholdKm: 500,
+          notificationDaysBefore: 7,
+        }),
       { wrapper },
     );
 
@@ -91,7 +102,15 @@ describe('useGlobalWarningCount', () => {
     vi.mocked(apiClient.get).mockResolvedValue([]);
 
     const { wrapper, queryClient } = createWrapperWithClient();
-    renderHook(() => useGlobalWarningCount([vehicle], 500), { wrapper });
+    renderHook(
+      () =>
+        useGlobalWarningCount({
+          vehicles: [vehicle],
+          thresholdKm: 500,
+          notificationDaysBefore: 7,
+        }),
+      { wrapper },
+    );
 
     await waitFor(() => {
       const cached = queryClient

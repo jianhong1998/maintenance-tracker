@@ -1,12 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { IAppConfigResDTO, IFeatureFlagResDTO } from '@project/types';
+import {
+  DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
+  DEFAULT_NOTIFICATION_DAYS_BEFORE,
+} from '@project/types';
 import { Public } from '../auth/decorators/public.decorator';
 import { EnvironmentVariableUtil } from '../common/utils/environment-variable.util';
 import { readNumericEnv } from '../common/utils/config-number.util';
-
-const DEFAULT_MILEAGE_WARNING_THRESHOLD_KM = 500;
-const DEFAULT_NOTIFICATION_DAYS_BEFORE = 7;
 
 @Controller('config')
 export class ConfigController {
