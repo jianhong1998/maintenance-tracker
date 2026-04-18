@@ -157,7 +157,13 @@ Bar colour follows **`status.mileage`**, not `status.overall`. Rationale: the ba
 
 `getProgressFill` is unchanged.
 
-## 6. Sorting — new `frontend/src/lib/card-sort.ts`
+## 6. Sorting — backend `MaintenanceCardService.listCards`
+
+Sorting happens on the backend (`backend/src/modules/maintenance-card/services/maintenance-card.service.ts`, function `sortByUrgency`). The frontend already passes `?sort=urgency` to `GET /vehicles/:id/maintenance-cards` and the backend replies with a pre-sorted list. The new sort replaces the existing `sortByUrgency` function.
+
+The service reads `MILEAGE_WARNING_THRESHOLD_KM` and `NOTIFICATION_DAYS_BEFORE` from `ConfigService` at list time (same pattern the scheduler already uses), then passes them together with `vehicle.mileage` and `vehicle.mileageUnit` into a pure comparator.
+
+**Comparator signature** (new `backend/src/modules/maintenance-card/utils/card-sort.util.ts`):
 
 ```ts
 export const compareCardsByUrgency = (params: {
@@ -165,23 +171,26 @@ export const compareCardsByUrgency = (params: {
   mileageUnit: MileageUnit;
   mileageWarningThresholdKm: number;
   notificationDaysBefore: number;
-}) => (a: IMaintenanceCardResDTO, b: IMaintenanceCardResDTO): number;
+  today: Date;
+}) => (a: MaintenanceCardEntity, b: MaintenanceCardEntity): number;
 ```
 
 Sort keys, in order:
 
-1. **Overall tier** — `overdue` (0) < `warning` (1) < `ok` (2).
+1. **Overall tier** — `overdue` (0) < `warning` (1) < `ok` (2). Tier is computed per-card with the same per-axis rules defined in §4 (operating on the entity — `nextDueDate` is a `Date`, `nextDueMileage` is `number | null`).
 2. **Driver axis within tier:**
    - Mileage-driven (0) if `status.mileage === status.overall`.
    - Else date-driven (1) if `status.date === status.overall`.
    - Else "inert" (2) — applies only to `ok` cards with both axes `none`; sorted last within `ok`.
 3. **Urgency within driver:**
-   - Mileage-driven → ascending `nextDueMileage - vehicleMileage` (more-negative / smaller remaining → earlier).
+   - Mileage-driven → ascending `nextDueMileage - vehicleMileage`.
    - Date-driven → ascending `daysUntilDue`.
    - Inert → no urgency key.
-4. **Tiebreaker** — `card.name` ascending (locale-aware `localeCompare`). Guarantees deterministic output.
+4. **Tiebreaker** — `card.name` via `localeCompare` for deterministic output.
 
-The `NAME` sort toggle already exists and is orthogonal to this comparator.
+**`getCardStatus` helper.** Extract the per-axis status rules into a pure helper (`backend/src/modules/maintenance-card/utils/card-status.util.ts`) used by `compareCardsByUrgency`. The frontend keeps its own copy in `frontend/src/lib/warning.ts` — the logic is short enough that cross-package sharing (via `@project/types` runtime code) is not worth the ceremony, and `@project/types` is typed-only by convention.
+
+**Name-sort** — the `sort === 'name'` branch in `listCards` is unchanged.
 
 ## 7. Testing
 
@@ -191,28 +200,29 @@ The `NAME` sort toggle already exists and is orthogonal to this comparator.
   - 16-case matrix over `{mileage, date} × {none, ok, warning, overdue}` asserting per-axis + overall.
   - Date-axis edges: `daysUntilDue = -1, 0, 1, threshold, threshold+1, 3*threshold, 3*threshold+1`.
   - Back-compat: `getCardWarningStatus` wrapper returns `overall` for all 16 matrix cases.
-- **`frontend/src/lib/card-sort.spec.ts`** (new) — table-driven:
+- **`backend/src/modules/maintenance-card/utils/card-status.util.spec.ts`** (new) — 16-case matrix mirroring the frontend status spec, operating on `MaintenanceCardEntity`.
+- **`backend/src/modules/maintenance-card/utils/card-sort.util.spec.ts`** (new) — table-driven:
   - Tier ordering (overdue before warning before ok).
   - Mileage-driven before date-driven within a tier.
   - Cards with both axes in the tier sort as mileage-driven (Option A).
   - Inert `ok` cards (both axes `none`) land last.
   - Urgency ordering within each driver.
-  - Name tiebreaker; stable output for equal inputs.
+  - Name tiebreaker; deterministic output for equal inputs.
+- **`backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts`** — extend to assert `listCards(…, 'urgency')` calls the comparator with the right params and returns its output.
 - **`frontend/src/components/maintenance-cards/maintenance-card-row.spec.tsx`** — extend:
   - Date label rendering for each axis status, including `"Due today"` and singular `"1 day"`.
   - 3× muted rule for the date axis.
   - Per-axis colour classes (mileage can be ok while date is overdue, and vice versa).
   - Bar colour follows `status.mileage` independently of `status.overall`.
   - Dual-label stack when both axes are present; single-label when only one axis; empty label slot when both `none`.
-- **`frontend/src/components/pages/vehicle-dashboard-page.spec.tsx`** — assert sorted order using fixtures with mixed-axis cards.
-
 ### 7.2 Backend tests
 
 - **`backend/src/modules/config/config.controller.spec.ts`** — assert `notificationDaysBefore` is returned from the env var and defaults to `7` when unset.
 
 ### 7.3 API integration test
 
-- **`api-test/src/tests/*`** — the `/config` test extends to assert `notificationDaysBefore` is present and numeric.
+- **`api-test/src/tests/*`** — extend `/config` coverage to assert `notificationDaysBefore` is present and numeric.
+- **`api-test/src/tests/maintenance-cards.spec.ts`** — add coverage for `?sort=urgency` returning the new tier ordering.
 
 ## 8. Risks & back-compat
 
@@ -226,18 +236,23 @@ The `NAME` sort toggle already exists and is orthogonal to this comparator.
 ## 9. File-change inventory
 
 **New:**
-- `frontend/src/lib/card-sort.ts`
-- `frontend/src/lib/card-sort.spec.ts`
+- `backend/src/modules/maintenance-card/utils/card-status.util.ts`
+- `backend/src/modules/maintenance-card/utils/card-status.util.spec.ts`
+- `backend/src/modules/maintenance-card/utils/card-sort.util.ts`
+- `backend/src/modules/maintenance-card/utils/card-sort.util.spec.ts`
+- `frontend/src/constants/notification.ts` — `DEFAULT_NOTIFICATION_DAYS_BEFORE = 7`.
 
 **Modified:**
 - `packages/types/src/dtos/config.dto.ts` — add `notificationDaysBefore` to `IAppConfigResDTO`.
 - `backend/src/modules/config/config.controller.ts` — populate the new field.
 - `backend/src/modules/config/config.controller.spec.ts` — cover the new field.
+- `backend/src/modules/maintenance-card/services/maintenance-card.service.ts` — delete the legacy `sortByUrgency`; have `listCards` pull env thresholds + vehicle info and call `compareCardsByUrgency`.
+- `backend/src/modules/maintenance-card/services/maintenance-card.service.spec.ts` — cover the new sort path.
+- `backend/src/modules/maintenance-card/maintenance-card.module.ts` — if needed, ensure `ConfigModule` is available (already imported globally via `AppConfig`, so likely no change).
 - `frontend/src/lib/warning.ts` — add `getCardStatus`, keep `getCardWarningStatus` as a wrapper.
 - `frontend/src/lib/warning.spec.ts` — rewrite for per-axis status.
 - `frontend/src/components/maintenance-cards/maintenance-card-row.tsx` — dual label stack, bar colour from mileage axis, helper consolidation.
 - `frontend/src/components/maintenance-cards/maintenance-card-row.spec.tsx` — cover new rendering rules.
-- `frontend/src/components/pages/vehicle-dashboard-page.tsx` — use `compareCardsByUrgency` for the urgency sort, threading config values.
-- `frontend/src/components/pages/vehicle-dashboard-page.spec.tsx` — cover new sort.
-- `frontend/src/constants/index.ts` — add `DEFAULT_NOTIFICATION_DAYS_BEFORE = 7` alongside the existing mileage default.
-- `api-test/src/tests/health-check.spec.ts` (or wherever `/config` is covered) — assert the new field.
+- `frontend/src/constants/index.ts` — re-export from `notification.ts`.
+- `api-test/src/tests/health-check.spec.ts` (or wherever `/config` is covered) — assert `notificationDaysBefore`.
+- `api-test/src/tests/maintenance-cards.spec.ts` — cover the new urgency sort.
