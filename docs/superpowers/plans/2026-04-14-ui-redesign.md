@@ -10,6 +10,8 @@
 
 **Scope:** This plan implements every "in scope" item from `docs/superpowers/specs/2026-04-14-ui-redesign-design.md`. Deferred items listed in the spec's "Deferred Items" section are explicitly out of scope for this plan and tracked in `docs/raw-requirements/002-ui-redesign/002-follow-up-of-design.md`.
 
+> **Superseded rule note (2026-04-18).** References in this plan to the `3 × thresholdNative` muted/primary split for healthy labels (`getHealthyLabelColor`, follow-up 4.4) no longer reflect shipped behaviour. The rule was dropped — grey read as "disabled." Current behaviour: `ok` → cyan (`--primary`) unconditionally. See `docs/project-related/007-frontend.md` Plan 16 and `frontend/src/components/maintenance-cards/maintenance-card-row.tsx`. Plan body retained as-is for historical record.
+
 ---
 
 ## File Map

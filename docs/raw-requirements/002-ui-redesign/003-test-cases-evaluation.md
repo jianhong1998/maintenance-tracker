@@ -257,6 +257,9 @@ it('renders progress bar fill between 60–99% when status is warning', () => {
 ```
 
 #### b) Healthy label color (3× rule) not tested
+
+> **Obsolete (2026-04-18).** The 3× muted-grey rule was dropped; healthy labels are cyan unconditionally. The gap described below no longer applies — no test is needed for a non-existent transition. Kept for historical context.
+
 `getHealthyLabelColor` switches between `'primary'` (cyan) and `'muted'` based on whether `remaining > 3 × thresholdNative`. No test verifies this threshold transition is respected.
 
 **Suggested test:**

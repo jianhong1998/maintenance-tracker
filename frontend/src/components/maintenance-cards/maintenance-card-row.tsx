@@ -69,17 +69,10 @@ const getDateLabel = (params: {
   return `${pluralise(days, 'day')} left`;
 };
 
-const getAxisLabelColor = (params: {
-  status: CardAxisStatus;
-  remaining: number;
-  threshold: number;
-}): string => {
-  const { status, remaining, threshold } = params;
+const getAxisLabelColor = (status: CardAxisStatus): string => {
   if (status === 'overdue') return 'text-[#ff4444]';
   if (status === 'warning') return 'text-[#f59e0b]';
-  if (status === 'ok') {
-    return remaining > 3 * threshold ? 'text-[#555]' : 'text-[#00e5ff]';
-  }
+  if (status === 'ok') return 'text-[#00e5ff]';
   return 'text-[#555]';
 };
 
@@ -148,27 +141,14 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
     vehicle,
     mileageStatus: status.mileage,
   });
-  const mileageLabelColor =
-    remainingMileage !== null
-      ? getAxisLabelColor({
-          status: status.mileage,
-          remaining: remainingMileage,
-          threshold: thresholdNative,
-        })
-      : 'text-[#555]';
+  const mileageLabelColor = getAxisLabelColor(status.mileage);
 
   const dateLabel = getDateLabel({
     card,
     today,
     dateStatus: status.date,
   });
-  const daysUntilDue =
-    card.nextDueDate != null ? computeDaysUntilDue(card.nextDueDate, today) : 0;
-  const dateLabelColor = getAxisLabelColor({
-    status: status.date,
-    remaining: daysUntilDue,
-    threshold: notificationDaysBefore,
-  });
+  const dateLabelColor = getAxisLabelColor(status.date);
 
   return (
     <div

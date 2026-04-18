@@ -222,7 +222,7 @@ describe('MaintenanceCardRow — per-axis label colours', () => {
     expect(label.className).toContain('text-[#00e5ff]');
   });
 
-  it('uses muted grey for date label when daysUntilDue > 3× threshold', () => {
+  it('uses cyan for date label even when daysUntilDue exceeds 3× threshold', () => {
     render(
       <MaintenanceCardRow
         {...defaultProps}
@@ -230,7 +230,7 @@ describe('MaintenanceCardRow — per-axis label colours', () => {
       />,
     );
     const label = screen.getByText('22 days left');
-    expect(label.className).toContain('text-[#555]');
+    expect(label.className).toContain('text-[#00e5ff]');
   });
 
   it('uses destructive red for overdue date label', () => {
@@ -268,7 +268,7 @@ describe('MaintenanceCardRow — per-axis label colours', () => {
     );
     const mileageLabel = screen.getByText('10,000 km left');
     const dateLabel = screen.getByText(/days overdue/i);
-    expect(mileageLabel.className).toContain('text-[#555]');
+    expect(mileageLabel.className).toContain('text-[#00e5ff]');
     expect(dateLabel.className).toContain('text-[#ff4444]');
   });
 });

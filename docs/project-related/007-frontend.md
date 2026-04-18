@@ -314,8 +314,9 @@ Let `threshold` = warning-threshold km (or miles native), `remaining` = `nextDue
 
 ### Healthy label color rule
 
-- `remaining > 3 × threshold`: color = `--text-disabled` (`#555555`) — far from due, muted
-- `threshold < remaining ≤ 3 × threshold`: color = `--primary` (`#00e5ff`) — approaching, cyan
+- `ok` (`remaining > threshold`): color = `--primary` (`#00e5ff`) — cyan.
+
+The earlier two-tier healthy rule (muted grey beyond `3 × threshold`, cyan inside) was dropped after user feedback: grey reads as "disabled" and obscured that the card was still being tracked. `--text-disabled` remains in use for type badges and the ⋮ action button.
 
 ### Key files
 

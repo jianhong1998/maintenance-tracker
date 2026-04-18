@@ -10,6 +10,8 @@
 
 **Source spec:** `docs/superpowers/specs/2026-04-18-expiry-date-display-design.md`.
 
+> **Superseded rule note (2026-04-18).** References in this plan to the `3 × threshold` muted-grey branch for `ok` labels (test cases, `getAxisLabelColor` signature with `remaining`/`threshold` params, `text-[#555]` expectations for healthy labels) no longer reflect shipped behaviour. The rule was dropped shortly after implementation — grey read as "disabled." Current helper is `getAxisLabelColor(status)` returning cyan for `ok` unconditionally. See `docs/project-related/007-frontend.md` Plan 16 and `frontend/src/components/maintenance-cards/maintenance-card-row.tsx`. Plan body retained as-is for historical record.
+
 **Global commands** (run from repo root):
 
 - `just format` — format all workspaces

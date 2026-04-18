@@ -38,7 +38,7 @@ All tokens are declared in `globals.css` on `:root` and exposed to Tailwind via 
 | `--text-primary` | `#FFFFFF` | Headings, card titles |
 | `--text-secondary` | `#888888` | Labels, subtitles, eyebrow text |
 | `--text-muted` | `#444444` | Inactive nav items, placeholder, card meta |
-| `--text-disabled` | `#555555` | Type badge text, far-from-due healthy labels |
+| `--text-disabled` | `#555555` | Type badge text, ⋮ action button (healthy-label use superseded 2026-04-18 — see "Healthy Label Color Rule") |
 | `--border` | `#FFFFFF10` | Default card borders, default chrome |
 
 **C2 note on `--accent` collision.** shadcn's Tailwind conventions treat `bg-accent` as a *hover surface* color, not an interactive tint. To avoid silent drift, this spec keeps `--accent` aligned with shadcn semantics (`#0F1923` — a dark surface) and uses `--primary` for the cyan interactive color. Reference `bg-primary` / `text-primary` / `border-primary` for cyan; reference `bg-accent` only for hover surfaces.
@@ -100,6 +100,8 @@ Let `threshold` be the warning-threshold km (or miles native), `remaining` be `n
 - **Healthy** (`remaining > threshold`): `lookahead = 5 × threshold`. Fill = `(1 - min(remaining, lookahead) / lookahead) × 59`. Starts at `0%` when `remaining ≥ lookahead`, grows to `59%` when `remaining → threshold`. Linear. No minimum floor.
 
 ### Healthy Label Color Rule
+
+> **Superseded 2026-04-18.** The two-tier rule below was dropped in favour of a single cyan state for all healthy cards. Grey read as "disabled / not tracked," which was the opposite of the intended signal. Current rule: `ok` → `--primary` (`#00E5FF`) cyan unconditionally. See `docs/project-related/007-frontend.md` Plan 16 "Healthy label color rule" for current truth. Body retained below for historical context.
 
 Healthy cards MUST pick the label color based on proximity to the warning zone:
 

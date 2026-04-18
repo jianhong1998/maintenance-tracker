@@ -223,7 +223,7 @@ All palette values are declared as CSS custom properties in `frontend/src/app/gl
 | `text-destructive` | `#ff4444` | Overdue status, destructive actions |
 | `text-[color:var(--text-secondary)]` | `#888888` | Labels, meta text |
 | `text-[color:var(--text-muted)]` | `#444444` | Inactive items, placeholders |
-| `text-[color:var(--text-disabled)]` | `#555555` | Type badges, far-from-due labels |
+| `text-[color:var(--text-disabled)]` | `#555555` | Type badges, ⋮ action button |
 
 Direct hex literals (e.g. `bg-[#ff44440d]`) are acceptable only for values that have no named token — for example, semi-transparent overlays that are one-off.
 

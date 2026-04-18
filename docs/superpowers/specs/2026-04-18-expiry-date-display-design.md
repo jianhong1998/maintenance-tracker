@@ -135,6 +135,8 @@ Rules:
 
 ### 5.3 Per-line colour
 
+> **Superseded 2026-04-18.** The `3 * threshold` muted-grey branch for `ok` was dropped — users read grey as "disabled." Current signature is `getAxisLabelColor(status)` (no `remaining`/`threshold` params); `ok` → cyan unconditionally. See `docs/project-related/007-frontend.md` Plan 16 and `frontend/src/components/maintenance-cards/maintenance-card-row.tsx` for current truth. Original spec retained below.
+
 One helper, called once per axis:
 
 ```ts
