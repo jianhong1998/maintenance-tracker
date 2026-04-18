@@ -139,7 +139,7 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-card-title truncate">{card.name}</p>
-          <span className="inline-block mt-0.5 bg-[color:var(--bg-card)] border border-[#333] text-[color:var(--text-disabled)] text-[0.375rem] px-[4px] py-[1px] rounded">
+          <span className="inline-block mt-0.5 bg-[color:var(--bg-card)] border border-[#333] text-[color:var(--text-secondary)] text-[0.375rem] px-[4px] py-[1px] rounded">
             {TYPE_LABELS[card.type]}
           </span>
         </div>
@@ -172,7 +172,7 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
                 e.nativeEvent.stopImmediatePropagation();
                 onDropdownToggle(isDropdownOpen ? null : card.id);
               }}
-              className="bg-[color:var(--bg-card)] border-[#333] text-[color:var(--text-disabled)]"
+              className="bg-[color:var(--bg-card)] border-[#333] text-[color:var(--text-secondary)]"
             >
               ⋮
             </Button>
