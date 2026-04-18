@@ -77,6 +77,38 @@ describe('ConfigController', () => {
 
       expect(result.notificationDaysBefore).toBe(7);
     });
+
+    it('coerces numeric string env values to numbers (real env vars are always strings)', () => {
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'MILEAGE_WARNING_THRESHOLD_KM') return '500';
+        if (key === 'NOTIFICATION_DAYS_BEFORE') return '7';
+        return undefined;
+      });
+
+      const result = controller.getConfig();
+
+      expect(result).toEqual({
+        mileageWarningThresholdKm: 500,
+        notificationDaysBefore: 7,
+      });
+      expect(typeof result.mileageWarningThresholdKm).toBe('number');
+      expect(typeof result.notificationDaysBefore).toBe('number');
+    });
+
+    it('falls back to defaults when env values are non-numeric strings', () => {
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'MILEAGE_WARNING_THRESHOLD_KM') return 'not-a-number';
+        if (key === 'NOTIFICATION_DAYS_BEFORE') return '';
+        return undefined;
+      });
+
+      const result = controller.getConfig();
+
+      expect(result).toEqual({
+        mileageWarningThresholdKm: 500,
+        notificationDaysBefore: 7,
+      });
+    });
   });
 
   it('getFeatureFlag is decorated with @Public()', () => {

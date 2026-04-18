@@ -16,6 +16,7 @@ import {
   type CreateMaintenanceCardData,
 } from '../repositories/maintenance-card.repository';
 import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
+import { readNumericEnv } from 'src/modules/common/utils/config-number.util';
 import { compareCardsByUrgency } from '../utils/card-sort.util';
 
 export type CreateCardInput = Omit<CreateMaintenanceCardData, 'vehicleId'>;
@@ -72,10 +73,16 @@ export class MaintenanceCardService {
       return [...cards].sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    const mileageWarningThresholdKm =
-      this.configService.get<number>('MILEAGE_WARNING_THRESHOLD_KM') ?? 500;
-    const notificationDaysBefore =
-      this.configService.get<number>('NOTIFICATION_DAYS_BEFORE') ?? 7;
+    const mileageWarningThresholdKm = readNumericEnv({
+      configService: this.configService,
+      key: 'MILEAGE_WARNING_THRESHOLD_KM',
+      fallback: 500,
+    });
+    const notificationDaysBefore = readNumericEnv({
+      configService: this.configService,
+      key: 'NOTIFICATION_DAYS_BEFORE',
+      fallback: 7,
+    });
 
     return [...cards].sort(
       compareCardsByUrgency({
