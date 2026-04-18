@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import type { IMarkDoneReqDTO } from '@project/types';
@@ -15,6 +16,7 @@ import {
   type CreateMaintenanceCardData,
 } from '../repositories/maintenance-card.repository';
 import { MaintenanceHistoryRepository } from '../repositories/maintenance-history.repository';
+import { compareCardsByUrgency } from '../utils/card-sort.util';
 
 export type CreateCardInput = Omit<CreateMaintenanceCardData, 'vehicleId'>;
 
@@ -45,56 +47,6 @@ function addMonths(date: Date, months: number): Date {
   return result;
 }
 
-function sortByUrgency(
-  cards: MaintenanceCardEntity[],
-  vehicleMileage: number,
-): MaintenanceCardEntity[] {
-  const today = new Date();
-
-  const isDateOverdue = (card: MaintenanceCardEntity): boolean =>
-    card.nextDueDate !== null && card.nextDueDate < today;
-
-  const isMileageOverdue = (card: MaintenanceCardEntity): boolean =>
-    card.nextDueMileage !== null && card.nextDueMileage <= vehicleMileage;
-
-  const overdueByDate: MaintenanceCardEntity[] = [];
-  const overdueByMileageOnly: MaintenanceCardEntity[] = [];
-  const nonOverdue: MaintenanceCardEntity[] = [];
-  const noDueInfo: MaintenanceCardEntity[] = [];
-
-  for (const card of cards) {
-    if (isDateOverdue(card)) {
-      overdueByDate.push(card);
-    } else if (isMileageOverdue(card)) {
-      overdueByMileageOnly.push(card);
-    } else if (card.nextDueDate !== null || card.nextDueMileage !== null) {
-      nonOverdue.push(card);
-    } else {
-      noDueInfo.push(card);
-    }
-  }
-
-  overdueByDate.sort(
-    (a, b) => a.nextDueDate!.getTime() - b.nextDueDate!.getTime(),
-  );
-  overdueByMileageOnly.sort((a, b) => a.nextDueMileage! - b.nextDueMileage!);
-  nonOverdue.sort((a, b) => {
-    if (a.nextDueDate && b.nextDueDate) {
-      return a.nextDueDate.getTime() - b.nextDueDate.getTime();
-    }
-    if (a.nextDueDate) return -1;
-    if (b.nextDueDate) return 1;
-    return a.nextDueMileage! - b.nextDueMileage!;
-  });
-
-  return [
-    ...overdueByDate,
-    ...overdueByMileageOnly,
-    ...nonOverdue,
-    ...noDueInfo,
-  ];
-}
-
 @Injectable()
 export class MaintenanceCardService {
   constructor(
@@ -103,6 +55,7 @@ export class MaintenanceCardService {
     private readonly vehicleService: VehicleService,
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly backgroundJobRepository: BackgroundJobRepository,
+    private readonly configService: ConfigService,
   ) {}
 
   async listCards(
@@ -119,7 +72,20 @@ export class MaintenanceCardService {
       return [...cards].sort((a, b) => a.name.localeCompare(b.name));
     }
 
-    return sortByUrgency(cards, vehicle.mileage);
+    const mileageWarningThresholdKm =
+      this.configService.get<number>('MILEAGE_WARNING_THRESHOLD_KM') ?? 500;
+    const notificationDaysBefore =
+      this.configService.get<number>('NOTIFICATION_DAYS_BEFORE') ?? 7;
+
+    return [...cards].sort(
+      compareCardsByUrgency({
+        vehicleMileage: vehicle.mileage,
+        mileageUnit: vehicle.mileageUnit,
+        mileageWarningThresholdKm,
+        notificationDaysBefore,
+        today: new Date(),
+      }),
+    );
   }
 
   async getCard(
