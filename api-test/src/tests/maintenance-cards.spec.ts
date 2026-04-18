@@ -860,4 +860,60 @@ describe('#MaintenanceCards', () => {
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
   });
+
+  // ─── GET list — sort=urgency (tier + driver) ──────────────────────────────
+
+  describe('GET /vehicles/:vehicleId/maintenance-cards?sort=urgency (tier + driver)', () => {
+    it('orders cards by tier (overdue → warning → ok) and driver (mileage → date) within tier', async () => {
+      // Bring the vehicle to 50_000 km.
+      await axiosInstance.patch(
+        `/vehicles/${vehicleId}/mileage`,
+        { mileage: 50000 },
+        authHeaders(),
+      );
+
+      const post = (
+        payload: Partial<IMaintenanceCardResDTO> & { name: string },
+      ) =>
+        axiosInstance.post<IMaintenanceCardResDTO>(
+          `/vehicles/${vehicleId}/maintenance-cards`,
+          { type: 'task', intervalMileage: 5000, ...payload },
+          authHeaders(),
+        );
+
+      const okFar = await post({
+        name: 'ok-far',
+        nextDueMileage: 60000,
+        nextDueDate: '2099-01-01',
+      });
+      const overdueDate = await post({
+        name: 'overdue-date',
+        nextDueMileage: 60000,
+        nextDueDate: '2020-01-01',
+      });
+      const overdueMile = await post({
+        name: 'overdue-mile',
+        nextDueMileage: 40000,
+        nextDueDate: '2099-01-01',
+      });
+      const warnMile = await post({
+        name: 'warn-mile',
+        nextDueMileage: 50400,
+        nextDueDate: '2099-01-01',
+      });
+
+      const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
+        `/vehicles/${vehicleId}/maintenance-cards?sort=urgency`,
+        authHeaders(),
+      );
+
+      const orderedIds = res.data.map((c) => c.id);
+      expect(orderedIds).toEqual([
+        overdueMile.data.id,
+        overdueDate.data.id,
+        warnMile.data.id,
+        okFar.data.id,
+      ]);
+    });
+  });
 });
