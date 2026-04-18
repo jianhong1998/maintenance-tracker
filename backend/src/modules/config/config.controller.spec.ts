@@ -47,15 +47,19 @@ describe('ConfigController', () => {
   });
 
   describe('#getConfig', () => {
-    it('returns mileageWarningThresholdKm from env', () => {
+    it('returns mileageWarningThresholdKm and notificationDaysBefore from env', () => {
       mockConfigService.get.mockImplementation((key: string) => {
         if (key === 'MILEAGE_WARNING_THRESHOLD_KM') return 500;
+        if (key === 'NOTIFICATION_DAYS_BEFORE') return 7;
         return undefined;
       });
 
       const result = controller.getConfig();
 
-      expect(result).toEqual({ mileageWarningThresholdKm: 500 });
+      expect(result).toEqual({
+        mileageWarningThresholdKm: 500,
+        notificationDaysBefore: 7,
+      });
     });
 
     it('falls back to default 500 when MILEAGE_WARNING_THRESHOLD_KM is not set', () => {
@@ -64,6 +68,14 @@ describe('ConfigController', () => {
       const result = controller.getConfig();
 
       expect(result.mileageWarningThresholdKm).toBe(500);
+    });
+
+    it('falls back to default 7 when NOTIFICATION_DAYS_BEFORE is not set', () => {
+      mockConfigService.get.mockReturnValue(undefined);
+
+      const result = controller.getConfig();
+
+      expect(result.notificationDaysBefore).toBe(7);
     });
   });
 
