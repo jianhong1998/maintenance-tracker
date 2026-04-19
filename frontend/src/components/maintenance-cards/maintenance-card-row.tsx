@@ -30,38 +30,44 @@ const getProgressFill = (remaining: number, interval: number): number => {
 const pluralise = (value: number, unit: 'day') =>
   `${value} ${value === 1 ? unit : `${unit}s`}`;
 
+type AxisLabel = { text: string; colorClass: string };
+
+const LABEL_COLOR_BY_STATUS: Record<Exclude<CardAxisStatus, 'none'>, string> = {
+  overdue: 'text-[#ff4444]',
+  warning: 'text-[#f59e0b]',
+  ok: 'text-[#00e5ff]',
+};
+
 const getMileageLabel = (params: {
   card: IMaintenanceCardResDTO;
   vehicle: IVehicleResDTO;
   mileageStatus: CardAxisStatus;
-}): string | null => {
+}): AxisLabel | null => {
   const { card, vehicle, mileageStatus } = params;
   if (card.nextDueMileage === null || mileageStatus === 'none') return null;
   const remaining = card.nextDueMileage - vehicle.mileage;
-  if (mileageStatus === 'overdue') {
-    return `${Math.abs(Math.round(remaining)).toLocaleString()} ${vehicle.mileageUnit} past due`;
-  }
-  return `${Math.round(remaining).toLocaleString()} ${vehicle.mileageUnit} left`;
+  const text =
+    mileageStatus === 'overdue'
+      ? `${Math.abs(Math.round(remaining)).toLocaleString()} ${vehicle.mileageUnit} past due`
+      : `${Math.round(remaining).toLocaleString()} ${vehicle.mileageUnit} left`;
+  return { text, colorClass: LABEL_COLOR_BY_STATUS[mileageStatus] };
 };
 
 const getDateLabel = (params: {
   card: IMaintenanceCardResDTO;
   today: Date;
   dateStatus: CardAxisStatus;
-}): string | null => {
+}): AxisLabel | null => {
   const { card, today, dateStatus } = params;
   if (card.nextDueDate == null || dateStatus === 'none') return null;
   const days = computeDaysUntilDue(card.nextDueDate, today);
-  if (days === 0) return 'Due today';
-  if (days < 0) return `${pluralise(Math.abs(days), 'day')} overdue`;
-  return `${pluralise(days, 'day')} left`;
-};
-
-const getAxisLabelColor = (status: CardAxisStatus): string => {
-  if (status === 'overdue') return 'text-[#ff4444]';
-  if (status === 'warning') return 'text-[#f59e0b]';
-  if (status === 'ok') return 'text-[#00e5ff]';
-  return 'text-[#555]';
+  const text =
+    days === 0
+      ? 'Due today'
+      : days < 0
+        ? `${pluralise(Math.abs(days), 'day')} overdue`
+        : `${pluralise(days, 'day')} left`;
+  return { text, colorClass: LABEL_COLOR_BY_STATUS[dateStatus] };
 };
 
 const getContainerClass = (overall: CardStatus['overall']): string => {
@@ -120,14 +126,12 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
     vehicle,
     mileageStatus: status.mileage,
   });
-  const mileageLabelColor = getAxisLabelColor(status.mileage);
 
   const dateLabel = getDateLabel({
     card,
     today,
     dateStatus: status.date,
   });
-  const dateLabelColor = getAxisLabelColor(status.date);
 
   return (
     <div
@@ -148,14 +152,22 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
           <div className="flex flex-col items-end">
             {mileageLabel && (
               <span
-                className={cn('text-[0.625rem] font-bold', mileageLabelColor)}
+                className={cn(
+                  'text-[0.625rem] font-bold',
+                  mileageLabel.colorClass,
+                )}
               >
-                {mileageLabel}
+                {mileageLabel.text}
               </span>
             )}
             {dateLabel && (
-              <span className={cn('text-[0.625rem] font-bold', dateLabelColor)}>
-                {dateLabel}
+              <span
+                className={cn(
+                  'text-[0.625rem] font-bold',
+                  dateLabel.colorClass,
+                )}
+              >
+                {dateLabel.text}
               </span>
             )}
           </div>
