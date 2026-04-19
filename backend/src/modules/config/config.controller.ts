@@ -1,10 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { IAppConfigResDTO, IFeatureFlagResDTO } from '@project/types';
+import {
+  DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
+  DEFAULT_NOTIFICATION_DAYS_BEFORE,
+} from '@project/types';
 import { Public } from '../auth/decorators/public.decorator';
 import { EnvironmentVariableUtil } from '../common/utils/environment-variable.util';
-
-const DEFAULT_MILEAGE_WARNING_THRESHOLD_KM = 500;
+import { readNumericEnv } from '../common/utils/config-number.util';
 
 @Controller('config')
 export class ConfigController {
@@ -17,9 +20,16 @@ export class ConfigController {
   @Get()
   getConfig(): IAppConfigResDTO {
     return {
-      mileageWarningThresholdKm:
-        this.configService.get<number>('MILEAGE_WARNING_THRESHOLD_KM') ??
-        DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
+      mileageWarningThresholdKm: readNumericEnv({
+        configService: this.configService,
+        key: 'MILEAGE_WARNING_THRESHOLD_KM',
+        fallback: DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
+      }),
+      notificationDaysBefore: readNumericEnv({
+        configService: this.configService,
+        key: 'NOTIFICATION_DAYS_BEFORE',
+        fallback: DEFAULT_NOTIFICATION_DAYS_BEFORE,
+      }),
     };
   }
 

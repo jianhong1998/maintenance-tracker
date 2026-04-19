@@ -1,7 +1,5 @@
-import type { IMaintenanceCardResDTO, MileageUnit } from '@project/types';
-
-const MILES_TO_KM = 1.60934;
-const MS_PER_DAY = 86_400_000;
+import type { MileageUnit } from '@project/types';
+import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
 
 export type CardAxisStatus = 'overdue' | 'warning' | 'ok' | 'none';
 
@@ -13,22 +11,18 @@ export type CardStatus = {
 
 type CardWarningStatus = CardStatus['overall'];
 
-const startOfLocalDay = (date: Date): Date => {
+const MILES_TO_KM = 1.60934;
+
+export const MS_PER_DAY = 86_400_000;
+
+export const startOfLocalDay = (date: Date): Date => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;
 };
 
-export const daysUntilDue = (nextDueDateIso: string, today: Date): number => {
-  const due = new Date(nextDueDateIso.slice(0, 10) + 'T00:00:00');
-  return Math.floor(
-    (startOfLocalDay(due).getTime() - startOfLocalDay(today).getTime()) /
-      MS_PER_DAY,
-  );
-};
-
 const getMileageStatus = (params: {
-  card: IMaintenanceCardResDTO;
+  card: MaintenanceCardEntity;
   vehicleMileage: number;
   mileageUnit: MileageUnit;
   mileageWarningThresholdKm: number;
@@ -46,15 +40,19 @@ const getMileageStatus = (params: {
 };
 
 const getDateStatus = (params: {
-  card: IMaintenanceCardResDTO;
+  card: MaintenanceCardEntity;
   notificationDaysBefore: number;
   today: Date;
 }): CardAxisStatus => {
   const { card, notificationDaysBefore, today } = params;
-  if (card.nextDueDate == null) return 'none';
-  const d = daysUntilDue(card.nextDueDate, today);
-  if (d <= 0) return 'overdue';
-  if (d <= notificationDaysBefore) return 'warning';
+  if (card.nextDueDate === null) return 'none';
+  const daysUntilDue = Math.floor(
+    (startOfLocalDay(card.nextDueDate).getTime() -
+      startOfLocalDay(today).getTime()) /
+      MS_PER_DAY,
+  );
+  if (daysUntilDue <= 0) return 'overdue';
+  if (daysUntilDue <= notificationDaysBefore) return 'warning';
   return 'ok';
 };
 
@@ -65,27 +63,14 @@ const worst = (a: CardAxisStatus, b: CardAxisStatus): CardWarningStatus => {
 };
 
 export const getCardStatus = (params: {
-  card: IMaintenanceCardResDTO;
+  card: MaintenanceCardEntity;
   vehicleMileage: number;
   mileageUnit: MileageUnit;
   mileageWarningThresholdKm: number;
   notificationDaysBefore: number;
-  today?: Date;
+  today: Date;
 }): CardStatus => {
-  const today = params.today ?? new Date();
   const mileage = getMileageStatus(params);
-  const date = getDateStatus({ ...params, today });
+  const date = getDateStatus(params);
   return { mileage, date, overall: worst(mileage, date) };
 };
-
-export const countWarningCards = (params: {
-  cards: IMaintenanceCardResDTO[];
-  vehicleMileage: number;
-  mileageUnit: MileageUnit;
-  mileageWarningThresholdKm: number;
-  notificationDaysBefore: number;
-}): number =>
-  params.cards.filter((card) => {
-    const { overall } = getCardStatus({ ...params, card });
-    return overall === 'overdue' || overall === 'warning';
-  }).length;

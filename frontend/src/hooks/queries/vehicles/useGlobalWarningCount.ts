@@ -9,10 +9,12 @@ import { maintenanceCardsQueryOptions } from '../maintenance-cards/useMaintenanc
  * parallel queries — no hooks-in-loop violation.
  * TanStack Query deduplicates these fetches with VehicleCard's useMaintenanceCards calls.
  */
-export function useGlobalWarningCount(
-  vehicles: IVehicleResDTO[],
-  thresholdKm: number,
-): number {
+export function useGlobalWarningCount(params: {
+  vehicles: IVehicleResDTO[];
+  thresholdKm: number;
+  notificationDaysBefore: number;
+}): number {
+  const { vehicles, thresholdKm, notificationDaysBefore } = params;
   const results = useQueries({
     queries: vehicles.map((vehicle) =>
       maintenanceCardsQueryOptions(vehicle.id),
@@ -24,12 +26,13 @@ export function useGlobalWarningCount(
     const vehicle = vehicles[index];
     return (
       total +
-      countWarningCards(
+      countWarningCards({
         cards,
-        vehicle.mileage,
-        vehicle.mileageUnit,
-        thresholdKm,
-      )
+        vehicleMileage: vehicle.mileage,
+        mileageUnit: vehicle.mileageUnit,
+        mileageWarningThresholdKm: thresholdKm,
+        notificationDaysBefore,
+      })
     );
   }, 0);
 }

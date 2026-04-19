@@ -1,5 +1,5 @@
 import axiosInstance from '../config/axios';
-import { IHealthCheckResDTO } from '@project/types';
+import { IAppConfigResDTO, IHealthCheckResDTO } from '@project/types';
 
 describe('#Health Check', () => {
   it('should return status 200 without auth token', async () => {
@@ -15,5 +15,15 @@ describe('#Health Check', () => {
       isHealthy: true,
       timestamp: expect.any(String) as string,
     } as IHealthCheckResDTO);
+  });
+});
+
+describe('GET /config', () => {
+  it('returns mileageWarningThresholdKm and notificationDaysBefore as numbers', async () => {
+    const { data, status } =
+      await axiosInstance.get<IAppConfigResDTO>('/config');
+    expect(status).toBe(200);
+    expect(typeof data.mileageWarningThresholdKm).toBe('number');
+    expect(typeof data.notificationDaysBefore).toBe('number');
   });
 });

@@ -68,6 +68,7 @@ describe('VehicleCard', () => {
       <VehicleCard
         vehicle={mockVehicle}
         thresholdKm={500}
+        notificationDaysBefore={7}
       />,
     );
 
@@ -79,6 +80,7 @@ describe('VehicleCard', () => {
       <VehicleCard
         vehicle={mockVehicle}
         thresholdKm={500}
+        notificationDaysBefore={7}
       />,
     );
 
@@ -96,6 +98,7 @@ describe('VehicleCard', () => {
       <VehicleCard
         vehicle={mockVehicle}
         thresholdKm={500}
+        notificationDaysBefore={7}
       />,
     );
 
@@ -111,6 +114,7 @@ describe('VehicleCard', () => {
       <VehicleCard
         vehicle={mockVehicle}
         thresholdKm={500}
+        notificationDaysBefore={7}
       />,
     );
 
@@ -125,6 +129,7 @@ describe('VehicleCard', () => {
       <VehicleCard
         vehicle={mockVehicle}
         thresholdKm={500}
+        notificationDaysBefore={7}
       />,
     );
 
@@ -132,22 +137,25 @@ describe('VehicleCard', () => {
     expect(link).toHaveAttribute('href', '/vehicles/vehicle-1');
   });
 
-  it('passes thresholdKm to countWarningCards', () => {
+  it('passes thresholdKm and notificationDaysBefore to countWarningCards', () => {
     const thresholdKm = 750;
+    const notificationDaysBefore = 14;
 
     render(
       <VehicleCard
         vehicle={mockVehicle}
         thresholdKm={thresholdKm}
+        notificationDaysBefore={notificationDaysBefore}
       />,
     );
 
-    expect(vi.mocked(countWarningCards)).toHaveBeenCalledWith(
-      mockCards,
-      mockVehicle.mileage,
-      mockVehicle.mileageUnit,
-      thresholdKm,
-    );
+    expect(vi.mocked(countWarningCards)).toHaveBeenCalledWith({
+      cards: mockCards,
+      vehicleMileage: mockVehicle.mileage,
+      mileageUnit: mockVehicle.mileageUnit,
+      mileageWarningThresholdKm: thresholdKm,
+      notificationDaysBefore,
+    });
   });
 
   it('shows registrationNumber as the primary label when set', () => {
@@ -156,6 +164,7 @@ describe('VehicleCard', () => {
       <VehicleCard
         vehicle={vehicleWithReg}
         thresholdKm={500}
+        notificationDaysBefore={7}
       />,
     );
     expect(screen.getByText('FBA1234Z')).toBeInTheDocument();
@@ -166,6 +175,7 @@ describe('VehicleCard', () => {
       <VehicleCard
         vehicle={mockVehicle}
         thresholdKm={500}
+        notificationDaysBefore={7}
       />,
     );
     // Toyota Camry appears exactly once (as primary)

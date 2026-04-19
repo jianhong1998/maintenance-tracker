@@ -3,11 +3,18 @@
 import type { FC } from 'react';
 import type { IMaintenanceCardResDTO, IVehicleResDTO } from '@project/types';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
-import { getCardWarningStatus, MILES_TO_KM } from '@/lib/warning';
-import type { CardWarningStatus } from '@/lib/warning';
+import {
+  getCardStatus,
+  daysUntilDue as computeDaysUntilDue,
+  type CardAxisStatus,
+  type CardStatus,
+} from '@/lib/warning';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { DEFAULT_MILEAGE_WARNING_THRESHOLD_KM } from '@/constants';
+import {
+  DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
+  DEFAULT_NOTIFICATION_DAYS_BEFORE,
+} from '@/constants';
 
 const TYPE_LABELS: Record<IMaintenanceCardResDTO['type'], string> = {
   task: 'Task',
@@ -15,38 +22,65 @@ const TYPE_LABELS: Record<IMaintenanceCardResDTO['type'], string> = {
   item: 'Item',
 };
 
-/**
- * Progress bar fill percentage (0–100).
- * Overdue: 100 (clamped — magnitude communicated via text).
- * Warning: linear 60→99 as remaining goes from threshold→0.
- * Healthy: linear 0→59 as remaining goes from (5 × threshold)→threshold. No floor.
- */
-const getProgressFill = (params: {
-  remaining: number | null;
-  thresholdNative: number;
-  status: CardWarningStatus;
-}): number => {
-  const { remaining, thresholdNative, status } = params;
-  if (status === 'overdue') return 100;
-  if (remaining === null) return 0;
-  if (status === 'warning') {
-    return 60 + ((thresholdNative - remaining) / thresholdNative) * 39;
-  }
-  // Healthy zone
-  const lookahead = thresholdNative * 5;
-  if (remaining >= lookahead) return 0;
-  return (1 - remaining / lookahead) * 59;
+const getProgressFill = (remaining: number, interval: number): number => {
+  const progress = 1 - remaining / interval;
+  return Math.max(0, Math.min(1, progress)) * 100;
 };
 
-/**
- * Healthy label color — muted when far from due, cyan when approaching warning zone.
- * Threshold: 3× warning threshold.
- */
-const getHealthyLabelColor = (
-  remaining: number,
-  thresholdNative: number,
-): 'primary' | 'muted' => {
-  return remaining > 3 * thresholdNative ? 'muted' : 'primary';
+const pluralise = (value: number, unit: 'day') =>
+  `${value} ${value === 1 ? unit : `${unit}s`}`;
+
+type AxisLabel = { text: string; colorClass: string };
+
+const LABEL_COLOR_BY_STATUS: Record<Exclude<CardAxisStatus, 'none'>, string> = {
+  overdue: 'text-[#ff4444]',
+  warning: 'text-[#f59e0b]',
+  ok: 'text-[#00e5ff]',
+};
+
+const getMileageLabel = (params: {
+  card: IMaintenanceCardResDTO;
+  vehicle: IVehicleResDTO;
+  mileageStatus: CardAxisStatus;
+}): AxisLabel | null => {
+  const { card, vehicle, mileageStatus } = params;
+  if (card.nextDueMileage === null || mileageStatus === 'none') return null;
+  const remaining = card.nextDueMileage - vehicle.mileage;
+  const text =
+    mileageStatus === 'overdue'
+      ? `${Math.abs(Math.round(remaining)).toLocaleString()} ${vehicle.mileageUnit} past due`
+      : `${Math.round(remaining).toLocaleString()} ${vehicle.mileageUnit} left`;
+  return { text, colorClass: LABEL_COLOR_BY_STATUS[mileageStatus] };
+};
+
+const getDateLabel = (params: {
+  card: IMaintenanceCardResDTO;
+  today: Date;
+  dateStatus: CardAxisStatus;
+}): AxisLabel | null => {
+  const { card, today, dateStatus } = params;
+  if (card.nextDueDate == null || dateStatus === 'none') return null;
+  const days = computeDaysUntilDue(card.nextDueDate, today);
+  const text =
+    days === 0
+      ? 'Due today'
+      : days < 0
+        ? `${pluralise(Math.abs(days), 'day')} overdue`
+        : `${pluralise(days, 'day')} left`;
+  return { text, colorClass: LABEL_COLOR_BY_STATUS[dateStatus] };
+};
+
+const getContainerClass = (overall: CardStatus['overall']): string => {
+  if (overall === 'overdue') return 'bg-[#ff44440a] border-[#ff444328]';
+  if (overall === 'warning') return 'bg-[#0f1923] border-[#f59e0b28]';
+  return 'bg-[#0f1923] border-[#00e5ff15]';
+};
+
+const getBarClass = (mileageStatus: CardAxisStatus): string => {
+  if (mileageStatus === 'overdue') return 'bg-[#ff4444]';
+  if (mileageStatus === 'warning')
+    return 'bg-gradient-to-r from-[#f59e0b60] to-[#f59e0b]';
+  return 'bg-gradient-to-r from-[#00e5ff40] to-[#00e5ff]';
 };
 
 type MaintenanceCardRowProps = {
@@ -71,82 +105,73 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
   const { data: config } = useAppConfig();
   const thresholdKm =
     config?.mileageWarningThresholdKm ?? DEFAULT_MILEAGE_WARNING_THRESHOLD_KM;
+  const notificationDaysBefore =
+    config?.notificationDaysBefore ?? DEFAULT_NOTIFICATION_DAYS_BEFORE;
+  const today = new Date();
 
-  const status = getCardWarningStatus(
+  const status = getCardStatus({
     card,
-    vehicle.mileage,
-    vehicle.mileageUnit,
-    thresholdKm,
-  );
-
-  const thresholdNative =
-    vehicle.mileageUnit === 'mile' ? thresholdKm / MILES_TO_KM : thresholdKm;
-
-  const remaining =
-    card.nextDueMileage !== null ? card.nextDueMileage - vehicle.mileage : null;
-
-  const progressFill = getProgressFill({
-    remaining,
-    thresholdNative,
-    status,
+    vehicleMileage: vehicle.mileage,
+    mileageUnit: vehicle.mileageUnit,
+    mileageWarningThresholdKm: thresholdKm,
+    notificationDaysBefore,
+    today,
   });
 
-  // Sub-label — single source for remaining-mileage text
-  const subLabel = (() => {
-    if (remaining === null) return null;
-    if (status === 'overdue') {
-      return `${Math.abs(Math.round(remaining)).toLocaleString()} ${vehicle.mileageUnit} past due`;
-    }
-    return `${Math.round(remaining).toLocaleString()} ${vehicle.mileageUnit} left`;
-  })();
+  const remainingMileage =
+    card.nextDueMileage !== null ? card.nextDueMileage - vehicle.mileage : null;
 
-  // Healthy label color follows the 3× rule
-  const labelColorClass = (() => {
-    if (status === 'overdue') return 'text-[#ff4444]';
-    if (status === 'warning') return 'text-[#f59e0b]';
-    if (remaining === null) return 'text-[#555]';
-    return getHealthyLabelColor(remaining, thresholdNative) === 'primary'
-      ? 'text-[#00e5ff]'
-      : 'text-[#555]';
-  })();
+  const mileageLabel = getMileageLabel({
+    card,
+    vehicle,
+    mileageStatus: status.mileage,
+  });
 
-  const containerClass = (() => {
-    if (status === 'overdue') return 'bg-[#ff44440a] border-[#ff444328]';
-    if (status === 'warning') return 'bg-[#0f1923] border-[#f59e0b28]';
-    return 'bg-[#0f1923] border-[#00e5ff15]';
-  })();
-
-  const barClass = (() => {
-    if (status === 'overdue') return 'bg-[#ff4444]';
-    if (status === 'warning')
-      return 'bg-gradient-to-r from-[#f59e0b60] to-[#f59e0b]';
-    return 'bg-gradient-to-r from-[#00e5ff40] to-[#00e5ff]';
-  })();
+  const dateLabel = getDateLabel({
+    card,
+    today,
+    dateStatus: status.date,
+  });
 
   return (
     <div
       className={cn(
         'relative rounded-lg border p-[9px] hover-pointer:bg-[#111d2b]',
-        containerClass,
+        getContainerClass(status.overall),
       )}
     >
-      {/* Top row: name + type badge | sub-label + ⋮ */}
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-card-title truncate">{card.name}</p>
-          <span className="inline-block mt-0.5 bg-[color:var(--bg-card)] border border-[#333] text-[color:var(--text-disabled)] text-[0.375rem] px-[4px] py-[1px] rounded">
+          <span className="inline-block mt-0.5 bg-[color:var(--bg-card)] border border-[#333] text-[color:var(--text-secondary)] text-[0.375rem] px-[4px] py-[1px] rounded">
             {TYPE_LABELS[card.type]}
           </span>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
-          {subLabel && (
-            <span className={cn('text-[0.625rem] font-bold', labelColorClass)}>
-              {subLabel}
-            </span>
-          )}
+          <div className="flex flex-col items-end">
+            {mileageLabel && (
+              <span
+                className={cn(
+                  'text-[0.625rem] font-bold',
+                  mileageLabel.colorClass,
+                )}
+              >
+                {mileageLabel.text}
+              </span>
+            )}
+            {dateLabel && (
+              <span
+                className={cn(
+                  'text-[0.625rem] font-bold',
+                  dateLabel.colorClass,
+                )}
+              >
+                {dateLabel.text}
+              </span>
+            )}
+          </div>
 
-          {/* ⋮ action button */}
           <div className="relative">
             <Button
               variant="secondary"
@@ -159,7 +184,7 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
                 e.nativeEvent.stopImmediatePropagation();
                 onDropdownToggle(isDropdownOpen ? null : card.id);
               }}
-              className="bg-[color:var(--bg-card)] border-[#333] text-[color:var(--text-disabled)]"
+              className="bg-[color:var(--bg-card)] border-[#333] text-[color:var(--text-secondary)]"
             >
               ⋮
             </Button>
@@ -208,20 +233,26 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
         </div>
       </div>
 
-      {/* Progress bar */}
-      {remaining !== null && (
-        <div className="mt-[5px] mb-[2px]">
-          <div
-            data-testid="progress-bar-track"
-            className="h-[3px] w-full bg-[#1a1a2e] rounded-full overflow-hidden"
-          >
+      {remainingMileage !== null &&
+        card.intervalMileage !== null &&
+        card.intervalMileage > 0 && (
+          <div className="mt-[5px] mb-[2px]">
             <div
-              className={cn('h-full rounded-full transition-all', barClass)}
-              style={{ width: `${Math.min(progressFill, 100)}%` }}
-            />
+              data-testid="progress-bar-track"
+              className="h-[3px] w-full bg-[#1a1a2e] rounded-full overflow-hidden"
+            >
+              <div
+                className={cn(
+                  'h-full rounded-full transition-all',
+                  getBarClass(status.mileage),
+                )}
+                style={{
+                  width: `${getProgressFill(remainingMileage, card.intervalMileage)}%`,
+                }}
+              />
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };

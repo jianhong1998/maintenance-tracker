@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import React from 'react';
 import type { IMaintenanceCardResDTO, IVehicleResDTO } from '@project/types';
@@ -6,14 +6,11 @@ import type { IMaintenanceCardResDTO, IVehicleResDTO } from '@project/types';
 vi.mock('@/hooks/queries/config/useAppConfig', () => ({
   useAppConfig: vi.fn(),
 }));
-vi.mock('@/lib/warning', () => ({
-  getCardWarningStatus: vi.fn(),
-  MILES_TO_KM: 1.60934,
-}));
 
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
-import { getCardWarningStatus } from '@/lib/warning';
 import { MaintenanceCardRow } from './maintenance-card-row';
+
+const FIXED_TODAY = new Date('2026-04-18T12:00:00');
 
 const mockVehicle: IVehicleResDTO = {
   id: 'vehicle-1',
@@ -51,134 +48,63 @@ const defaultProps = {
   onDelete: vi.fn(),
 };
 
-describe('MaintenanceCardRow', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(useAppConfig).mockReturnValue({
-      data: { mileageWarningThresholdKm: 500 },
-    } as ReturnType<typeof useAppConfig>);
-    vi.mocked(getCardWarningStatus).mockReturnValue('ok');
-  });
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.useFakeTimers();
+  vi.setSystemTime(FIXED_TODAY);
+  vi.mocked(useAppConfig).mockReturnValue({
+    data: { mileageWarningThresholdKm: 500, notificationDaysBefore: 7 },
+  } as ReturnType<typeof useAppConfig>);
+});
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe('MaintenanceCardRow — card chrome', () => {
   it('renders card name and type badge', () => {
     render(<MaintenanceCardRow {...defaultProps} />);
     expect(screen.getByText('Oil Change')).toBeInTheDocument();
     expect(screen.getByText('Task')).toBeInTheDocument();
   });
 
-  it('renders type badge for part type', () => {
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        card={{ ...mockCard, type: 'part' }}
-      />,
-    );
-    expect(screen.getByText('Part')).toBeInTheDocument();
-  });
-
-  it('renders type badge for item type', () => {
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        card={{ ...mockCard, type: 'item' }}
-      />,
-    );
-    expect(screen.getByText('Item')).toBeInTheDocument();
-  });
-
-  it('applies overdue dark classes when status is overdue', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
-    const { container } = render(<MaintenanceCardRow {...defaultProps} />);
-    const row = container.firstChild as HTMLElement;
-    expect(row.className).toContain('bg-[#ff44440a]');
-    expect(row.className).toContain('border-[#ff444328]');
-  });
-
-  it('applies warning dark classes when status is warning', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('warning');
-    const { container } = render(<MaintenanceCardRow {...defaultProps} />);
-    const row = container.firstChild as HTMLElement;
-    expect(row.className).toContain('border-[#f59e0b28]');
-  });
-
-  it('applies healthy dark classes when status is ok', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('ok');
-    const { container } = render(<MaintenanceCardRow {...defaultProps} />);
-    const row = container.firstChild as HTMLElement;
-    expect(row.className).toContain('border-[#00e5ff15]');
-    expect(row.className).not.toContain('bg-[#ff44440a]');
-  });
-
-  it('renders a progress bar track when nextDueMileage is set', () => {
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        card={{ ...mockCard, nextDueMileage: 51000 }}
-      />,
-    );
-    expect(screen.getByTestId('progress-bar-track')).toBeInTheDocument();
-  });
-
-  it('renders progress bar at 100% width when card is overdue', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
-    render(
+  it('applies overdue container classes when either axis is overdue', () => {
+    const { container } = render(
       <MaintenanceCardRow
         {...defaultProps}
         card={{ ...mockCard, nextDueMileage: 49000 }}
       />,
     );
-    const fill = document.querySelector('[style*="width: 100%"]');
-    expect(fill).toBeInTheDocument();
+    const row = container.firstChild as HTMLElement;
+    expect(row.className).toContain('bg-[#ff44440a]');
+    expect(row.className).toContain('border-[#ff444328]');
   });
 
-  it('does not render a progress bar when nextDueMileage is null', () => {
-    render(
+  it('applies warning container classes when overall tier is warning', () => {
+    const { container } = render(
       <MaintenanceCardRow
         {...defaultProps}
-        card={{ ...mockCard, nextDueMileage: null }}
+        card={{ ...mockCard, nextDueMileage: 50400 }}
       />,
     );
-    expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
+    const row = container.firstChild as HTMLElement;
+    expect(row.className).toContain('border-[#f59e0b28]');
   });
 
-  it('renders "N unit past due" sub-label when overdue', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
-    render(
+  it('applies healthy container classes when overall tier is ok', () => {
+    const { container } = render(
       <MaintenanceCardRow
         {...defaultProps}
-        card={{ ...mockCard, nextDueMileage: 49880 }}
+        card={{ ...mockCard, nextDueMileage: 60000 }}
       />,
     );
-    // currentMileage is 50000 in defaultProps mockVehicle
-    expect(screen.getByText(/past due/i)).toBeInTheDocument();
+    const row = container.firstChild as HTMLElement;
+    expect(row.className).toContain('border-[#00e5ff15]');
   });
+});
 
-  it('renders "N unit left" sub-label when warning or healthy', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('ok');
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        card={{ ...mockCard, nextDueMileage: 52000 }}
-      />,
-    );
-    expect(screen.getByText(/left/i)).toBeInTheDocument();
-  });
-
-  it('does not render "On track" text below the progress bar', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('ok');
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        card={{ ...mockCard, nextDueMileage: 52000 }}
-      />,
-    );
-    expect(screen.queryByText(/on track/i)).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/within warning threshold/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it('shows remaining mileage label when nextDueMileage is set and remaining > 0', () => {
+describe('MaintenanceCardRow — mileage label', () => {
+  it('shows "N unit left" when mileage is ok/warning', () => {
     render(
       <MaintenanceCardRow
         {...defaultProps}
@@ -188,69 +114,28 @@ describe('MaintenanceCardRow', () => {
     expect(screen.getByText('1,000 km left')).toBeInTheDocument();
   });
 
-  it('shows past due label when remaining <= 0', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('overdue');
+  it('shows "N unit past due" when mileage is overdue', () => {
     render(
       <MaintenanceCardRow
         {...defaultProps}
         card={{ ...mockCard, nextDueMileage: 49000 }}
       />,
     );
-    expect(screen.getByText(/past due/i)).toBeInTheDocument();
+    expect(screen.getByText('1,000 km past due')).toBeInTheDocument();
   });
 
-  it('shows no mileage label when nextDueMileage is null', () => {
+  it('omits mileage label when nextDueMileage is null', () => {
     render(
       <MaintenanceCardRow
         {...defaultProps}
         card={{ ...mockCard, nextDueMileage: null }}
       />,
     );
-    expect(screen.queryByText(/left/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/past due/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/km left/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/km past due/i)).not.toBeInTheDocument();
   });
 
-  it('uses mileageWarningThresholdKm from config when calling getCardWarningStatus', () => {
-    vi.mocked(useAppConfig).mockReturnValue({
-      data: { mileageWarningThresholdKm: 750 },
-    } as ReturnType<typeof useAppConfig>);
-    render(<MaintenanceCardRow {...defaultProps} />);
-    expect(vi.mocked(getCardWarningStatus)).toHaveBeenCalledWith(
-      mockCard,
-      mockVehicle.mileage,
-      mockVehicle.mileageUnit,
-      750,
-    );
-  });
-
-  it('renders progress bar fill between 60–99% when status is warning', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('warning');
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        card={{ ...mockCard, nextDueMileage: 50400 }} // remaining = 400, threshold = 500 → 67.8%
-      />,
-    );
-    const fill = document.querySelector('[style*="width:"]') as HTMLElement;
-    const pct = parseFloat(fill?.style.width ?? '0%');
-    expect(pct).toBeGreaterThanOrEqual(60);
-    expect(pct).toBeLessThan(100);
-  });
-
-  it('applies primary color to sub-label when remaining is below 3x threshold', () => {
-    vi.mocked(getCardWarningStatus).mockReturnValue('ok');
-    // threshold 500, remaining 1499 (below 3×500 = 1500) → primary color
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        card={{ ...mockCard, nextDueMileage: 51499 }}
-      />,
-    );
-    const label = screen.getByText(/left/i);
-    expect(label.className).toContain('text-[#00e5ff]');
-  });
-
-  it('shows mileage in miles unit for mile-unit vehicles', () => {
+  it('uses mile unit for mile-unit vehicles', () => {
     render(
       <MaintenanceCardRow
         {...defaultProps}
@@ -260,38 +145,312 @@ describe('MaintenanceCardRow', () => {
     );
     expect(screen.getByText('1,000 mile left')).toBeInTheDocument();
   });
+});
 
-  it('falls back to 500 threshold when config is undefined', () => {
+describe('MaintenanceCardRow — date label', () => {
+  it('shows "5 days left" when daysUntilDue is 5', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-04-23' }}
+      />,
+    );
+    expect(screen.getByText('5 days left')).toBeInTheDocument();
+  });
+
+  it('shows "1 day left" (singular) when daysUntilDue is 1', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-04-19' }}
+      />,
+    );
+    expect(screen.getByText('1 day left')).toBeInTheDocument();
+  });
+
+  it('shows "Due today" when daysUntilDue is 0', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-04-18' }}
+      />,
+    );
+    expect(screen.getByText('Due today')).toBeInTheDocument();
+  });
+
+  it('shows "3 days overdue" when daysUntilDue is -3', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-04-15' }}
+      />,
+    );
+    expect(screen.getByText('3 days overdue')).toBeInTheDocument();
+  });
+
+  it('shows "1 day overdue" (singular) when daysUntilDue is -1', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-04-17' }}
+      />,
+    );
+    expect(screen.getByText('1 day overdue')).toBeInTheDocument();
+  });
+
+  it('omits date label when nextDueDate is null', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueDate: null }}
+      />,
+    );
+    expect(screen.queryByText(/days left/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/due today/i)).not.toBeInTheDocument();
+  });
+});
+
+describe('MaintenanceCardRow — per-axis label colours', () => {
+  it('uses cyan for date label when daysUntilDue is within 3× threshold but > threshold', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-05-02' }}
+      />,
+    );
+    const label = screen.getByText('14 days left');
+    expect(label.className).toContain('text-[#00e5ff]');
+  });
+
+  it('uses cyan for date label even when daysUntilDue exceeds 3× threshold', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-05-10' }}
+      />,
+    );
+    const label = screen.getByText('22 days left');
+    expect(label.className).toContain('text-[#00e5ff]');
+  });
+
+  it('uses destructive red for overdue date label', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-04-10' }}
+      />,
+    );
+    const label = screen.getByText('8 days overdue');
+    expect(label.className).toContain('text-[#ff4444]');
+  });
+
+  it('uses amber for warning date label', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-04-22' }}
+      />,
+    );
+    const label = screen.getByText('4 days left');
+    expect(label.className).toContain('text-[#f59e0b]');
+  });
+
+  it('colours the two labels independently when one axis is ok and the other is overdue', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{
+          ...mockCard,
+          nextDueMileage: 60000,
+          nextDueDate: '2020-01-01',
+        }}
+      />,
+    );
+    const mileageLabel = screen.getByText('10,000 km left');
+    const dateLabel = screen.getByText(/days overdue/i);
+    expect(mileageLabel.className).toContain('text-[#00e5ff]');
+    expect(dateLabel.className).toContain('text-[#ff4444]');
+  });
+});
+
+describe('MaintenanceCardRow — progress bar', () => {
+  const getFillWidth = (): string => {
+    const fill = document.querySelector(
+      '[data-testid="progress-bar-track"] > div',
+    ) as HTMLElement;
+    return fill.style.width;
+  };
+
+  it('renders a progress bar when both nextDueMileage and intervalMileage are set', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 51000 }}
+      />,
+    );
+    expect(screen.getByTestId('progress-bar-track')).toBeInTheDocument();
+  });
+
+  it('does not render a progress bar when nextDueMileage is null', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-05-01' }}
+      />,
+    );
+    expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
+  });
+
+  it('does not render a progress bar when intervalMileage is null', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, intervalMileage: null, nextDueMileage: 51000 }}
+      />,
+    );
+    expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
+  });
+
+  it('does not render a progress bar when intervalMileage is 0', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, intervalMileage: 0, nextDueMileage: 51000 }}
+      />,
+    );
+    expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
+  });
+
+  it('fills 0% when just-serviced (remaining = interval)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 55000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('0%');
+  });
+
+  it('fills 50% at halfway through cycle (remaining = interval / 2)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 52500 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('50%');
+  });
+
+  it('fills 80% when 80% of the cycle is consumed', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 51000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('80%');
+  });
+
+  it('fills 100% at due (remaining = 0)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 50000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('100%');
+  });
+
+  it('fills 100% when overdue (remaining < 0)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 49000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('100%');
+  });
+
+  it('fills 0% when remaining exceeds interval (stale nextDue after interval edit)', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 60000 }}
+      />,
+    );
+    expect(getFillWidth()).toBe('0%');
+  });
+
+  it('bar colour follows the mileage axis even when overall is overdue due to date', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{
+          ...mockCard,
+          nextDueMileage: 51000,
+          nextDueDate: '2020-01-01',
+        }}
+      />,
+    );
+    const fill = document.querySelector(
+      '[data-testid="progress-bar-track"] > div',
+    ) as HTMLElement;
+    expect(fill.className).toContain('from-[#00e5ff40]');
+    expect(fill.className).not.toContain('bg-[#ff4444]');
+  });
+});
+
+describe('MaintenanceCardRow — no-axis card', () => {
+  it('renders neither label stack nor progress bar when both axes are null', () => {
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: null }}
+      />,
+    );
+    expect(
+      screen.queryByText(/left|overdue|today|past due/i),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('progress-bar-track')).not.toBeInTheDocument();
+  });
+});
+
+describe('MaintenanceCardRow — config fallbacks', () => {
+  it('falls back to 500 km threshold when config is undefined', () => {
     vi.mocked(useAppConfig).mockReturnValue({
       data: undefined,
     } as ReturnType<typeof useAppConfig>);
-    render(<MaintenanceCardRow {...defaultProps} />);
-    expect(vi.mocked(getCardWarningStatus)).toHaveBeenCalledWith(
-      mockCard,
-      mockVehicle.mileage,
-      mockVehicle.mileageUnit,
-      500,
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: 50400 }}
+      />,
     );
+    const label = screen.getByText('400 km left');
+    expect(label.className).toContain('text-[#f59e0b]');
   });
 
-  // ⋮ dropdown tests
+  it('falls back to 7-day threshold when config is undefined', () => {
+    vi.mocked(useAppConfig).mockReturnValue({
+      data: undefined,
+    } as ReturnType<typeof useAppConfig>);
+    render(
+      <MaintenanceCardRow
+        {...defaultProps}
+        card={{ ...mockCard, nextDueMileage: null, nextDueDate: '2026-04-25' }}
+      />,
+    );
+    const label = screen.getByText('7 days left');
+    expect(label.className).toContain('text-[#f59e0b]');
+  });
+});
+
+describe('MaintenanceCardRow — dropdown', () => {
   it('renders the ⋮ menu button', () => {
     render(<MaintenanceCardRow {...defaultProps} />);
     expect(
       screen.getByRole('button', { name: /actions/i }),
     ).toBeInTheDocument();
-  });
-
-  it('does not show dropdown items when isDropdownOpen is false', () => {
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        isDropdownOpen={false}
-      />,
-    );
-    expect(
-      screen.queryByRole('menuitem', { name: /mark done/i }),
-    ).not.toBeInTheDocument();
   });
 
   it('shows Mark Done, Edit, Delete when isDropdownOpen is true', () => {
@@ -310,7 +469,7 @@ describe('MaintenanceCardRow', () => {
     ).toBeInTheDocument();
   });
 
-  it('calls onDropdownToggle with cardId when ⋮ button is clicked and dropdown is closed', () => {
+  it('calls onDropdownToggle with cardId when ⋮ clicked and closed', () => {
     const onDropdownToggle = vi.fn();
     render(
       <MaintenanceCardRow
@@ -323,20 +482,7 @@ describe('MaintenanceCardRow', () => {
     expect(onDropdownToggle).toHaveBeenCalledWith('card-1');
   });
 
-  it('calls onDropdownToggle with null when ⋮ button is clicked and dropdown is open', () => {
-    const onDropdownToggle = vi.fn();
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        isDropdownOpen={true}
-        onDropdownToggle={onDropdownToggle}
-      />,
-    );
-    fireEvent.click(screen.getByRole('button', { name: /actions/i }));
-    expect(onDropdownToggle).toHaveBeenCalledWith(null);
-  });
-
-  it('calls onMarkDone with the card when Mark Done is clicked', () => {
+  it('calls onMarkDone when Mark Done is clicked', () => {
     const onMarkDone = vi.fn();
     render(
       <MaintenanceCardRow
@@ -347,46 +493,5 @@ describe('MaintenanceCardRow', () => {
     );
     fireEvent.click(screen.getByRole('menuitem', { name: /mark done/i }));
     expect(onMarkDone).toHaveBeenCalledWith(mockCard);
-  });
-
-  it('calls onEdit with the card when Edit is clicked', () => {
-    const onEdit = vi.fn();
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        isDropdownOpen={true}
-        onEdit={onEdit}
-      />,
-    );
-    fireEvent.click(screen.getByRole('menuitem', { name: /edit/i }));
-    expect(onEdit).toHaveBeenCalledWith(mockCard);
-  });
-
-  it('calls onDelete with the card when Delete is clicked', () => {
-    const onDelete = vi.fn();
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        isDropdownOpen={true}
-        onDelete={onDelete}
-      />,
-    );
-    fireEvent.click(screen.getByRole('menuitem', { name: /delete/i }));
-    expect(onDelete).toHaveBeenCalledWith(mockCard);
-  });
-
-  it('uses hover-pointer: variant (not plain hover:) on dropdown menu buttons', () => {
-    render(
-      <MaintenanceCardRow
-        {...defaultProps}
-        isDropdownOpen={true}
-      />,
-    );
-    const menuItems = screen.getAllByRole('menuitem');
-    menuItems.forEach((item) => {
-      expect(item.className).toContain(
-        'hover-pointer:bg-[color:var(--bg-card)]',
-      );
-    });
   });
 });

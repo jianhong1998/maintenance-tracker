@@ -294,7 +294,7 @@ The `xl:` prefix (1280px) is used for desktop-only layouts — NOT the default `
 - Vehicle Card: single meta line `"colour · mileage unit"` (brand/model removed from card), `VehicleStatusChip`, pointer-only hover
 - Vehicle Dashboard: functional `<Link href="/">` back nav labeled `← GO BACK` (`xl:hidden`), `getVehicleMetaLine` for header, `secondary-destructive` Delete button
 - Mileage Prompt: dark input with `border-primary-dim`, focus ring `#00e5ff40`, eyebrow label
-- Maintenance Card Row: progress bar with locked piecewise-linear formula, single top-right sub-label ("N unit past due" / "N unit left"), no status text below the bar, `icon-xs` ⋮ button
+- Maintenance Card Row: progress bar with a single cycle-consumption formula, single top-right sub-label ("N unit past due" / "N unit left"), no status text below the bar, `icon-xs` ⋮ button
 - Dialog shell: dark surface, mobile bottom sheet with drag-handle grabber, centered modal on `sm:` and up
 - All form dialogs: dark inputs, eyebrow labels, correct button variants
 
@@ -304,18 +304,28 @@ The `xl:` prefix (1280px) is used for desktop-only layouts — NOT the default `
 **Placeholder routes:**
 - `/history` and `/profile` — "Coming soon" pages wrapped in `AuthGuard`
 
-### Progress bar formula (locked)
+### Progress bar formula
 
-Let `threshold` = warning-threshold km (or miles native), `remaining` = `nextDueMileage - currentMileage`:
+Let `interval` = `card.intervalMileage` (native unit), `remaining` = `nextDueMileage - currentMileage` (native unit):
 
-- **Overdue** (`remaining ≤ 0`): fill = `100%`, solid red. Magnitude communicated via text only.
-- **Warning** (`0 < remaining ≤ threshold`): `fill = 60 + ((threshold - remaining) / threshold) × 39`. Linear 60% → 99%.
-- **Healthy** (`remaining > threshold`): `lookahead = 5 × threshold`. `fill = (1 - min(remaining, lookahead) / lookahead) × 59`. Linear 0% → 59%.
+- **Render gate.** Bar is rendered only when `nextDueMileage !== null` **and** `intervalMileage !== null` **and** `intervalMileage > 0`. A card with no mileage interval has no well-defined cycle length — we hide the bar rather than fake one.
+- **Fill.** `fill = clamp(1 - remaining / interval, 0, 1) × 100%`.
+  - **Just-serviced** (`remaining = interval`) → 0%.
+  - **Halfway** (`remaining = interval / 2`) → 50%.
+  - **At due** (`remaining = 0`) → 100%.
+  - **Overdue** (`remaining < 0`) → clamped to 100%.
+  - **Stale / pre-cycle** (`remaining > interval`, e.g. after user lowers `intervalMileage` without recomputing `nextDueMileage`) → clamped to 0%. Accepted UX: the card appears "fresh" under the new shorter cycle because the system's implied last-done point sits at or past current mileage. The numeric sub-label still shows the true remaining distance.
+- **Colour** tracks `mileageStatus` (cyan / amber / red) independently of fill. Width encodes "fraction of cycle consumed"; colour encodes "urgency tier". The two signals are independent and do not need to agree in appearance — e.g. a card 40% through a long cycle is still cyan because `remaining > threshold`.
+
+### Prior formula (superseded 2026-04-18)
+
+The old three-branch piecewise formula (overdue = 100%, warning = 60→99%, healthy = 0→59% across a `5 × threshold` lookahead) was dropped after user feedback that the bar felt confusing. Root cause: a discontinuity at the ok→warning boundary (bar jumped ~13% with no real change in mileage) and three magic numbers (60, 39, 59, 5×) with no derivation. The single cycle-consumption formula is monotonic, continuous, unit-safe, and needs no magic numbers.
 
 ### Healthy label color rule
 
-- `remaining > 3 × threshold`: color = `--text-disabled` (`#555555`) — far from due, muted
-- `threshold < remaining ≤ 3 × threshold`: color = `--primary` (`#00e5ff`) — approaching, cyan
+- `ok` (`remaining > threshold`): color = `--primary` (`#00e5ff`) — cyan.
+
+The earlier two-tier healthy rule (muted grey beyond `3 × threshold`, cyan inside) was dropped after user feedback: grey reads as "disabled" and obscured that the card was still being tracked. `--text-disabled` remains in use for type badges and the ⋮ action button.
 
 ### Key files
 

@@ -9,7 +9,10 @@ import { Button } from '@/components/ui/button';
 import { useVehicles } from '@/hooks/queries/vehicles/useVehicles';
 import { useAppConfig } from '@/hooks/queries/config/useAppConfig';
 import { useGlobalWarningCount } from '@/hooks/queries/vehicles/useGlobalWarningCount';
-import { DEFAULT_MILEAGE_WARNING_THRESHOLD_KM } from '@/constants';
+import {
+  DEFAULT_MILEAGE_WARNING_THRESHOLD_KM,
+  DEFAULT_NOTIFICATION_DAYS_BEFORE,
+} from '@/constants';
 
 const formatAttentionPill = (count: number): string => {
   if (count === 1) return '1 ITEM NEEDS ATTENTION';
@@ -22,7 +25,13 @@ const HomeContent: FC = () => {
   const { data: config } = useAppConfig();
   const thresholdKm =
     config?.mileageWarningThresholdKm ?? DEFAULT_MILEAGE_WARNING_THRESHOLD_KM;
-  const globalWarningCount = useGlobalWarningCount(vehicles, thresholdKm);
+  const notificationDaysBefore =
+    config?.notificationDaysBefore ?? DEFAULT_NOTIFICATION_DAYS_BEFORE;
+  const globalWarningCount = useGlobalWarningCount({
+    vehicles,
+    thresholdKm,
+    notificationDaysBefore,
+  });
 
   return (
     <div className="flex flex-col">
@@ -56,6 +65,7 @@ const HomeContent: FC = () => {
                   key={vehicle.id}
                   vehicle={vehicle}
                   thresholdKm={thresholdKm}
+                  notificationDaysBefore={notificationDaysBefore}
                 />
               ))}
             </div>

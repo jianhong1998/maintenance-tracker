@@ -100,6 +100,7 @@ A downstream agent should treat this file as an inbox for the next iteration —
 - **Spec says:** Healthy label color is `#00E5FF` **or** `#555` — implying a muted variant for cards that are "far from due".
 - **Current plan:** Always uses cyan.
 - **Follow-up:** Decide the threshold for switching to muted (`#555`). Likely: if `remaining > 2 × thresholdNative`, use muted; within the ramp toward warning, use cyan. Get sign-off from the designer before implementing.
+- **Resolution (2026-04-18):** Closed. Follow-up was implemented as a `3 × threshold` split, then reversed after user feedback — grey read as "disabled," obscuring that the card was still being tracked. Final rule: `ok` → cyan unconditionally. No muted tier.
 
 ### 4.5 Animations and transitions
 - **Spec out-of-scope:** "No animation/transition system (can be added in a follow-up)."

@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { getDataSourceToken } from '@nestjs/typeorm';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { MaintenanceCardService } from './maintenance-card.service';
@@ -32,6 +33,8 @@ const mockHistoryRepository = {
 const mockBackgroundJobRepository = {
   cancelJobsForCard: vi.fn(),
 };
+
+const mockConfigService = { get: vi.fn() };
 
 const mockEntityManager = {};
 const mockDataSource = {
@@ -83,6 +86,11 @@ describe('MaintenanceCardService', () => {
   beforeEach(async () => {
     vi.clearAllMocks();
     mockVehicleService.getVehicle.mockResolvedValue(baseVehicle);
+    mockConfigService.get.mockImplementation((key: string) => {
+      if (key === 'MILEAGE_WARNING_THRESHOLD_KM') return 500;
+      if (key === 'NOTIFICATION_DAYS_BEFORE') return 7;
+      return undefined;
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -101,6 +109,7 @@ describe('MaintenanceCardService', () => {
           provide: BackgroundJobRepository,
           useValue: mockBackgroundJobRepository,
         },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
@@ -150,7 +159,7 @@ describe('MaintenanceCardService', () => {
       expect(result[0].id).toBe('card-overdue');
     });
 
-    it('places mileage-only-overdue cards after date-overdue cards when sort=urgency', async () => {
+    it('places mileage-overdue cards before date-overdue cards when sort=urgency', async () => {
       const today = new Date();
       const pastDate = new Date(today);
       pastDate.setDate(today.getDate() - 1);
@@ -170,17 +179,17 @@ describe('MaintenanceCardService', () => {
         nextDueMileage: 5000, // vehicle mileage is 10000 → overdue
       };
       mockMaintenanceCardRepository.getAll.mockResolvedValue([
-        mileageOverdueCard,
         dateOverdueCard,
+        mileageOverdueCard,
       ]);
 
       const result = await service.listCards(vehicleId, userId, 'urgency');
 
-      expect(result[0].id).toBe('card-date-overdue');
-      expect(result[1].id).toBe('card-mileage-overdue');
+      expect(result[0].id).toBe('card-mileage-overdue');
+      expect(result[1].id).toBe('card-date-overdue');
     });
 
-    it('places both-dimension-overdue card in date-overdue group when sort=urgency', async () => {
+    it('places both-dimension-overdue card in mileage-driven group', async () => {
       const today = new Date();
       const pastDate = new Date(today);
       pastDate.setDate(today.getDate() - 1);
@@ -319,6 +328,63 @@ describe('MaintenanceCardService', () => {
       await expect(
         service.listCards(vehicleId, userId, 'name'),
       ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('#listCards — urgency sort (tier + driver)', () => {
+    it('orders cards by (overdue → warning → ok), mileage-driven before date-driven, then ascending remaining', async () => {
+      const vehicle = {
+        ...baseVehicle,
+        id: 'v1',
+        mileage: 50000,
+        mileageUnit: MILEAGE_UNITS.KM,
+      };
+      const cards = [
+        {
+          ...baseCard,
+          id: 'ok-far',
+          name: 'ok-far',
+          nextDueMileage: 60000,
+          nextDueDate: new Date('2099-01-01'),
+          intervalMileage: 5000,
+        },
+        {
+          ...baseCard,
+          id: 'overdue-date',
+          name: 'overdue-date',
+          nextDueMileage: 60000,
+          nextDueDate: new Date('2020-01-01'),
+          intervalMileage: 5000,
+        },
+        {
+          ...baseCard,
+          id: 'overdue-mile',
+          name: 'overdue-mile',
+          nextDueMileage: 40000,
+          nextDueDate: new Date('2099-01-01'),
+          intervalMileage: 5000,
+        },
+        {
+          ...baseCard,
+          id: 'warn-mile',
+          name: 'warn-mile',
+          nextDueMileage: 50400,
+          nextDueDate: new Date('2099-01-01'),
+          intervalMileage: 5000,
+        },
+      ];
+
+      mockVehicleService.getVehicle.mockResolvedValue(vehicle);
+      mockMaintenanceCardRepository.getAll.mockResolvedValue(cards);
+
+      const result = await service.listCards('v1', 'u1', 'urgency');
+
+      expect(result.map((c) => c.id)).toEqual([
+        'overdue-mile',
+        'overdue-date',
+        'warn-mile',
+        'ok-far',
+      ]);
     });
   });
 
