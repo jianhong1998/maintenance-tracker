@@ -10,9 +10,10 @@ export type CardStatus = {
 };
 
 const MILES_TO_KM = 1.60934;
-const MS_PER_DAY = 86_400_000;
 
-const startOfLocalDay = (date: Date): Date => {
+export const MS_PER_DAY = 86_400_000;
+
+export const startOfLocalDay = (date: Date): Date => {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   return d;

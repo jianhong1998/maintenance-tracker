@@ -11,7 +11,7 @@ export type CardStatus = {
   overall: 'overdue' | 'warning' | 'ok';
 };
 
-type CardWarningStatus = 'overdue' | 'warning' | 'ok';
+type CardWarningStatus = CardStatus['overall'];
 
 const startOfLocalDay = (date: Date): Date => {
   const d = new Date(date);

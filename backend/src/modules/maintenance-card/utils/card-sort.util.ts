@@ -1,6 +1,11 @@
 import type { MileageUnit } from '@project/types';
 import { MaintenanceCardEntity } from 'src/db/entities/maintenance-card.entity';
-import { getCardStatus, type CardStatus } from './card-status.util';
+import {
+  getCardStatus,
+  MS_PER_DAY,
+  startOfLocalDay,
+  type CardStatus,
+} from './card-status.util';
 
 type SortParams = {
   vehicleMileage: number;
@@ -16,14 +21,6 @@ const driverRank = (status: CardStatus): 0 | 1 | 2 => {
   if (status.mileage === status.overall) return 0;
   if (status.date === status.overall) return 1;
   return 2;
-};
-
-const MS_PER_DAY = 86_400_000;
-
-const startOfLocalDay = (date: Date): Date => {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
 };
 
 const urgencyKey = (params: {
