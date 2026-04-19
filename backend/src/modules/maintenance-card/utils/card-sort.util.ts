@@ -15,7 +15,11 @@ type SortParams = {
   today: Date;
 };
 
-const TIER_ORDER = { overdue: 0, warning: 1, ok: 2 } as const;
+const TIER_ORDER = {
+  overdue: 0,
+  warning: 1,
+  ok: 2,
+} as const satisfies Record<CardStatus['overall'], number>;
 
 const driverRank = (status: CardStatus): 0 | 1 | 2 => {
   if (status.mileage === status.overall) return 0;
