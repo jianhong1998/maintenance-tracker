@@ -9,6 +9,8 @@ export type CardStatus = {
   overall: 'overdue' | 'warning' | 'ok';
 };
 
+type CardWarningStatus = CardStatus['overall'];
+
 const MILES_TO_KM = 1.60934;
 
 export const MS_PER_DAY = 86_400_000;
@@ -54,10 +56,7 @@ const getDateStatus = (params: {
   return 'ok';
 };
 
-const worst = (
-  a: CardAxisStatus,
-  b: CardAxisStatus,
-): 'overdue' | 'warning' | 'ok' => {
+const worst = (a: CardAxisStatus, b: CardAxisStatus): CardWarningStatus => {
   if (a === 'overdue' || b === 'overdue') return 'overdue';
   if (a === 'warning' || b === 'warning') return 'warning';
   return 'ok';
