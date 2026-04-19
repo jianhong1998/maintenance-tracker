@@ -1,6 +1,6 @@
 import type { IMaintenanceCardResDTO, MileageUnit } from '@project/types';
 
-export const MILES_TO_KM = 1.60934;
+const MILES_TO_KM = 1.60934;
 const MS_PER_DAY = 86_400_000;
 
 export type CardAxisStatus = 'overdue' | 'warning' | 'ok' | 'none';
