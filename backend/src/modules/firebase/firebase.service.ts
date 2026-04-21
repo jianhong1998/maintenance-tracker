@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as admin from 'firebase-admin';
+import { EnvironmentVariableUtil } from 'src/modules/common/utils/environment-variable.util';
 
 const FIREBASE_APP_NAME = 'maintenance-tracker';
 
@@ -12,9 +13,14 @@ const FIREBASE_APP_NAME = 'maintenance-tracker';
 export class FirebaseService implements OnModuleInit {
   private _app: admin.app.App | undefined;
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly envUtil: EnvironmentVariableUtil,
+  ) {}
 
   onModuleInit(): void {
+    this.applyEmulatorEnv();
+
     const projectId = this.configService.getOrThrow<string>(
       'FIREBASE_PROJECT_ID',
     );
@@ -41,6 +47,21 @@ export class FirebaseService implements OnModuleInit {
       },
       FIREBASE_APP_NAME,
     );
+  }
+
+  // The Admin SDK auto-recognizes process.env.FIREBASE_AUTH_EMULATOR_HOST.
+  // We control that env var explicitly here so the SDK can never silently
+  // route to an emulator unless our gate is on AND we provide a host.
+  private applyEmulatorEnv(): void {
+    const { enableMockAuth } = this.envUtil.getFeatureFlags();
+    if (enableMockAuth) {
+      const host = this.configService.getOrThrow<string>(
+        'FIREBASE_AUTH_EMULATOR_HOST',
+      );
+      process.env.FIREBASE_AUTH_EMULATOR_HOST = host;
+    } else {
+      delete process.env.FIREBASE_AUTH_EMULATOR_HOST;
+    }
   }
 
   get app(): admin.app.App {
