@@ -83,9 +83,20 @@ A new container in `docker-compose.yml` (and `docker-compose.pipeline.yml`, `doc
 
 2. `frontend/src/lib/firebase.ts` `initFirebase()`:
    - After `getAuth(app)`, if `config.authEmulatorHost` is non-empty, call `connectAuthEmulator(auth, http://${authEmulatorHost}, { disableWarnings: true })`.
-   - Production deployments leave `FRONTEND_ENABLE_MOCK_AUTH` unset/false → real Firebase, no emulator code path reachable.
+   - **Also when `authEmulatorHost` is set**, expose a test-only global `window.__e2eAuth = { signIn(email, password) }` that wraps `signInWithEmailAndPassword(auth, email, password)`. This is the handle Playwright uses to drive authentication from the browser context (see `loginAs` below).
+   - Production deployments leave `FRONTEND_ENABLE_MOCK_AUTH` unset/false → real Firebase, no emulator code path reachable, `window.__e2eAuth` never defined.
 
 3. No other frontend code changes. The auth provider, login button, and token retrieval all work unchanged because `connectAuthEmulator` is transparent to consumers.
+
+#### Why `window.__e2eAuth` instead of dynamic `import('firebase/auth')` from `page.evaluate`?
+
+The first design drafted used `await import('firebase/auth')` inside `page.evaluate`. That does not work in a Next.js build: bare module specifiers like `firebase/auth` are resolved by the bundler at build time and are not exposed to arbitrary browser code via a runtime import map. The webpack/turbopack module registry is opaque from outside the bundle.
+
+The alternatives considered:
+
+- **Rebuild the login path via REST + IndexedDB injection.** Mint an ID token via the emulator REST API, then hand-craft the Firebase Auth persistence key in IndexedDB. Fragile (persistence format is internal to the SDK) and requires maintaining a second source of truth.
+- **Expose the `Auth` instance directly on `window`.** Same blast radius as `__e2eAuth` but a wider surface (any SDK method, not just sign-in). Worse.
+- **Expose a narrow `signIn(email, password)` helper on `window` only when the emulator gate is on** ← chosen. One method, one purpose, gated.
 
 ### `api-test/` migration
 
@@ -124,16 +135,21 @@ export async function loginAs(page: Page, opts?: { email?: string }) {
   const password = 'test-password';
   await emulatorSignUp({ email, password }); // REST → emulator
   await page.goto('/login');
-  await page.evaluate(async ({ email, password }) => {
-    const { getAuth, signInWithEmailAndPassword } = await import('firebase/auth');
-    await signInWithEmailAndPassword(getAuth(), email, password);
-  }, { email, password });
+  // window.__e2eAuth is exposed by initFirebase() only when the emulator gate
+  // is on. Production builds never define this property.
+  await page.waitForFunction(() => typeof (window as any).__e2eAuth !== 'undefined');
+  await page.evaluate(
+    async ({ email, password }) => {
+      await (window as any).__e2eAuth.signIn(email, password);
+    },
+    { email, password },
+  );
   await page.waitForURL((url) => !url.pathname.startsWith('/login'));
   return { email };
 }
 ```
 
-The emulator accepts `signInWithEmailAndPassword` for any user created via signUp, even though prod only uses Google sign-in. Production code is untouched — the helper just calls a different SDK method against the emulator from inside the page context.
+The emulator accepts `signInWithEmailAndPassword` for any user created via signUp, even though prod only uses Google sign-in. Production code is untouched — the helper just calls a different SDK method against the emulator from inside the page context via the gated `window.__e2eAuth` handle.
 
 #### Real-popup test (`auth-popup.spec.ts`)
 
@@ -189,6 +205,15 @@ FIREBASE_PRIVATE_KEY=placeholder
 
 **Two-key safety property:** the emulator code path is only reachable when **both** the gate is true **and** the host is set. The backend additionally `delete`s `process.env.FIREBASE_AUTH_EMULATOR_HOST` at startup when the gate is off, so the Admin SDK cannot silently route to an emulator even if some other process sets that variable.
 
+**`window.__e2eAuth` four-key safety:** the sign-in helper exposed on `window` is only a real attack surface if **all four** of these env states hold simultaneously in production:
+
+1. `FRONTEND_ENABLE_MOCK_AUTH=true`
+2. `FRONTEND_FIREBASE_AUTH_EMULATOR_HOST` set and reachable
+3. `BACKEND_ENABLE_MOCK_AUTH=true`
+4. `FIREBASE_AUTH_EMULATOR_HOST` set and reachable on the backend host
+
+Miss any one of these and an attacker who finds `__e2eAuth` in the console either (a) signs into an unreachable emulator and gets no token, or (b) gets an emulator-issued token that the real backend's `verifyIdToken` rejects as unsigned. All four are `false`/unset by default in production env files and each is individually a glaring red flag on deployment review.
+
 ## Test Isolation
 
 - **Emulator users:** each test mints a unique uid+email via `emulatorSignUp`. No reset between tests.
@@ -217,6 +242,7 @@ The implementation must keep the system runnable at every step.
 - **Emulator data persisted across CI runs:** wipe at suite start; emulator container has no volumes.
 - **Real-popup test flake:** popup timing is the most fragile path. Mitigation: only one test uses it. If it flakes, we have signal that something real broke; if persistent flake comes from emulator UI changes, pin emulator version.
 - **`signInWithEmailAndPassword` in fast path differs from prod's Google flow:** acceptable — the popup test covers the Google path; everything else just needs an authenticated session, not a specific provider.
+- **`window.__e2eAuth` bundled in production JS:** the top-level `import { signInWithEmailAndPassword } from 'firebase/auth'` keeps the symbol referenced, so tree-shaking won't remove it. This is intentional — the code path that assigns `window.__e2eAuth` is only reached when the emulator gate flips on, and the four-key safety property above contains the worst-case blast radius. Production CI/CD deployment review is the primary control.
 
 ## Open Items
 

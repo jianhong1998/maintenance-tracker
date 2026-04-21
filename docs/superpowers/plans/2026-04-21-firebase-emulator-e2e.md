@@ -292,6 +292,8 @@ FRONTEND_FIREBASE_PROJECT_ID=$FRONTEND_FIREBASE_PROJECT_ID
 
 (Keep `BACKEND_COOKIE_SECRET`, `POSTMARK_API_KEY`, `POSTMARK_FROM_ADDRESS`.)
 
+> **Rollback note:** the CircleCI project-level env vars (`FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, `FRONTEND_FIREBASE_API_KEY`, `FRONTEND_FIREBASE_AUTH_DOMAIN`, `FRONTEND_FIREBASE_PROJECT_ID`) are **not** deleted from the CircleCI UI — only the injection lines in `config.yml` are removed. If the emulator rollout breaks CI, revert the `.circleci/config.yml` diff from this task and CI returns to the previous state without reconfiguring secrets.
+
 - [ ] **Step 3: Commit**
 
 ```bash
@@ -1250,17 +1252,22 @@ describe('firebase', () => {
       );
     });
 
-    it('exposes window.__e2eAuth.signIn only when authEmulatorHost is set', async () => {
+    it('does not expose window.__e2eAuth when authEmulatorHost is undefined', async () => {
       const { initFirebase } = await import('@/lib/firebase');
       initFirebase(validConfig);
       expect(
         (window as unknown as { __e2eAuth?: unknown }).__e2eAuth,
       ).toBeUndefined();
+    });
 
+    it('exposes window.__e2eAuth.signIn when authEmulatorHost is set', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
       initFirebase({ ...validConfig, authEmulatorHost: 'localhost:9099' });
-      const helper = (window as unknown as {
-        __e2eAuth?: { signIn: (e: string, p: string) => Promise<void> };
-      }).__e2eAuth;
+      const helper = (
+        window as unknown as {
+          __e2eAuth?: { signIn: (e: string, p: string) => Promise<void> };
+        }
+      ).__e2eAuth;
       expect(typeof helper?.signIn).toBe('function');
     });
   });
@@ -1287,7 +1294,9 @@ describe('firebase', () => {
 ```bash
 cd frontend && pnpm exec vitest run src/lib/firebase.spec.ts
 ```
-Expected: 3 new tests fail.
+Expected: 4 new tests fail (the two `connectAuthEmulator` assertions and the two `__e2eAuth` exposure assertions).
+
+Sanity check before implementing: `beforeEach` resets modules (`vi.resetModules()`) **and** deletes `window.__e2eAuth` if present. Each test above calls `initFirebase` at most once on a freshly-imported module, so the `if (_auth) return _auth;` short-circuit in the implementation is not exercised mid-test. Do not merge the `__e2eAuth` tests back into a single two-call test — the module singleton would swallow the second call.
 
 - [ ] **Step 3: Implement** — replace `firebase.ts`:
 
