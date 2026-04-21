@@ -32,6 +32,17 @@ services:
       timeout: 5s
       retries: 5
 
+  firebase-emulator:
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile.firebase-emulator
+    network_mode: host
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:9099/']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   server:
     ports:
       - '${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}'
@@ -47,6 +58,8 @@ services:
       redis:
         condition: service_healthy
         restart: true
+      firebase-emulator:
+        condition: service_healthy
     develop:
       watch:
         - path: ./backend/src
@@ -100,6 +113,8 @@ services:
       redis:
         condition: service_healthy
         restart: true
+      firebase-emulator:
+        condition: service_healthy
     develop:
       watch:
         - path: ./backend/src
