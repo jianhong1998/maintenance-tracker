@@ -24,12 +24,6 @@ export class FirebaseService implements OnModuleInit {
     const projectId = this.configService.getOrThrow<string>(
       'FIREBASE_PROJECT_ID',
     );
-    const clientEmail = this.configService.getOrThrow<string>(
-      'FIREBASE_CLIENT_EMAIL',
-    );
-    const privateKey = this.configService
-      .getOrThrow<string>('FIREBASE_PRIVATE_KEY')
-      .replace(/\\n/g, '\n');
 
     const existing = admin.apps.find((a) => a?.name === FIREBASE_APP_NAME);
     if (existing) {
@@ -38,15 +32,34 @@ export class FirebaseService implements OnModuleInit {
     }
 
     this._app = admin.initializeApp(
-      {
-        credential: admin.credential.cert({
-          projectId,
-          clientEmail,
-          privateKey,
-        }),
-      },
+      this.buildAppOptions(projectId),
       FIREBASE_APP_NAME,
     );
+  }
+
+  // In emulator mode the Admin SDK routes Auth calls to the emulator using a
+  // synthetic owner token, so real service-account credentials are neither
+  // needed nor safe to pass — `credential.cert()` parses the private key
+  // eagerly and throws on non-PEM input.
+  private buildAppOptions(projectId: string): admin.AppOptions {
+    const { enableMockAuth } = this.envUtil.getFeatureFlags();
+    if (enableMockAuth) {
+      return { projectId };
+    }
+
+    const clientEmail = this.configService.getOrThrow<string>(
+      'FIREBASE_CLIENT_EMAIL',
+    );
+    const privateKey = this.configService
+      .getOrThrow<string>('FIREBASE_PRIVATE_KEY')
+      .replace(/\\n/g, '\n');
+    return {
+      credential: admin.credential.cert({
+        projectId,
+        clientEmail,
+        privateKey,
+      }),
+    };
   }
 
   // The Admin SDK auto-recognizes process.env.FIREBASE_AUTH_EMULATOR_HOST.

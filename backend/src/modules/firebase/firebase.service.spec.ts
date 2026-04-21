@@ -96,4 +96,22 @@ describe('FirebaseService', () => {
     await module.init();
     expect(process.env.FIREBASE_AUTH_EMULATOR_HOST).toBeUndefined();
   });
+
+  it('does not read FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY when mock auth is enabled', async () => {
+    // In emulator mode the Admin SDK routes Auth calls to the emulator with a
+    // synthetic owner token — real service-account credentials are never used
+    // and must not be validated (firebase-admin `credential.cert()` parses the
+    // private key eagerly and throws on garbage values).
+    const env: EnvMap = {
+      FIREBASE_PROJECT_ID: 'test-project',
+      FIREBASE_AUTH_EMULATOR_HOST: 'localhost:9099',
+      // FIREBASE_CLIENT_EMAIL and FIREBASE_PRIVATE_KEY intentionally absent.
+    };
+    const module: TestingModule = await buildModule(env, {
+      enableMockAuth: true,
+    });
+    await expect(module.init()).resolves.not.toThrow();
+    const service = module.get<FirebaseService>(FirebaseService);
+    expect(service.app.name).toBe('maintenance-tracker');
+  });
 });
