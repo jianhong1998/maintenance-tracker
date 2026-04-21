@@ -76,5 +76,18 @@ describe('EnvironmentVariableUtil', () => {
 
       expect(util.getFeatureFlags().enableApiTestMode).toBe(false);
     });
+
+    it('returns enableMockAuth=true when BACKEND_ENABLE_MOCK_AUTH is "true"', () => {
+      mockConfigService.get.mockImplementation((key: string, def: string) => {
+        if (key === 'BACKEND_ENABLE_MOCK_AUTH') return 'true';
+        return def ?? 'false';
+      });
+      expect(util.getFeatureFlags().enableMockAuth).toBe(true);
+    });
+
+    it('returns enableMockAuth=false when BACKEND_ENABLE_MOCK_AUTH is not set', () => {
+      mockConfigService.get.mockReturnValue(undefined);
+      expect(util.getFeatureFlags().enableMockAuth).toBe(false);
+    });
   });
 });

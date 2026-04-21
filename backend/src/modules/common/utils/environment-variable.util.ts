@@ -20,6 +20,7 @@ type IEnvironmentVariableList = {
 
 type IFeatureFlagList = {
   // Feature Flag Related
+  enableMockAuth: boolean;
   enableApiTestMode: boolean;
   enableHistory: boolean;
   enableProfile: boolean;
@@ -68,6 +69,9 @@ export class EnvironmentVariableUtil {
     if (this.featureFlagList) return this.featureFlagList;
 
     this.featureFlagList = {
+      enableMockAuth:
+        this.configService.get<string>('BACKEND_ENABLE_MOCK_AUTH', 'false') ===
+        'true',
       enableApiTestMode:
         this.configService.get<string>(
           'BACKEND_ENABLE_API_TEST_MODE',
