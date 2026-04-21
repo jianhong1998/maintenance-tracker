@@ -1,16 +1,29 @@
 import { getApps, initializeApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
+import {
+  connectAuthEmulator,
+  getAuth,
+  signInWithEmailAndPassword,
+  type Auth,
+} from 'firebase/auth';
 
 let _auth: Auth | null = null;
 
-export function initFirebase(config: {
+export type InitFirebaseConfig = {
   apiKey: string | undefined;
   authDomain: string | undefined;
   projectId: string | undefined;
-}): Auth {
+  authEmulatorHost: string | undefined;
+};
+
+export function initFirebase(config: InitFirebaseConfig): Auth {
   if (_auth) return _auth;
 
-  const missing = Object.entries(config)
+  const required = {
+    apiKey: config.apiKey,
+    authDomain: config.authDomain,
+    projectId: config.projectId,
+  };
+  const missing = Object.entries(required)
     .filter(([, v]) => !v)
     .map(([k]) => k);
   if (missing.length > 0) {
@@ -18,9 +31,16 @@ export function initFirebase(config: {
   }
 
   // getApps()[0] reuses an existing app (e.g. across HMR cycles in dev).
-  // This is intentional — we always own the first Firebase app in this project.
-  const app = getApps().length === 0 ? initializeApp(config) : getApps()[0];
+  const app = getApps().length === 0 ? initializeApp(required) : getApps()[0];
   _auth = getAuth(app);
+
+  if (config.authEmulatorHost) {
+    connectAuthEmulator(_auth, `http://${config.authEmulatorHost}`, {
+      disableWarnings: true,
+    });
+    exposeE2ESignInHelper(_auth);
+  }
+
   return _auth;
 }
 
@@ -30,4 +50,20 @@ export function getFirebaseAuth(): Auth {
       'Firebase has not been initialized. Call initFirebase() first.',
     );
   return _auth;
+}
+
+// Exposed only when the emulator gate is on. Production builds never reach
+// this branch because authEmulatorHost is undefined unless FRONTEND_ENABLE_MOCK_AUTH
+// is true on the server.
+function exposeE2ESignInHelper(auth: Auth): void {
+  if (typeof window === 'undefined') return;
+  (
+    window as unknown as {
+      __e2eAuth: { signIn: (email: string, password: string) => Promise<void> };
+    }
+  ).__e2eAuth = {
+    signIn: async (email, password) => {
+      await signInWithEmailAndPassword(auth, email, password);
+    },
+  };
 }

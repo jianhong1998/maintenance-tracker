@@ -5,19 +5,32 @@ vi.mock('firebase/app', () => ({
   initializeApp: vi.fn(() => ({ name: 'test-app' })),
 }));
 
+const mockConnectAuthEmulator = vi.fn();
+const mockSignInWithEmailAndPassword = vi.fn();
+
 vi.mock('firebase/auth', () => ({
   getAuth: vi.fn(() => ({ name: 'test-auth' })),
+  connectAuthEmulator: (...args: unknown[]) => mockConnectAuthEmulator(...args),
+  signInWithEmailAndPassword: (...args: unknown[]) =>
+    mockSignInWithEmailAndPassword(...args),
 }));
 
 const validConfig = {
   apiKey: 'test-key',
   authDomain: 'test.firebaseapp.com',
   projectId: 'test-project',
+  authEmulatorHost: undefined as string | undefined,
 };
 
 describe('firebase', () => {
   beforeEach(() => {
     vi.resetModules();
+    mockConnectAuthEmulator.mockReset();
+    mockSignInWithEmailAndPassword.mockReset();
+    // Clean up any window.__e2eAuth left over from a previous test
+    if (typeof window !== 'undefined') {
+      delete (window as unknown as { __e2eAuth?: unknown }).__e2eAuth;
+    }
   });
 
   describe('initFirebase', () => {
@@ -51,8 +64,44 @@ describe('firebase', () => {
           apiKey: undefined,
           authDomain: undefined,
           projectId: 'test',
+          authEmulatorHost: undefined,
         }),
       ).toThrow('Missing required Firebase config');
+    });
+
+    it('does not call connectAuthEmulator when authEmulatorHost is undefined', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
+      initFirebase(validConfig);
+      expect(mockConnectAuthEmulator).not.toHaveBeenCalled();
+    });
+
+    it('calls connectAuthEmulator with http URL when authEmulatorHost is set', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
+      initFirebase({ ...validConfig, authEmulatorHost: 'localhost:9099' });
+      expect(mockConnectAuthEmulator).toHaveBeenCalledWith(
+        expect.anything(),
+        'http://localhost:9099',
+        { disableWarnings: true },
+      );
+    });
+
+    it('does not expose window.__e2eAuth when authEmulatorHost is undefined', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
+      initFirebase(validConfig);
+      expect(
+        (window as unknown as { __e2eAuth?: unknown }).__e2eAuth,
+      ).toBeUndefined();
+    });
+
+    it('exposes window.__e2eAuth.signIn when authEmulatorHost is set', async () => {
+      const { initFirebase } = await import('@/lib/firebase');
+      initFirebase({ ...validConfig, authEmulatorHost: 'localhost:9099' });
+      const helper = (
+        window as unknown as {
+          __e2eAuth?: { signIn: (e: string, p: string) => Promise<void> };
+        }
+      ).__e2eAuth;
+      expect(typeof helper?.signIn).toBe('function');
     });
   });
 
