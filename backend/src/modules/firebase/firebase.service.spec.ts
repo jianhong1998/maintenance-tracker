@@ -38,7 +38,6 @@ function buildModule(envValues: EnvMap, flags: { enableMockAuth: boolean }) {
   const envUtil = {
     getFeatureFlags: () => ({
       enableMockAuth: flags.enableMockAuth,
-      enableApiTestMode: false,
       enableHistory: false,
       enableProfile: false,
     }),
