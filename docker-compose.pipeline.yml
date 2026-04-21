@@ -27,6 +27,17 @@ services:
       timeout: 5s
       retries: 5
 
+  firebase-emulator:
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile.firebase-emulator
+    network_mode: host
+    healthcheck:
+      test: ['CMD', 'curl', '-fsS', 'http://localhost:9099/']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   db-migration-service:
     image: ${AWS_ECR_REGISTRY}/maintenance-tracker/db-migration:${CIRCLE_SHA1_SHORT}
     network_mode: host
@@ -50,6 +61,8 @@ services:
       redis:
         condition: service_healthy
         restart: true
+      firebase-emulator:
+        condition: service_healthy
 
   client:
     image: ${AWS_ECR_REGISTRY}/maintenance-tracker/frontend:${CIRCLE_SHA1_SHORT}
@@ -74,3 +87,5 @@ services:
       redis:
         condition: service_healthy
         restart: true
+      firebase-emulator:
+        condition: service_healthy
