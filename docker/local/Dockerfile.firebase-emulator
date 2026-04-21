@@ -1,0 +1,17 @@
+# Pinned firebase-tools version. Bump deliberately, never via `latest`.
+FROM node:20-alpine
+
+# OpenJDK is required by the Firebase Auth emulator.
+RUN apk add --no-cache openjdk17-jre-headless curl bash
+
+RUN npm install -g firebase-tools@13.29.1
+
+WORKDIR /firebase
+COPY docker/firebase/firebase.json ./firebase.json
+COPY docker/firebase/.firebaserc ./.firebaserc
+
+EXPOSE 9099
+
+# --project must match .firebaserc; --host 0.0.0.0 so it's reachable from
+# other containers (and from the host when run with network_mode: host).
+CMD ["firebase", "emulators:start", "--only", "auth", "--project", "maintenance-tracker-e2e"]
