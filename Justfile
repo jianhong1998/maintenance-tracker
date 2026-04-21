@@ -97,6 +97,20 @@ test-api:
         pnpm run test
 
 [group: 'test']
+test-e2e:
+    @docker compose \
+        -p {{PROJECT_NAME}} \
+        -f docker-compose.yml \
+        -f docker-compose.e2e.yml \
+        up --build --abort-on-container-exit playwright-runner
+
+[group: 'test']
+emulator-wipe:
+    @curl -fsS -X DELETE \
+        http://localhost:9099/emulator/v1/projects/maintenance-tracker-e2e/accounts && \
+        echo "emulator wiped"
+
+[group: 'test']
 check-implementation-frontend:
   @just format lint build-frontend test-ui
 
