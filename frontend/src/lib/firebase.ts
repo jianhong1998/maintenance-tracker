@@ -52,11 +52,13 @@ export function getFirebaseAuth(): Auth {
   return _auth;
 }
 
-// Exposed only when the emulator gate is on. Production builds never reach
-// this branch because authEmulatorHost is undefined unless FRONTEND_ENABLE_MOCK_AUTH
-// is true on the server.
+// Exposed only when the emulator gate is on AND we are not in a production
+// build. The NODE_ENV check lets the bundler tree-shake this branch (and the
+// signInWithEmailAndPassword import when it's only used here) out of prod
+// bundles, turning the spec's "four-key safety" into physical impossibility.
 function exposeE2ESignInHelper(auth: Auth): void {
   if (typeof window === 'undefined') return;
+  if (process.env.NODE_ENV === 'production') return;
   (
     window as unknown as {
       __e2eAuth: { signIn: (email: string, password: string) => Promise<void> };

@@ -103,6 +103,19 @@ describe('firebase', () => {
       ).__e2eAuth;
       expect(typeof helper?.signIn).toBe('function');
     });
+
+    it('does not expose window.__e2eAuth in production even when authEmulatorHost is set', async () => {
+      vi.stubEnv('NODE_ENV', 'production');
+      try {
+        const { initFirebase } = await import('@/lib/firebase');
+        initFirebase({ ...validConfig, authEmulatorHost: 'localhost:9099' });
+        expect(
+          (window as unknown as { __e2eAuth?: unknown }).__e2eAuth,
+        ).toBeUndefined();
+      } finally {
+        vi.unstubAllEnvs();
+      }
+    });
   });
 
   describe('getFirebaseAuth', () => {
