@@ -11,9 +11,9 @@ services:
       firebase-emulator:
         condition: service_healthy
       server:
-        condition: service_started
+        condition: service_healthy
       client:
-        condition: service_started
+        condition: service_healthy
       db-migration-service:
         condition: service_completed_successfully
     volumes:
