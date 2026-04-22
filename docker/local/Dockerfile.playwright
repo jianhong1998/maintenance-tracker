@@ -3,12 +3,9 @@ FROM mcr.microsoft.com/playwright:v1.49.1-jammy
 # Install pnpm (matches CircleCI install)
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
-# Install just so global-setup can call `just db-data-reset`
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends curl ca-certificates \
-  && curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh \
-       | bash -s -- --to /usr/local/bin \
-  && rm -rf /var/lib/apt/lists/*
+# No `just` needed: this image always sets E2E_SKIP_DB_RESET=true (pipeline
+# resets the DB out-of-band via the migration service). Dev runs happen on the
+# host, which has just available.
 
 WORKDIR /app
 
