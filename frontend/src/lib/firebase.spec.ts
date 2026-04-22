@@ -104,14 +104,17 @@ describe('firebase', () => {
       expect(typeof helper?.signIn).toBe('function');
     });
 
-    it('does not expose window.__e2eAuth in production even when authEmulatorHost is set', async () => {
+    it('exposes window.__e2eAuth in production builds when authEmulatorHost is set — gating is runtime-only so pipeline E2E can hit the prod image', async () => {
       vi.stubEnv('NODE_ENV', 'production');
       try {
         const { initFirebase } = await import('@/lib/firebase');
         initFirebase({ ...validConfig, authEmulatorHost: 'localhost:9099' });
-        expect(
-          (window as unknown as { __e2eAuth?: unknown }).__e2eAuth,
-        ).toBeUndefined();
+        const helper = (
+          window as unknown as {
+            __e2eAuth?: { signIn: (e: string, p: string) => Promise<void> };
+          }
+        ).__e2eAuth;
+        expect(typeof helper?.signIn).toBe('function');
       } finally {
         vi.unstubAllEnvs();
       }
