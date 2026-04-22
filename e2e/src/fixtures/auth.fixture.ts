@@ -1,5 +1,5 @@
-import { test as base, type Page } from "@playwright/test";
-import { createEmulatorUser, type EmulatorUser } from "./emulator";
+import { test as base, type Page } from '@playwright/test';
+import { createEmulatorUser, type EmulatorUser } from './emulator';
 
 type AuthFixtures = {
   loginAs: (page: Page) => Promise<EmulatorUser>;
@@ -10,13 +10,13 @@ export const test = base.extend<AuthFixtures>({
   loginAs: async ({}, use) => {
     await use(async (page) => {
       const user = await createEmulatorUser();
-      await page.goto("/login");
+      await page.goto('/login');
       // window.__e2eAuth is exposed by frontend/src/lib/firebase.ts when the
       // emulator is connected. Production builds do not expose it.
       await page.waitForFunction(
         () =>
           typeof (window as unknown as { __e2eAuth?: unknown }).__e2eAuth !==
-          "undefined",
+          'undefined',
       );
       await page.evaluate(
         async ({ email, password }) => {
@@ -30,10 +30,10 @@ export const test = base.extend<AuthFixtures>({
         },
         { email: user.email, password: user.password },
       );
-      await page.waitForURL((url) => !url.pathname.startsWith("/login"));
+      await page.waitForURL((url) => !url.pathname.startsWith('/login'));
       return user;
     });
   },
 });
 
-export { expect } from "@playwright/test";
+export { expect } from '@playwright/test';
