@@ -123,7 +123,7 @@ describe('ConfigController', () => {
   describe('#getFeatureFlag', () => {
     it('returns enableHistory and enableProfile from EnvironmentVariableUtil', () => {
       mockEnvironmentVariableUtil.getFeatureFlags.mockReturnValue({
-        enableApiTestMode: false,
+        enableMockAuth: false,
         enableHistory: true,
         enableProfile: false,
       });
@@ -135,7 +135,7 @@ describe('ConfigController', () => {
 
     it('returns false for both when flags are disabled', () => {
       mockEnvironmentVariableUtil.getFeatureFlags.mockReturnValue({
-        enableApiTestMode: false,
+        enableMockAuth: false,
         enableHistory: false,
         enableProfile: false,
       });

@@ -1,0 +1,21 @@
+services:
+  playwright-runner:
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile.playwright
+    network_mode: host
+    env_file: ./.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      firebase-emulator:
+        condition: service_healthy
+      server:
+        condition: service_healthy
+      client:
+        condition: service_healthy
+      db-migration-service:
+        condition: service_completed_successfully
+    volumes:
+      - ./e2e/playwright-report:/app/e2e/playwright-report
+      - ./e2e/test-results:/app/e2e/test-results

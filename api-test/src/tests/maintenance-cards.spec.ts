@@ -1,11 +1,12 @@
 import axiosInstance from '../config/axios';
 import type { IVehicleResDTO, IMaintenanceCardResDTO } from '@project/types';
+import { createTestUser, authHeaders, type TestUser } from '../helpers/auth';
 
-const API_TEST_TOKEN = 'Bearer api-test-token';
+let user: TestUser;
 
-function authHeaders() {
-  return { headers: { Authorization: API_TEST_TOKEN } };
-}
+beforeAll(async () => {
+  user = await createTestUser();
+});
 
 const baseVehiclePayload = {
   brand: 'Yamaha',
@@ -22,14 +23,14 @@ describe('#MaintenanceCards', () => {
     const res = await axiosInstance.post<IVehicleResDTO>(
       '/vehicles',
       baseVehiclePayload,
-      authHeaders(),
+      authHeaders(user),
     );
     vehicleId = res.data.id;
   });
 
   afterEach(async () => {
     await axiosInstance
-      .delete(`/vehicles/${vehicleId}`, authHeaders())
+      .delete(`/vehicles/${vehicleId}`, authHeaders(user))
       .catch(() => undefined);
   });
 
@@ -40,7 +41,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.post<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'task', name: 'Oil Change', intervalMileage: 5000 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(201);
@@ -63,7 +64,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.post<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'part', name: 'Air Filter', intervalTimeMonths: 12 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(201);
@@ -83,7 +84,7 @@ describe('#MaintenanceCards', () => {
           intervalTimeMonths: 24,
           description: 'Replace both front and rear',
         },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(201);
@@ -98,7 +99,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.post<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'task', name: 'Chain Lube', intervalMileage: 1000 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(201);
@@ -109,7 +110,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.post<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'task', name: 'Clutch Check', intervalMileage: 30000 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.data.nextDueDate).toBeNull();
@@ -124,7 +125,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Tyre Check' },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -134,7 +135,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Coolant', intervalMileage: 5000.5 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -144,7 +145,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Coolant', intervalMileage: 0 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -154,7 +155,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Coolant', intervalTimeMonths: 1.5 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -164,7 +165,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'invalid', name: 'Test', intervalMileage: 1000 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -174,7 +175,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: '', intervalMileage: 1000 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -185,7 +186,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${nonExistentVehicleId}/maintenance-cards`,
           { type: 'task', name: 'Oil Change', intervalMileage: 5000 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
@@ -210,7 +211,7 @@ describe('#MaintenanceCards', () => {
             intervalMileage: null,
             intervalTimeMonths: null,
           },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -220,7 +221,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Oil Change', intervalMileage: -1 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -230,7 +231,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Oil Change', intervalTimeMonths: 0 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -240,7 +241,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Oil Change', intervalTimeMonths: -6 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -250,7 +251,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', intervalMileage: 5000 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -260,7 +261,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           '/vehicles/not-a-uuid/maintenance-cards',
           { type: 'task', name: 'Oil Change', intervalMileage: 5000 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -274,7 +275,7 @@ describe('#MaintenanceCards', () => {
           intervalMileage: 1000000,
           nextDueMileage: 1000000,
         },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(201);
@@ -292,7 +293,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.post<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'task', name: 'Oil Change', intervalMileage: 5000 },
-        authHeaders(),
+        authHeaders(user),
       );
       cardId = res.data.id;
     });
@@ -300,7 +301,7 @@ describe('#MaintenanceCards', () => {
     it('returns 200 with an array of cards', async () => {
       const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
         `/vehicles/${vehicleId}/maintenance-cards`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -313,12 +314,12 @@ describe('#MaintenanceCards', () => {
       await axiosInstance.post(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'task', name: 'Air Filter', intervalMileage: 10000 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
         `/vehicles/${vehicleId}/maintenance-cards?sort=name`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       const names = res.data.map((c) => c.name);
@@ -328,7 +329,7 @@ describe('#MaintenanceCards', () => {
     it('returns 200 array when sort=urgency (urgency sort smoke test)', async () => {
       const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
         `/vehicles/${vehicleId}/maintenance-cards?sort=urgency`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -339,21 +340,21 @@ describe('#MaintenanceCards', () => {
       const emptyVehicleRes = await axiosInstance.post<IVehicleResDTO>(
         '/vehicles',
         { ...baseVehiclePayload, model: 'CBR' },
-        authHeaders(),
+        authHeaders(user),
       );
       const emptyVehicleId = emptyVehicleRes.data.id;
 
       try {
         const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
           `/vehicles/${emptyVehicleId}/maintenance-cards`,
-          authHeaders(),
+          authHeaders(user),
         );
 
         expect(res.status).toBe(200);
         expect(res.data).toEqual([]);
       } finally {
         await axiosInstance
-          .delete(`/vehicles/${emptyVehicleId}`, authHeaders())
+          .delete(`/vehicles/${emptyVehicleId}`, authHeaders(user))
           .catch(() => undefined);
       }
     });
@@ -363,7 +364,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.get(
           `/vehicles/${nonExistentVehicleId}/maintenance-cards`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
@@ -378,7 +379,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.get(
           '/vehicles/not-a-uuid/maintenance-cards',
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -388,18 +389,18 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Zzz Last', intervalMileage: 5000 },
-          authHeaders(),
+          authHeaders(user),
         ),
         axiosInstance.post(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', name: 'Aaa First', intervalMileage: 5000 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ]);
 
       const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
         `/vehicles/${vehicleId}/maintenance-cards`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -412,7 +413,7 @@ describe('#MaintenanceCards', () => {
     it('response objects contain all IMaintenanceCardResDTO fields', async () => {
       const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
         `/vehicles/${vehicleId}/maintenance-cards`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -443,7 +444,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.post<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'task', name: 'Spark Plug', intervalTimeMonths: 6 },
-        authHeaders(),
+        authHeaders(user),
       );
       cardId = res.data.id;
     });
@@ -451,7 +452,7 @@ describe('#MaintenanceCards', () => {
     it('returns 200 with the full card shape', async () => {
       const res = await axiosInstance.get<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -473,7 +474,7 @@ describe('#MaintenanceCards', () => {
     it('returns nextDueDate as null when not yet set', async () => {
       const res = await axiosInstance.get<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.data.nextDueDate).toBeNull();
@@ -484,7 +485,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.get(
           `/vehicles/${vehicleId}/maintenance-cards/${nonExistentCardId}`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
@@ -493,7 +494,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.get(
           `/vehicles/${vehicleId}/maintenance-cards/not-a-uuid`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -502,7 +503,7 @@ describe('#MaintenanceCards', () => {
       const otherVehicleRes = await axiosInstance.post<IVehicleResDTO>(
         '/vehicles',
         { ...baseVehiclePayload, model: 'MT-07' },
-        authHeaders(),
+        authHeaders(user),
       );
       const otherVehicleId = otherVehicleRes.data.id;
 
@@ -510,12 +511,12 @@ describe('#MaintenanceCards', () => {
         await expect(
           axiosInstance.get(
             `/vehicles/${otherVehicleId}/maintenance-cards/${cardId}`,
-            authHeaders(),
+            authHeaders(user),
           ),
         ).rejects.toMatchObject({ response: { status: 404 } });
       } finally {
         await axiosInstance
-          .delete(`/vehicles/${otherVehicleId}`, authHeaders())
+          .delete(`/vehicles/${otherVehicleId}`, authHeaders(user))
           .catch(() => undefined);
       }
     });
@@ -530,7 +531,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.get(
           `/vehicles/not-a-uuid/maintenance-cards/${cardId}`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -545,7 +546,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.post<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'task', name: 'Coolant Top-up', intervalMileage: 8000 },
-        authHeaders(),
+        authHeaders(user),
       );
       cardId = res.data.id;
     });
@@ -554,7 +555,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.patch<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
         { name: 'Coolant Flush', intervalMileage: 10000 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -568,7 +569,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.patch<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
         { intervalTimeMonths: 6 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -580,13 +581,13 @@ describe('#MaintenanceCards', () => {
       await axiosInstance.patch(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
         { intervalTimeMonths: 12 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       const res = await axiosInstance.patch<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
         { intervalMileage: null },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -600,7 +601,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
           { intervalMileage: null },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -610,7 +611,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
           { intervalMileage: 999.9 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -620,7 +621,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
           { name: '' },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -630,7 +631,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
           { type: 'unknown' },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -641,7 +642,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/${nonExistentCardId}`,
           { name: 'Updated' },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
@@ -661,7 +662,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
           { intervalMileage: null, intervalTimeMonths: null },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -671,7 +672,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
           { intervalMileage: -500 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -681,7 +682,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
           { intervalTimeMonths: 0 },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -690,7 +691,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.patch<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
         { name: 'Coolant Flush' },
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(200);
@@ -704,7 +705,7 @@ describe('#MaintenanceCards', () => {
       const otherVehicleRes = await axiosInstance.post<IVehicleResDTO>(
         '/vehicles',
         { ...baseVehiclePayload, model: 'CBR650R' },
-        authHeaders(),
+        authHeaders(user),
       );
       const otherVehicleId = otherVehicleRes.data.id;
 
@@ -713,12 +714,12 @@ describe('#MaintenanceCards', () => {
           axiosInstance.patch(
             `/vehicles/${otherVehicleId}/maintenance-cards/${cardId}`,
             { name: 'Hijack' },
-            authHeaders(),
+            authHeaders(user),
           ),
         ).rejects.toMatchObject({ response: { status: 404 } });
       } finally {
         await axiosInstance
-          .delete(`/vehicles/${otherVehicleId}`, authHeaders())
+          .delete(`/vehicles/${otherVehicleId}`, authHeaders(user))
           .catch(() => undefined);
       }
     });
@@ -728,7 +729,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/not-a-uuid/maintenance-cards/${cardId}`,
           { name: 'Updated' },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -738,7 +739,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${vehicleId}/maintenance-cards/not-a-uuid`,
           { name: 'Updated' },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -749,7 +750,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.patch(
           `/vehicles/${nonExistentVehicleId}/maintenance-cards/${cardId}`,
           { name: 'Updated' },
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
@@ -764,7 +765,7 @@ describe('#MaintenanceCards', () => {
       const res = await axiosInstance.post<IMaintenanceCardResDTO>(
         `/vehicles/${vehicleId}/maintenance-cards`,
         { type: 'task', name: 'Tyre Rotation', intervalMileage: 10000 },
-        authHeaders(),
+        authHeaders(user),
       );
       cardId = res.data.id;
     });
@@ -772,7 +773,7 @@ describe('#MaintenanceCards', () => {
     it('returns 204 on successful deletion', async () => {
       const res = await axiosInstance.delete(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       expect(res.status).toBe(204);
@@ -781,13 +782,13 @@ describe('#MaintenanceCards', () => {
     it('returns 404 after the card has been deleted', async () => {
       await axiosInstance.delete(
         `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       await expect(
         axiosInstance.get(
           `/vehicles/${vehicleId}/maintenance-cards/${cardId}`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
@@ -797,7 +798,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.delete(
           `/vehicles/${vehicleId}/maintenance-cards/${nonExistentCardId}`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
@@ -814,7 +815,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.delete(
           `/vehicles/${vehicleId}/maintenance-cards/not-a-uuid`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -823,7 +824,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.delete(
           `/vehicles/not-a-uuid/maintenance-cards/${cardId}`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 400 } });
     });
@@ -832,7 +833,7 @@ describe('#MaintenanceCards', () => {
       const otherVehicleRes = await axiosInstance.post<IVehicleResDTO>(
         '/vehicles',
         { ...baseVehiclePayload, model: 'Z900' },
-        authHeaders(),
+        authHeaders(user),
       );
       const otherVehicleId = otherVehicleRes.data.id;
 
@@ -840,12 +841,12 @@ describe('#MaintenanceCards', () => {
         await expect(
           axiosInstance.delete(
             `/vehicles/${otherVehicleId}/maintenance-cards/${cardId}`,
-            authHeaders(),
+            authHeaders(user),
           ),
         ).rejects.toMatchObject({ response: { status: 404 } });
       } finally {
         await axiosInstance
-          .delete(`/vehicles/${otherVehicleId}`, authHeaders())
+          .delete(`/vehicles/${otherVehicleId}`, authHeaders(user))
           .catch(() => undefined);
       }
     });
@@ -855,7 +856,7 @@ describe('#MaintenanceCards', () => {
       await expect(
         axiosInstance.delete(
           `/vehicles/${nonExistentVehicleId}/maintenance-cards/${cardId}`,
-          authHeaders(),
+          authHeaders(user),
         ),
       ).rejects.toMatchObject({ response: { status: 404 } });
     });
@@ -869,7 +870,7 @@ describe('#MaintenanceCards', () => {
       await axiosInstance.patch(
         `/vehicles/${vehicleId}/mileage`,
         { mileage: 50000 },
-        authHeaders(),
+        authHeaders(user),
       );
 
       const post = (
@@ -878,7 +879,7 @@ describe('#MaintenanceCards', () => {
         axiosInstance.post<IMaintenanceCardResDTO>(
           `/vehicles/${vehicleId}/maintenance-cards`,
           { type: 'task', intervalMileage: 5000, ...payload },
-          authHeaders(),
+          authHeaders(user),
         );
 
       const okFar = await post({
@@ -904,7 +905,7 @@ describe('#MaintenanceCards', () => {
 
       const res = await axiosInstance.get<IMaintenanceCardResDTO[]>(
         `/vehicles/${vehicleId}/maintenance-cards?sort=urgency`,
-        authHeaders(),
+        authHeaders(user),
       );
 
       const orderedIds = res.data.map((c) => c.id);

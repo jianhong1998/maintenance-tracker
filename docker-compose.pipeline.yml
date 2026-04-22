@@ -27,6 +27,25 @@ services:
       timeout: 5s
       retries: 5
 
+  firebase-emulator:
+    build:
+      context: .
+      dockerfile: ./docker/local/Dockerfile.firebase-emulator
+    network_mode: host
+    # /emulator/v1/projects/<id>/config is the documented ready probe; the
+    # bare root is an HTML landing page whose status is not contractually 200.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'curl',
+          '-fsS',
+          'http://localhost:9099/emulator/v1/projects/${FIREBASE_PROJECT_ID:-maintenance-tracker-e2e}/config',
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   db-migration-service:
     image: ${AWS_ECR_REGISTRY}/maintenance-tracker/db-migration:${CIRCLE_SHA1_SHORT}
     network_mode: host
@@ -41,6 +60,20 @@ services:
     network_mode: host
     env_file:
       - .env
+    # node -e because the backend image is slim and has no curl/wget.
+    # GET / returns 200 from the app controller's health-check endpoint.
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:'+(process.env.BACKEND_PORT||3001)+'/', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       db-migration-service:
         condition: service_completed_successfully
@@ -50,12 +83,29 @@ services:
       redis:
         condition: service_healthy
         restart: true
+      firebase-emulator:
+        condition: service_healthy
 
   client:
     image: ${AWS_ECR_REGISTRY}/maintenance-tracker/frontend:${CIRCLE_SHA1_SHORT}
     network_mode: host
     env_file:
       - .env
+    environment:
+      - HOSTNAME=0.0.0.0
+    # Next.js standalone server listens on PORT (default 3000).
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:'+(process.env.FRONTEND_PORT||process.env.PORT||3000)+'/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     depends_on:
       db-migration-service:
         condition: service_completed_successfully
@@ -74,3 +124,5 @@ services:
       redis:
         condition: service_healthy
         restart: true
+      firebase-emulator:
+        condition: service_healthy

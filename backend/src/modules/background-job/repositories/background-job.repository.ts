@@ -8,6 +8,7 @@ import {
   Repository,
 } from 'typeorm';
 import type { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import { uuidv7 } from 'uuidv7';
 import {
   BackgroundJobEntity,
   BackgroundJobStatus,
@@ -67,11 +68,17 @@ export class BackgroundJobRepository extends BaseDBUtil<
   async insertIfNotExists(
     data: CreateBackgroundJobData,
   ): Promise<BackgroundJobEntity | null> {
+    // QueryBuilder path bypasses @BeforeInsert, so generate the id manually.
+    const values = {
+      ...data,
+      id: uuidv7(),
+    } as QueryDeepPartialEntity<BackgroundJobEntity>;
+
     const result = await this.backgroundJobRepo
       .createQueryBuilder()
       .insert()
       .into(BackgroundJobEntity)
-      .values(data as QueryDeepPartialEntity<BackgroundJobEntity>)
+      .values(values)
       .orIgnore()
       .returning('*')
       .execute();
