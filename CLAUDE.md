@@ -122,3 +122,4 @@ All recorded bugs and their fix context are indexed at @docs/bug-list/index.md .
   - Refer to @docs/code-review-related/001-linus-role-definition.md
   - Refer to skill `code-review`.
 - Always try to point out the space of improvement for simplification on the solution.
+- **Before suggesting a `process.env.NODE_ENV === 'production'` (or any compile-time) early-return as a "harden the runtime gate" improvement**, read @docs/code-review-related/002-build-time-vs-runtime-gates.md first. Pipeline E2E in this project runs against the same `next build` artifact as real prod, so `NODE_ENV` cannot discriminate between them — runtime env-var gates are mandatory for any capability shared across those environments.
