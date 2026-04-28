@@ -3,9 +3,10 @@ FROM mcr.microsoft.com/playwright:v1.49.1-jammy
 # Install pnpm (matches CircleCI install)
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
-# No `just` needed: this image always sets E2E_SKIP_DB_RESET=true (pipeline
-# resets the DB out-of-band via the migration service). Dev runs happen on the
-# host, which has just available.
+# No `just` needed: global-setup.ts only wipes the Firebase emulator (per-test
+# users isolate user-scoped data). The pipeline resets Postgres out-of-band via
+# the migration service, so this image never touches the DB. Dev runs happen
+# on the host, which has just available.
 
 WORKDIR /app
 
@@ -25,9 +26,6 @@ COPY . .
 
 WORKDIR /app/e2e
 
-# E2E_SKIP_DB_RESET=true because the pipeline resets the DB outside this
-# container (the migration service already starts from a clean Postgres).
-ENV E2E_SKIP_DB_RESET=true
 ENV E2E_FRONTEND_URL=http://localhost:3000
 ENV E2E_FIREBASE_AUTH_EMULATOR_HOST=localhost:9099
 

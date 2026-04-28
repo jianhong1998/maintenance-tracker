@@ -24,8 +24,12 @@ test.describe('F1 — Overdue mileage shows red', () => {
 
     // The row container — not just the label — must turn red. data-status is
     // the explicit row-level contract that maps to bg/border colour classes
-    // in maintenance-card-row.tsx::getContainerClass.
-    const row = page.getByTestId('maintenance-card-row');
+    // in maintenance-card-row.tsx::getContainerClass. Filter by card name so
+    // that future F-series specs seeding multiple cards on the same vehicle
+    // don't trip Playwright strict-mode (mirrors G1's pattern).
+    const row = page
+      .getByTestId('maintenance-card-row')
+      .filter({ hasText: 'Coolant Flush' });
     await expect(row).toHaveAttribute('data-status', 'overdue');
 
     // Lock case to match the implementation (lowercase "past due").
