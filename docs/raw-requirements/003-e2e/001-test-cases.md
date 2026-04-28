@@ -13,31 +13,51 @@ required · `[✓]` reviewed, no blocking issues.
 
 | Spec | Status | Headline finding (full review: `docs/raw-requirements/003-e2e/002-tier-1-review.md`) |
 |------|--------|--------------------------------------------------------------------------------------|
-| A1   | `[R]`  | URL regex `/\/$/` matches anything ending in slash; eyebrow text duplicate.           |
-| B1   | `[R]`  | Loose accessible-name regex on card; unstated `km` default; raw `#id` selectors.      |
-| B3   | `[R]`  | `heading.locator('..')` couples bug-#001 guard to DOM topology — the one assertion that exists fails for the wrong reasons. |
-| B6   | `[R]`  | Same loose-name match as B1; no API-side verification that DELETE actually happened.  |
-| C1   | `[R]`  | "Auto-calculated next-due values" (the spec's headline phrase) is **not** verified — only the rendered "X km left" label, which has known mathematical ambiguity. |
-| C3   | `[R]`  | Test name claims "name AND interval reflected" but interval change is never asserted; setup data incoherent (interval edited, next-due frozen). |
+| A1   | `[✓]`  | URL regex tightened to pathname check; eyebrow assertion kept as defense-in-depth.   |
+| B1   | `[✓]`  | Loose link regex replaced with `vehicle-card-link` testid; mileage-unit comment locks the implicit km default. |
+| B3   | `[✓]`  | Bug #001 guard now uses `vehicle-meta-line` testid + independent visibility — DOM topology no longer load-bearing. |
+| B6   | `[✓]`  | Loose regex replaced with testid; `confirm` renamed; API readback (`apiGetVehicleStatus` → 404) now verifies DB-side delete. |
+| C1   | `[✓]`  | API readback (`apiGetCards`) verifies both `nextDueMileage` and `nextDueDate` — the spec's "auto-calculated next-due values" phrase is now actually tested. |
+| C3   | `[✓]`  | API readback (`apiGetCards`) verifies the persisted `intervalMileage` change — test no longer lies about what it asserts. |
 | C4   | `[✓]`  | Best-shaped test of the batch — empty-state assertion is a strong signal.             |
-| D1   | `[R]`  | **Garbage tier**: pre-fill (current+interval) never asserted *and* not implemented; "5,000 km left" assertion is identical pre- and post-mark-done so the test cannot distinguish no-op from success. |
-| E2   | `[R]`  | `heading.locator('..')` couples bug-#001 guard to markup; relies on undocumented backend behaviour (`mileageLastUpdatedAt = null` on create). |
-| F1   | `[R]`  | **Garbage tier**: asserts label colour only, not row container colour — the row turning red is the spec, and it's unverified; case-insensitive regex hides "KM PAST DUE" vs "km past due" mismatch. |
-| G1   | `[R]`  | Empty-fleet state never asserted; status colour for both cards never asserted; date regex `/3\d\d days left/` allows a 100-day drift; "correct status" half of spec is unverified. |
+| D1   | `[✓]`  | Seed numbers chosen so pre/post labels differ (`5,000 km left` → `7,000 km left`), pinning a real success/no-op gap; bug-#001 guard switched to the meta-line testid; pre-fill UX dropped (see updated D1 below). |
+| E2   | `[✓]`  | Bug-#001 guard switched to the meta-line testid; the `mileageLastUpdatedAt = null` default is documented in `docs/codebase-related/001-architechture.md` §5/§12, not undocumented. |
+| F1   | `[✓]`  | Row container now carries `data-status="overdue"` (production change in `MaintenanceCardRow`); test asserts that attribute and locks "5,000 km past due" to exact lowercase to match the implementation. |
+| G1   | `[✓]`  | Empty-fleet asserted; both cards' `data-status="ok"` asserted; days regex tightened to `(364|365|366)`; cross-axis label absence asserted. |
 
 ### Foundation issues (affect every spec)
 
-- `e2e/src/tests/auth-popup.spec.ts` — does not match the test-cases doc; appears to be dev scaffolding. **Delete or relocate.**
-- `e2e/src/global-setup.ts` — DB reset commented out with TODO. Programmatic reset (or backend test-only endpoint) needed before F-series and aggregation tests land.
-- `e2e/src/fixtures/api.ts` — duplicates `IVehicleResDTO` / `ICreateVehicleReqDTO` from `@project/types` instead of importing them; missing `apiUpdate*` / `apiDelete*` / `apiMarkDone` helpers, which forces UI-driven setup in downstream specs.
-- `e2e/src/fixtures/auth.fixture.ts` — `loginAs` always traverses the `/login` UI; only A1/A2/A3 actually need that. An `idToken`-injection path would cut ~2s × 8 specs of wall-time and remove a flake surface. `as unknown as { __e2eAuth: ... }` casts should be replaced by a `global.d.ts` declaration.
-- No `pages/` / page-object layer and no `data-testid` discipline. Each test hand-rolls selectors against placeholder text and `aria-label`. One copy-tweak breaks 11 specs today and 30 next month.
+Resolved:
+- `e2e/src/tests/auth-popup.spec.ts` — **deleted**. Did not map to any test-cases entry; A1/A2/A3 already cover login.
+- `e2e/src/global-setup.ts` — TODO comment rewritten to document the actual rationale: per-test fresh emulator users isolate user-scoped data, so a DB reset is not required today. The comment now lists the conditions under which a real reset must be added (global state / cross-user aggregation / F-series mutations on shared rows) and points at the right replacement (backend endpoint guarded by `BACKEND_ENABLE_MOCK_AUTH`, not a `just` shell-out).
+- `e2e/src/fixtures/api.ts` — now imports `IVehicleResDTO`, `ICreateVehicleReqDTO`, `IMaintenanceCardResDTO`, `ICreateMaintenanceCardReqDTO`, `IRecordMileageReqDTO`, and `MILEAGE_UNITS` from `@project/types`. Added minimal helpers needed by the resolved fixes: `apiGetCards` (C1, C3 readback) and `apiGetVehicleStatus` (B6 404 verify). Speculative `apiUpdate*`/`apiDelete*`/`apiMarkDone` deferred until a downstream spec actually needs them.
+- Added load-bearing `data-testid` to a small set of high-value targets:
+  - `VehicleCard`'s `<Link>` → `data-testid="vehicle-card-link"` (resolves loose accessible-name regex flagged in B1, B6, G1).
+  - Vehicle dashboard meta `<p>` → `data-testid="vehicle-meta-line"` (replaces the `heading.locator('..')` topology trick in B3, E2, D1).
+  - `MaintenanceCardRow` outer container → `data-testid="maintenance-card-row"` plus `data-status="overdue|warning|ok"` (resolves F1 row-container assertion, G1 status-colour assertion).
 
-### Cross-cutting verdicts
+Rejected (with reasons):
+- *POM / page-object layer.* 11 specs today; abstraction overhead exceeds the duplicated-selector cost. Revisit at ≥20 specs.
+- *idToken-injection in `loginAs` (skip the `/login` UI for non-auth specs).* The current path already uses programmatic `__e2eAuth.signIn`, not the login button — only `page.goto('/login')` is UI. Wall-clock saving is small and A1/A2/A3 still need the UI traversal. YAGNI.
+- *`as unknown as { __e2eAuth }` casts → `global.d.ts`.* Cosmetic. Defer.
+- *Hard-coded fallback URLs in three files; centralise + throw in CI.* Solving a non-existent problem — fallbacks are explicit and CI sets the env vars.
+- *`tsconfig.json` doesn't extend a base.* No shared base exists in the monorepo; introducing one for one consumer is overhead without payoff.
+- *Speculative API helpers (`apiUpdate*`, `apiDelete*`, `apiMarkDone`).* YAGNI — added only the helpers actually needed by resolved Tier 1 fixes.
 
-- The bug-#001 regression guard (B3 + E2 + D1) currently rests on `heading.locator('..')` — a DOM traversal trick. Three of the highest-value tests in the suite share one fragile selector pattern.
-- "Status colour" (F1, G1) is never asserted on the row container. Adding `data-status="overdue|warning|ok"` to `MaintenanceCardRow` and asserting that attribute would simultaneously fix F1, G1, and unblock the rest of the F-series.
-- API-side readback after mutating actions is missing across the suite. Several tests cannot mathematically distinguish no-op from success (D1 in particular). API GET assertions after the click would close that gap with ~3 lines per test.
+### Cross-cutting resolutions
+
+- The bug-#001 regression guard (B3 + E2 + D1) now uses two independent
+  visibility/text assertions against `[role="heading"]` and
+  `[data-testid="vehicle-meta-line"]` — survives any future header layout
+  change.
+- `MaintenanceCardRow` carries `data-status="overdue|warning|ok"`. F1 and G1
+  assert the attribute directly. Future F-series specs gain the same
+  contract for free.
+- API readback closed the no-op-vs-success gap where it actually mattered:
+  C1 (`nextDueMileage` + `nextDueDate`), C3 (`intervalMileage`), B6
+  (vehicle GET → 404). D1 closes the gap by seeding distinct interval
+  numbers so the rendered "X km left" label changes across the mark-done
+  call.
 
 ---
 
@@ -149,7 +169,9 @@ Critical path — writes mileage and resets card next-due.
 
 ### D1. Mark done, mileage-based card
 
-Card with `intervalMileage` set → menu → Mark Done → mileage field required and pre-filled with current + interval → submit → card's next-due shifts forward; vehicle mileage updates on detail header.
+Card with `intervalMileage` set → menu → Mark Done → mileage field required (starts empty; user enters the actual odometer reading) → submit → card's next-due shifts forward; vehicle mileage updates on detail header.
+
+> **Note (2026-04-28):** A prior version of this spec said "pre-filled with current + interval". The implementation in `mark-done-dialog.tsx` deliberately resets the field to `''` on dialog open so the user enters the actual odometer they recorded, not a pre-computed guess. The spec has been corrected to match the implementation.
 
 **Breaks if:** POST `/maintenance-cards/:id/mark-done`, mileage write-through, or query invalidation regresses.
 
@@ -201,7 +223,9 @@ Recent feature (#45) — high regression risk.
 
 ### F1. Overdue mileage shows red
 
-Seed a card where `nextDueMileage <= vehicleMileage` → row renders red background, "X KM PAST DUE" label.
+Seed a card where `nextDueMileage <= vehicleMileage` → row carries `data-status="overdue"` (red background/border via `getContainerClass`) and renders the lowercase label "X km past due".
+
+> **Note (2026-04-28):** Spec was previously written as "X KM PAST DUE" (uppercase). The implementation in `maintenance-card-row.tsx` emits the lowercase form, and the `.text-card-title`/`text-eyebrow` typography utilities are not applied to this label — the label renders as-emitted. Per "Never break userspace", the spec follows the code.
 
 **Breaks if:** warning calculation in `lib/warning.ts` or status-to-color mapping regresses.
 

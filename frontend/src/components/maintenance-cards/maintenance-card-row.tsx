@@ -135,6 +135,8 @@ export const MaintenanceCardRow: FC<MaintenanceCardRowProps> = ({
 
   return (
     <div
+      data-testid="maintenance-card-row"
+      data-status={status.overall}
       className={cn(
         'relative rounded-lg border p-[9px] hover-pointer:bg-[#111d2b]',
         getContainerClass(status.overall),

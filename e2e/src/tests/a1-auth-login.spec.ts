@@ -10,7 +10,7 @@ test.describe('A1 — Login success', () => {
 
     await loginAs(page);
 
-    await expect(page).toHaveURL(/\/$/);
+    await page.waitForURL((url) => url.pathname === '/');
     await expect(page.getByText(/FLEET OVERVIEW/i)).toBeVisible();
     await expect(
       page.getByRole('heading', { name: /Your Vehicles/i }),

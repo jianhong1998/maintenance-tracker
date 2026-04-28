@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/auth.fixture';
 import { apiCreateCard, apiCreateVehicle } from '../fixtures/api';
 
 test.describe('F1 — Overdue mileage shows red', () => {
-  test('card with nextDueMileage <= vehicleMileage renders an overdue (red) row with "X km past due"', async ({
+  test('card with nextDueMileage <= vehicleMileage renders an overdue row with "X km past due"', async ({
     page,
     loginAs,
   }) => {
@@ -22,8 +22,15 @@ test.describe('F1 — Overdue mileage shows red', () => {
 
     await page.goto(`/vehicles/${vehicle.id}`);
 
-    const overdueLabel = page.getByText(/5,000 km past due/i);
-    await expect(overdueLabel).toBeVisible();
-    await expect(overdueLabel).toHaveClass(/text-\[#ff4444\]/);
+    // The row container — not just the label — must turn red. data-status is
+    // the explicit row-level contract that maps to bg/border colour classes
+    // in maintenance-card-row.tsx::getContainerClass.
+    const row = page.getByTestId('maintenance-card-row');
+    await expect(row).toHaveAttribute('data-status', 'overdue');
+
+    // Lock case to match the implementation (lowercase "past due").
+    // Frontend convention "Never break userspace": code emits lowercase, so
+    // the test pins lowercase. The test-cases doc has been updated to match.
+    await expect(row.getByText('5,000 km past due')).toBeVisible();
   });
 });

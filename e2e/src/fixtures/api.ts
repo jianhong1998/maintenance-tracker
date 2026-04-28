@@ -1,48 +1,23 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosError, AxiosInstance } from 'axios';
+import {
+  MILEAGE_UNITS,
+  type ICreateMaintenanceCardReqDTO,
+  type ICreateVehicleReqDTO,
+  type IMaintenanceCardResDTO,
+  type IRecordMileageReqDTO,
+  type IVehicleResDTO,
+} from '@project/types';
 
 const BACKEND_URL = process.env.E2E_BACKEND_URL ?? 'http://localhost:3001';
 
-export type CreateVehicleInput = {
-  brand: string;
-  model: string;
-  colour: string;
-  mileage: number;
-  mileageUnit?: 'km' | 'mile';
-  registrationNumber?: string;
+// e2e test inputs allow omitting mileageUnit (defaults to km below).
+export type CreateVehicleInput = Omit<ICreateVehicleReqDTO, 'mileageUnit'> & {
+  mileageUnit?: ICreateVehicleReqDTO['mileageUnit'];
 };
 
-export type CreateCardInput = {
-  type: 'task' | 'part' | 'item';
-  name: string;
-  description?: string | null;
-  intervalMileage?: number | null;
-  intervalTimeMonths?: number | null;
-  nextDueMileage?: number | null;
-  nextDueDate?: string | null;
-};
-
-export type VehicleResponse = {
-  id: string;
-  brand: string;
-  model: string;
-  colour: string;
-  mileage: number;
-  mileageUnit: 'km' | 'mile';
-  mileageLastUpdatedAt: string | null;
-  registrationNumber: string | null;
-};
-
-export type CardResponse = {
-  id: string;
-  vehicleId: string;
-  type: 'task' | 'part' | 'item';
-  name: string;
-  description: string | null;
-  intervalMileage: number | null;
-  intervalTimeMonths: number | null;
-  nextDueMileage: number | null;
-  nextDueDate: string | null;
-};
+export type CreateCardInput = ICreateMaintenanceCardReqDTO;
+export type VehicleResponse = IVehicleResDTO;
+export type CardResponse = IMaintenanceCardResDTO;
 
 const buildClient = (idToken: string): AxiosInstance =>
   axios.create({
@@ -56,10 +31,24 @@ export const apiCreateVehicle = async (
 ): Promise<VehicleResponse> => {
   const client = buildClient(idToken);
   const res = await client.post<VehicleResponse>('/vehicles', {
-    mileageUnit: 'km',
+    mileageUnit: MILEAGE_UNITS.KM,
     ...input,
   });
   return res.data;
+};
+
+export const apiGetVehicleStatus = async (
+  idToken: string,
+  vehicleId: string,
+): Promise<number> => {
+  const client = buildClient(idToken);
+  try {
+    await client.get(`/vehicles/${vehicleId}`);
+    return 200;
+  } catch (err) {
+    if (err instanceof AxiosError && err.response) return err.response.status;
+    throw err;
+  }
 };
 
 export const apiCreateCard = async (
@@ -82,15 +71,27 @@ export const apiCreateCard = async (
   return res.data;
 };
 
+export const apiGetCards = async (
+  idToken: string,
+  vehicleId: string,
+): Promise<CardResponse[]> => {
+  const client = buildClient(idToken);
+  const res = await client.get<CardResponse[]>(
+    `/vehicles/${vehicleId}/maintenance-cards`,
+  );
+  return res.data;
+};
+
 export const apiRecordMileage = async (
   idToken: string,
   vehicleId: string,
   mileage: number,
 ): Promise<VehicleResponse> => {
   const client = buildClient(idToken);
+  const body: IRecordMileageReqDTO = { mileage };
   const res = await client.patch<VehicleResponse>(
     `/vehicles/${vehicleId}/mileage`,
-    { mileage },
+    body,
   );
   return res.data;
 };

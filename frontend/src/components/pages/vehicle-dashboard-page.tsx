@@ -105,7 +105,10 @@ const DashboardContent: FC<VehicleDashboardPageProps> = ({ vehicleId }) => {
         <div className="flex items-start justify-between gap-3 mb-1">
           <div className="min-w-0">
             <h1 className="text-page-title truncate">{primary}</h1>
-            <p className="text-[color:var(--text-muted)] text-[0.625rem]">
+            <p
+              data-testid="vehicle-meta-line"
+              className="text-[color:var(--text-muted)] text-[0.625rem]"
+            >
               {metaLine}
             </p>
           </div>

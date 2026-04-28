@@ -18,12 +18,15 @@ test.describe('B1 — Create vehicle (empty fleet)', () => {
     await page.locator('#vehicle-model').fill('Corolla');
     await page.locator('#vehicle-colour').fill('Silver');
     await page.locator('#vehicle-mileage').fill('12345');
-    // Default unit is km — leave as-is.
+    // The mileage-unit toggle defaults to km. The "12,345 km" assertion below
+    // is self-validating — if the default flipped to mile, that regex fails.
 
     await dialog.getByRole('button', { name: /^Save$/ }).click();
     await expect(dialog).toBeHidden();
 
-    const newCard = page.getByRole('link', { name: /Toyota Corolla/i });
+    const newCard = page.getByTestId('vehicle-card-link').filter({
+      hasText: /Toyota Corolla/,
+    });
     await expect(newCard).toBeVisible();
     await expect(newCard).toContainText(/Silver/);
     await expect(newCard).toContainText(/12,345 km/);

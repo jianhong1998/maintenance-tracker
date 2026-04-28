@@ -1,5 +1,5 @@
 import { test, expect } from '../fixtures/auth.fixture';
-import { apiCreateVehicle } from '../fixtures/api';
+import { apiCreateVehicle, apiGetVehicleStatus } from '../fixtures/api';
 
 test.describe('B6 — Delete vehicle', () => {
   test('confirming delete redirects to home and removes the vehicle from the grid', async ({
@@ -17,15 +17,18 @@ test.describe('B6 — Delete vehicle', () => {
     await page.goto(`/vehicles/${vehicle.id}`);
     await page.getByRole('button', { name: /Delete vehicle/i }).click();
 
-    const confirm = page.getByRole('dialog');
-    await expect(confirm).toContainText(/Delete Vehicle/i);
-    await expect(confirm).toContainText(/Mazda MX-5/);
+    const confirmDialog = page.getByRole('dialog');
+    await expect(confirmDialog).toContainText(/Delete Vehicle/i);
+    await expect(confirmDialog).toContainText(/Mazda MX-5/);
 
-    await confirm.getByRole('button', { name: /^Delete$/ }).click();
+    await confirmDialog.getByRole('button', { name: /^Delete$/ }).click();
 
     await page.waitForURL((url) => url.pathname === '/');
-    await expect(page.getByRole('link', { name: /Mazda MX-5/i })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByTestId('vehicle-card-link').filter({ hasText: /Mazda MX-5/ }),
+    ).toHaveCount(0);
+
+    // API-side verification: the vehicle is gone from the database.
+    expect(await apiGetVehicleStatus(user.idToken, vehicle.id)).toBe(404);
   });
 });

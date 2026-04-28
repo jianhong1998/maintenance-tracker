@@ -374,3 +374,62 @@ or misaligned with the spec. That is worse than not having them: a green
 test board lies about coverage. The fixes above are not gold-plating — they
 are what the tests need to actually be tests. Until then, treat A1/B1/B3/
 B6/C1/C3/C4/D1/E2/F1/G1 as *drafts*, not as acceptance gates.
+
+---
+
+## Resolution Log (2026-04-28)
+
+Each finding above triaged against the project's documented architecture
+(`docs/codebase-related/001-architechture.md`,
+`docs/codebase-related/002-frontend-convention.md`), bug history
+(`docs/bug-list/001-mileage-update-issues/`), and code-review playbook
+(`docs/code-review-related/`).
+
+### Foundation
+
+| Finding | Outcome | Note |
+|---------|---------|------|
+| `auth-popup.spec.ts` doesn't belong | ✅ Resolved | File deleted. |
+| DB never reset (TODO) | ⚠️ Partially resolved | Comment rewritten. Backend test-only endpoint **not** implemented — the review itself acknowledges per-test fresh emulator users cover today's user-scoped specs. Endpoint deferred until F-series globals or cross-user aggregation specs land. |
+| Type duplication with `@project/types` | ✅ Resolved | `e2e/package.json` now declares `@project/types` workspace dep; `e2e/src/fixtures/api.ts` imports `IVehicleResDTO`, `ICreateVehicleReqDTO`, `IMaintenanceCardResDTO`, `ICreateMaintenanceCardReqDTO`, `IRecordMileageReqDTO`, `MILEAGE_UNITS`. |
+| Missing API helpers | ⚠️ Partially resolved | Added only `apiGetCards` and `apiGetVehicleStatus` (load-bearing for resolved C1/C3/B6 fixes). `apiUpdate*`/`apiDelete*`/`apiMarkDone` rejected as YAGNI — no current Tier 1 fix needs them; Tier 2 specs that do can add them at that point. |
+| `loginAs` always traverses `/login` UI | ❌ Rejected | The current path uses programmatic `__e2eAuth.signIn`, not the login button. Only `page.goto('/login')` is UI; the wall-clock saving is small, A1/A2/A3 require the UI traversal anyway, and an `idToken` injection path adds complexity for a non-load-bearing perf win. |
+| `as unknown as { __e2eAuth }` casts → `global.d.ts` | ❌ Rejected | Cosmetic. |
+| Hard-coded fallback URLs (centralise + throw in CI) | ❌ Rejected | Solving an imaginary problem. CI sets the env vars; fallbacks are explicit and discoverable. |
+| No POM layer | ❌ Rejected (defer) | 11 specs is below the threshold where the abstraction pays for itself. Revisit at ≥20. |
+| `tsconfig.json` doesn't extend a base | ❌ Rejected | No shared base in the monorepo today; one consumer doesn't justify creating one. |
+| No `data-testid` discipline | ✅ Resolved (scoped) | Added testids to the three load-bearing targets (vehicle card link, vehicle dashboard meta line, maintenance card row + `data-status`). Form-input testids deliberately skipped — none of the Tier 1 fixes need them. |
+
+### Per-spec
+
+| Finding | Outcome | Note |
+|---------|---------|------|
+| **A1** URL regex `/\/$/` | ✅ Resolved | Replaced with `pathname === '/'` check. |
+| **A1** "FLEET OVERVIEW" eyebrow duplicate | ❌ Rejected | Defense-in-depth assertion costs nothing; the suggested replacement (negative AuthGuard case) is A3's territory. |
+| **B1** Loose `link` regex | ✅ Resolved | Switched to `getByTestId('vehicle-card-link').filter(...)`. |
+| **B1** Unstated `km` default | ❌ Rejected (self-validating) | The downstream `12,345 km` regex already fails if the default flips. Comment added in the test. |
+| **B1** Raw `#vehicle-brand` ids | ❌ Rejected | The ids are exact-match selectors and stable; `getByLabel` is the cosmetic equivalent. Linus: "Not worth churning." |
+| **B3** `heading.locator('..')` | ✅ Resolved | Two independent assertions against the heading and the `vehicle-meta-line` testid. |
+| **B6** Loose link regex | ✅ Resolved | Switched to testid. |
+| **B6** `confirm` shadows `window.confirm` | ✅ Resolved | Renamed to `confirmDialog`. |
+| **B6** No API-side delete verification | ✅ Resolved | Added `apiGetVehicleStatus`; asserts 404 after the UI flow completes. |
+| **C1** Auto-calc not verified | ✅ Resolved | API readback verifies `nextDueMileage` and `nextDueDate` (the spec's actual headline phrase). |
+| **C1** Placeholder selectors / dialog scope | ❌ Rejected (cosmetic) | Test waits for `dialog` to be hidden before asserting on the row; no false-positive risk. |
+| **C3** Interval change never asserted | ✅ Resolved | API readback verifies the persisted `intervalMileage`. Per architecture §5, `next_due_*` are not recomputed on PATCH, so data readback is the only honest gate. |
+| **C3** Other selector concerns | ❌ Rejected (cosmetic) | Single-card test; `actions` button matches uniquely. |
+| **C4** All findings | ❌ Rejected (cosmetic) | Review itself rated this 🟢. No action. |
+| **D1** Pre-fill not asserted, not implemented | ✅ Resolved (spec correction) | Implementation deliberately resets to `''` on dialog open — safer UX (user enters the real odometer). The test-cases doc has been updated to match implementation; the test now asserts the empty initial value to pin the contract. |
+| **D1** Identical pre/post label | ✅ Resolved | Seed `intervalMileage` changed to `7000`; pre-state shows "5,000 km left", post-state shows "7,000 km left". Asserting the new value AND absence of the old prevents stale-state false positives. |
+| **D1** `heading.locator('..')` | ✅ Resolved | Switched to `vehicle-meta-line` testid. |
+| **D1** Locale comma / race timing | ❌ Rejected | Playwright auto-retries on visibility; CI locale stable. |
+| **E2** `heading.locator('..')` | ✅ Resolved | Switched to `vehicle-meta-line` testid. |
+| **E2** "Undocumented backend default" | ❌ Rejected | The `mileageLastUpdatedAt = null` default IS documented — `docs/codebase-related/001-architechture.md` §5 (Vehicles table) explicitly types it as nullable, and §12 ("separate endpoint for system-managed field updates") states only `recordMileage` writes it. The reviewer was wrong. Comment added to the test pointing at the architecture doc. |
+| **E2** Redundant "UPDATE ODOMETER" / no `waitForResponse` | ❌ Rejected | Cosmetic / Playwright auto-waits cover the wait. The redundant assertion was dropped as part of the rewrite (the meta-line check is stronger). |
+| **F1** Asserts label colour, not row colour | ✅ Resolved | `MaintenanceCardRow` now carries `data-status`; test asserts `data-status="overdue"` on the row. |
+| **F1** Case-insensitive regex hides KM/km mismatch | ✅ Resolved (spec correction) | Code emits lowercase ("past due") at `maintenance-card-row.tsx:51`. Per "Never break userspace", spec aligned to code. Test now asserts exact lowercase. |
+| **F1** Other minor | ❌ Rejected (cosmetic) | |
+| **G1** Empty-fleet not asserted | ✅ Resolved | `getByTestId('vehicle-card-link')` count = 0 plus `+ ADD VEHICLE` visible. |
+| **G1** Status colour not asserted | ✅ Resolved | Both rows asserted via `data-status="ok"`. |
+| **G1** Date regex 100-day drift | ✅ Resolved | Tightened to `(364|365|366) days left`. |
+| **G1** Cross-axis label absence | ✅ Resolved | Mileage-only row asserts no `days left`; date-only row asserts no `km left`. |
+| **G1** Link role / placeholder selector / unit default | ❌ Rejected (cosmetic) | Card link role is exercised via the testid; placeholders are stable; unit default is self-validating like B1. |

@@ -34,8 +34,15 @@ test.describe('B3 — Edit vehicle', () => {
     await dialog.getByRole('button', { name: /^Save$/ }).click();
     await expect(dialog).toBeHidden();
 
-    const heading = page.getByRole('heading', { name: /Honda Civic/i });
-    await expect(heading).toBeVisible();
-    await expect(heading.locator('..')).toContainText(/Red · 51,000 km/);
+    // Bug #001 regression guard: heading + meta line must BOTH stay visible
+    // after the cache invalidation that follows a vehicle edit. Asserting
+    // them independently — instead of via a DOM-walk from heading — keeps
+    // the guard robust against header layout refactors.
+    await expect(
+      page.getByRole('heading', { name: /Honda Civic/i }),
+    ).toBeVisible();
+    await expect(page.getByTestId('vehicle-meta-line')).toHaveText(
+      /Red · 51,000 km/,
+    );
   });
 });

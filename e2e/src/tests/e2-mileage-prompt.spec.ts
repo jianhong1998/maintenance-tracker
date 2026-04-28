@@ -7,6 +7,9 @@ test.describe('E2 — Mileage prompt submit', () => {
     loginAs,
   }) => {
     const user = await loginAs(page);
+    // Per architecture §5 / §12: a freshly-created vehicle has
+    // mileageLastUpdatedAt = null because only recordMileage sets it.
+    // That null is what triggers the daily mileage prompt to render.
     const vehicle = await apiCreateVehicle(user.idToken, {
       brand: 'Audi',
       model: 'A4',
@@ -18,14 +21,17 @@ test.describe('E2 — Mileage prompt submit', () => {
 
     const promptInput = page.getByPlaceholder('Enter mileage');
     await expect(promptInput).toBeVisible();
-    await expect(page.getByText(/UPDATE ODOMETER/i)).toBeVisible();
 
     await promptInput.fill('60500');
     await page.getByRole('button', { name: /^OK$/ }).click();
 
     await expect(promptInput).toBeHidden();
-    const heading = page.getByRole('heading', { name: /Audi A4/i });
-    await expect(heading).toBeVisible();
-    await expect(heading.locator('..')).toContainText(/Grey · 60,500 km/);
+
+    // Bug #001 regression guard: heading + meta line BOTH stay visible after
+    // the recordMileage cache invalidation.
+    await expect(page.getByRole('heading', { name: /Audi A4/i })).toBeVisible();
+    await expect(page.getByTestId('vehicle-meta-line')).toHaveText(
+      /Grey · 60,500 km/,
+    );
   });
 });

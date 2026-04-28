@@ -1,8 +1,8 @@
 import { test, expect } from '../fixtures/auth.fixture';
-import { apiCreateCard, apiCreateVehicle } from '../fixtures/api';
+import { apiCreateCard, apiCreateVehicle, apiGetCards } from '../fixtures/api';
 
 test.describe('C3 — Edit card', () => {
-  test('row reflects the new name and interval after editing', async ({
+  test('row reflects the new name and the new interval is persisted', async ({
     page,
     loginAs,
   }) => {
@@ -29,8 +29,7 @@ test.describe('C3 — Edit card', () => {
     const dialog = page.getByRole('dialog');
     await expect(dialog).toContainText(/Edit Maintenance Card/i);
 
-    const nameInput = dialog.getByPlaceholder('e.g. Oil Change');
-    await nameInput.fill('Wheel Alignment');
+    await dialog.getByPlaceholder('e.g. Oil Change').fill('Wheel Alignment');
     await dialog.getByPlaceholder('e.g. 5000').fill('10000');
 
     await dialog.getByRole('button', { name: /^Save$/ }).click();
@@ -38,5 +37,13 @@ test.describe('C3 — Edit card', () => {
 
     await expect(page.getByText('Wheel Alignment')).toBeVisible();
     await expect(page.getByText('Tyre Rotation')).toHaveCount(0);
+
+    // API readback: per architecture §5, PATCH does not recompute next_due_*,
+    // so the interval change is observable only via data. This is the gate
+    // the test name promises ("name AND interval reflected").
+    const cards = await apiGetCards(user.idToken, vehicle.id);
+    expect(cards).toHaveLength(1);
+    expect(cards[0].name).toBe('Wheel Alignment');
+    expect(cards[0].intervalMileage).toBe(10000);
   });
 });

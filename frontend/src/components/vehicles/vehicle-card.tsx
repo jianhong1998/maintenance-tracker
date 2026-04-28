@@ -41,6 +41,7 @@ export const VehicleCard: FC<VehicleCardProps> = ({
   return (
     <Link
       href={`/vehicles/${vehicle.id}`}
+      data-testid="vehicle-card-link"
       className={cn(
         'block rounded-[10px] border p-[11px] transition-colors hover-pointer:bg-[#111d2b]',
         hasWarning
