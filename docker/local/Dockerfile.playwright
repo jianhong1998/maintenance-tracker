@@ -9,7 +9,7 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 WORKDIR /app
 
-COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml turbo.json ./
 COPY packages ./packages
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
@@ -17,6 +17,9 @@ COPY api-test/package.json ./api-test/
 COPY e2e/package.json ./e2e/
 
 RUN pnpm install --frozen-lockfile --ignore-scripts
+
+# Build shared types so e2e fixtures importing @project/types resolve at runtime.
+RUN pnpm run build --filter=@project/types
 
 COPY . .
 
