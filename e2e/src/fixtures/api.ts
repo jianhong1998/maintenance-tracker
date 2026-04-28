@@ -4,7 +4,6 @@ import {
   type ICreateMaintenanceCardReqDTO,
   type ICreateVehicleReqDTO,
   type IMaintenanceCardResDTO,
-  type IRecordMileageReqDTO,
   type IVehicleResDTO,
 } from '@project/types';
 
@@ -78,20 +77,6 @@ export const apiGetCards = async (
   const client = buildClient(idToken);
   const res = await client.get<CardResponse[]>(
     `/vehicles/${vehicleId}/maintenance-cards`,
-  );
-  return res.data;
-};
-
-export const apiRecordMileage = async (
-  idToken: string,
-  vehicleId: string,
-  mileage: number,
-): Promise<VehicleResponse> => {
-  const client = buildClient(idToken);
-  const body: IRecordMileageReqDTO = { mileage };
-  const res = await client.patch<VehicleResponse>(
-    `/vehicles/${vehicleId}/mileage`,
-    body,
   );
   return res.data;
 };

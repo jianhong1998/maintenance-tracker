@@ -12,6 +12,10 @@ export default defineConfig({
   globalSetup: './src/global-setup.ts',
   use: {
     baseURL: FRONTEND_URL,
+    // Lock the browser locale so Intl.NumberFormat group separators (the
+    // comma in "12,345 km" assertions across b1/b3/c1/d1/e2/f1/g1) stay
+    // deterministic regardless of the host/CI image default.
+    locale: 'en-US',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
   },
