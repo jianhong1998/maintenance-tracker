@@ -77,9 +77,15 @@ lint:
 lint-fix:
     @pnpm run lint:fix
 
+[group: 'init']
 install:
     @chmod +x ./scripts/reinstall.sh && \
         ./scripts/reinstall.sh
+
+[group: 'init']
+init-e2e:
+    @cd e2e && \
+    pnpm exec playwright install
 
 [group: 'test']
 test-ui:
@@ -98,6 +104,12 @@ test-api:
 
 [group: 'test']
 test-e2e:
+  @just init-e2e
+  @cd e2e && \
+    pnpm exec playwright test --ui
+
+[group: 'test']
+test-e2e-docker:
     @docker compose \
         -p {{PROJECT_NAME}} \
         -f docker-compose.yml \
