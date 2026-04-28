@@ -6,6 +6,41 @@ recent change has broken a specific part of the application.
 
 ---
 
+## Progress Tracker (Tier 1)
+
+Status legend: `[ ]` not written · `[D]` draft written · `[R]` reviewed, fixes
+required · `[✓]` reviewed, no blocking issues.
+
+| Spec | Status | Headline finding (full review: `docs/raw-requirements/003-e2e/002-tier-1-review.md`) |
+|------|--------|--------------------------------------------------------------------------------------|
+| A1   | `[R]`  | URL regex `/\/$/` matches anything ending in slash; eyebrow text duplicate.           |
+| B1   | `[R]`  | Loose accessible-name regex on card; unstated `km` default; raw `#id` selectors.      |
+| B3   | `[R]`  | `heading.locator('..')` couples bug-#001 guard to DOM topology — the one assertion that exists fails for the wrong reasons. |
+| B6   | `[R]`  | Same loose-name match as B1; no API-side verification that DELETE actually happened.  |
+| C1   | `[R]`  | "Auto-calculated next-due values" (the spec's headline phrase) is **not** verified — only the rendered "X km left" label, which has known mathematical ambiguity. |
+| C3   | `[R]`  | Test name claims "name AND interval reflected" but interval change is never asserted; setup data incoherent (interval edited, next-due frozen). |
+| C4   | `[✓]`  | Best-shaped test of the batch — empty-state assertion is a strong signal.             |
+| D1   | `[R]`  | **Garbage tier**: pre-fill (current+interval) never asserted *and* not implemented; "5,000 km left" assertion is identical pre- and post-mark-done so the test cannot distinguish no-op from success. |
+| E2   | `[R]`  | `heading.locator('..')` couples bug-#001 guard to markup; relies on undocumented backend behaviour (`mileageLastUpdatedAt = null` on create). |
+| F1   | `[R]`  | **Garbage tier**: asserts label colour only, not row container colour — the row turning red is the spec, and it's unverified; case-insensitive regex hides "KM PAST DUE" vs "km past due" mismatch. |
+| G1   | `[R]`  | Empty-fleet state never asserted; status colour for both cards never asserted; date regex `/3\d\d days left/` allows a 100-day drift; "correct status" half of spec is unverified. |
+
+### Foundation issues (affect every spec)
+
+- `e2e/src/tests/auth-popup.spec.ts` — does not match the test-cases doc; appears to be dev scaffolding. **Delete or relocate.**
+- `e2e/src/global-setup.ts` — DB reset commented out with TODO. Programmatic reset (or backend test-only endpoint) needed before F-series and aggregation tests land.
+- `e2e/src/fixtures/api.ts` — duplicates `IVehicleResDTO` / `ICreateVehicleReqDTO` from `@project/types` instead of importing them; missing `apiUpdate*` / `apiDelete*` / `apiMarkDone` helpers, which forces UI-driven setup in downstream specs.
+- `e2e/src/fixtures/auth.fixture.ts` — `loginAs` always traverses the `/login` UI; only A1/A2/A3 actually need that. An `idToken`-injection path would cut ~2s × 8 specs of wall-time and remove a flake surface. `as unknown as { __e2eAuth: ... }` casts should be replaced by a `global.d.ts` declaration.
+- No `pages/` / page-object layer and no `data-testid` discipline. Each test hand-rolls selectors against placeholder text and `aria-label`. One copy-tweak breaks 11 specs today and 30 next month.
+
+### Cross-cutting verdicts
+
+- The bug-#001 regression guard (B3 + E2 + D1) currently rests on `heading.locator('..')` — a DOM traversal trick. Three of the highest-value tests in the suite share one fragile selector pattern.
+- "Status colour" (F1, G1) is never asserted on the row container. Adding `data-status="overdue|warning|ok"` to `MaintenanceCardRow` and asserting that attribute would simultaneously fix F1, G1, and unblock the rest of the F-series.
+- API-side readback after mutating actions is missing across the suite. Several tests cannot mathematically distinguish no-op from success (D1 in particular). API GET assertions after the click would close that gap with ~3 lines per test.
+
+---
+
 ## A. Authentication Flows
 
 ### A1. Login success
