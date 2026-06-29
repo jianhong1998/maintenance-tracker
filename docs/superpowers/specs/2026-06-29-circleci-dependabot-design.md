@@ -217,3 +217,97 @@ CI config and shell glue are not unit-testable in the repo's Vitest sense, so ve
 ## 13. Non-goals / explicitly deferred
 
 GitHub Actions ecosystem · grouping across ecosystems · auto-merge · major upgrades · security-only mode · two-token read/write split · docker-compose image bumps.
+
+---
+
+## Appendix A — Grilling session log (questions, answers, rationale)
+
+This design was settled through a `/grill-me` + `/superpowers:brainstorming`
+session: one question at a time, each with a recommended answer, walking the
+decision tree. This log preserves what was asked, what was decided, and **why**
+— including the cases where the chosen answer differed from the recommendation.
+
+### Research that shaped the recommendations
+
+Findings established before/between questions, used to ground the options:
+
+- **GitHub-native Dependabot already does weekly PRs for free** (zero CI
+  minutes, zero token management) — but its schedule lives in
+  `.github/dependabot.yml`, so it **cannot** be triggered from the CircleCI
+  web UI. This is the central tension behind Q1.
+- **`dependabot-script` (the old self-hosting path) is deprecated**, now
+  redirecting to `dependabot/example-cli-usage`. The supported standalone path
+  is the **Dependabot CLI**, which produces update *diffs* (JSONL), not PRs;
+  PR creation is wired up separately (`create.sh` in the example repo).
+- **There is no official `:slim` image.** Dependabot publishes the monolithic
+  `ghcr.io/dependabot/dependabot-core` and per-ecosystem
+  `ghcr.io/dependabot/dependabot-updater-<eco>` images. The per-ecosystem ones
+  *are* the "slim" images; the CLI pulls them by default.
+- **Prebuilt images are AMD64-only** (run 2–3× slower on ARM under emulation)
+  → forces the x86 `machine-executor` (Q via decision #8).
+- **Grouping + major-ignoring are expressible in the CLI job-description YAML**
+  (`dependency-groups`, `allowed-updates`, `ignore-conditions` exist in the
+  CLI's `internal/model/job.go`). So "one grouped minor/patch PR, majors
+  ignored" is *configuration*, not hand-built orchestration — this is what
+  made Q5's answer cheap to honor.
+- **Dependabot has no cross-ecosystem grouping** (groups only scope within one
+  ecosystem, even in GitHub-native) → the single npm+Docker PR (follow-up a)
+  requires a custom combiner; it is the one genuinely bespoke piece.
+
+### Q1 — Where should Dependabot actually run?
+
+- **Options:** (A) GitHub-native `.github/dependabot.yml` *(recommended)* — free, zero maintenance, but not CircleCI-triggerable. (B) Self-hosted in CircleCI — matches the literal request, ~10× the moving parts.
+- **Recommendation:** A. For a solo project, don't build infrastructure GitHub already runs for free.
+- **Decision:** **B — Self-hosted in CircleCI.**
+- **Reason:** The requirement is explicitly that the schedule/trigger be handled in the CircleCI web UI, alongside the rest of the pipeline (single pane of glass). The user accepted the higher complexity and maintenance burden in exchange for keeping all automation in CircleCI. → Decision #1.
+
+### Q2 — Which ecosystems?
+
+- **Options:** npm/pnpm only *(recommended)* / npm + Docker / npm + Docker + GitHub Actions.
+- **Recommendation:** npm/pnpm only — where nearly all churn and security risk lives; each extra ecosystem is more script surface in self-hosted mode.
+- **Decision:** **npm + Docker.**
+- **Reason:** Docker base images (`docker/deployment/Dockerfile.*`) are worth keeping current too; GitHub Actions moves slowly and was deferred. → Decision #2; GitHub Actions listed as a non-goal.
+
+### Q3 — What happens to a PR once tests pass?
+
+- **Options:** Manual review *(recommended)* / Auto-merge passing patch+minor / Auto-merge all passing.
+- **Recommendation:** Manual review, no auto-merge.
+- **Decision:** **Manual review.**
+- **Reason:** Solo project with no second reviewer; auto-merge lets an unattended bad transitive bump reach `main`, and a green suite doesn't catch every regression. The cost of clicking merge on a green PR is trivial, and it's the least code to maintain. → Decision #4.
+
+### Q4 — How are the Dependabot images driven?
+
+Preceded by the user's note: *"I will prefer to use Dependabot slim docker image to run it"* — which surfaced the research that there is no official slim tag (the per-ecosystem images are the slim ones).
+
+- **Options:** (X) CLI orchestrates the images + credential proxy *(recommended, supported `example-cli-usage` path)* / (Y) run the updater image directly as the job container (deprecated `dependabot-script` style, no proxy isolation).
+- **Recommendation:** X.
+- **Decision:** **X — CLI-orchestrated — but using the monolithic `dependabot-core` image instead of the per-ecosystem slim images.**
+- **Reason:** X is the supported path and keeps proxy credential isolation; the user preferred the broader `dependabot-core` image over fussing with per-ecosystem variants. Caveat recorded: the CLI defaults to per-ecosystem images, so `dependabot-core` likely requires pinning `--updater-image` and must be verified at implementation, with the per-ecosystem images as the proven fallback. → Decision #5, §4 implementation-time verification, §10 risk.
+
+### Q5 — How to control PR volume?
+
+- **Options:** Cap at 5 open PRs *(recommended, mirrors GitHub's default)* / Cap at a different number / No cap.
+- **Recommendation:** Cap at 5 — one PR per dependency floods otherwise, and unmerged PRs accumulate weekly.
+- **Decision (differed from all options):** **Create exactly one grouped PR for all minor + patch upgrades; ignore major upgrades for now.**
+- **Reason:** Grouping minimizes review noise far better than a cap (≈1 PR per ecosystem per run instead of many), and it's cheap because grouping + major-ignoring are pure job-YAML configuration (see research above), not orchestration. Majors are deferred as inherently higher-risk and worth handling deliberately. → Decisions #3 (minor/patch only, majors ignored) and #6 (one combined PR); makes the cap moot.
+
+### Follow-up (a) — One combined PR, or one per ecosystem?
+
+Raised when presenting the design: the natural unit is one grouped PR *per ecosystem* (npm + Docker = 2 PRs), because the two ecosystems are separate updater runs touching different files.
+
+- **Decision:** **Literally one PR, combining npm + Docker.**
+- **Reason:** The user wants the absolute minimum PR count (one). Consequence accepted and recorded: Dependabot has no cross-ecosystem grouping, so this requires a **custom combiner** (we own the code), and the PR becomes **all-or-nothing to merge** — if one ecosystem's bump breaks CI, it's fixed or dropped on the single branch rather than merged independently. → Decision #6, §8, §10 risk.
+
+### Follow-up (b) — Credential model
+
+The user asked what "single-PAT model" meant.
+
+- **Clarification given:** one fine-grained PAT (scoped to this repo, `Contents` + `Pull requests` read/write) used by both the compute step (via the proxy, which isolates it from arbitrary code run during dependency resolution) and the PR-creation step — versus the `example-cli-usage` two-token read/write split, which is unnecessary for a solo private repo because the proxy already protects the token.
+- **Decision:** **Single fine-grained PAT** in CircleCI context `dependabot-context`. Two-token split listed as optional future hardening. → Decision #7, §9.
+
+### Follow-up (c) — Trigger gating parameter
+
+After spec approval, the user requested the pipeline only trigger on a pipeline param `workflow_type='dependency-update'`.
+
+- **Decision:** Use a **string** parameter `workflow_type` (default `''`) rather than a boolean `run_dependabot`. `dependabot-workflow` runs on `equal ['dependency-update', workflow_type]`; `branch-workflow` gains a `not equal` guard on the same value.
+- **Reason:** A string discriminator is extensible to future web-UI-triggered workflow types without adding more boolean flags or touching this gate again, and it keeps the change to `branch-workflow` surgical (one `not equal` clause). Normal pushes and tag releases never set it, so behaviour is unchanged. → §5, §6.
