@@ -107,7 +107,7 @@ const DashboardContent: FC<VehicleDashboardPageProps> = ({ vehicleId }) => {
             <h1 className="text-page-title truncate">{primary}</h1>
             <p
               data-testid="vehicle-meta-line"
-              className="text-[color:var(--text-muted)] text-[0.625rem]"
+              className="text-primary text-[0.625rem]"
             >
               {metaLine}
             </p>
