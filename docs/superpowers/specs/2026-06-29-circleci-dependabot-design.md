@@ -49,9 +49,9 @@ The repo has no automated dependency-update mechanism. There is no `.github/depe
 
 ```
 CircleCI Scheduled Pipeline (web UI, weekly)
-        │  sets pipeline parameter run_dependabot=true
+        │  sets pipeline parameter workflow_type=dependency-update
         ▼
-dependabot-workflow  (when: run_dependabot == true)
+dependabot-workflow  (when: workflow_type == 'dependency-update')
         │
         ▼
 dependabot job  (machine-executor, x86, Docker available)
@@ -74,10 +74,12 @@ This is the highest-risk part: a scheduled pipeline runs on `main` with no git t
 
 ```yaml
 parameters:
-  run_dependabot:
-    type: boolean
-    default: false
+  workflow_type:
+    type: string
+    default: ''
 ```
+
+A string parameter (rather than a boolean) so it can discriminate future workflow types, not just on/off. Normal pushes and tag releases never set it, so it defaults to `''`.
 
 **Gate the existing `branch-workflow`** (change only its `when`):
 
@@ -86,14 +88,16 @@ branch-workflow:
   when:
     and:
       - equal: ['', << pipeline.git.tag >>]
-      - not: << pipeline.parameters.run_dependabot >>
+      - not:
+          equal: ['dependency-update', << pipeline.parameters.workflow_type >>]
 ```
 
 **Add the new workflow:**
 
 ```yaml
 dependabot-workflow:
-  when: << pipeline.parameters.run_dependabot >>
+  when:
+    equal: ['dependency-update', << pipeline.parameters.workflow_type >>]
   jobs:
     - dependabot:
         context: dependabot-context
@@ -101,18 +105,18 @@ dependabot-workflow:
 
 **Correctness matrix** (proves "never break userspace"):
 
-| Event                            | `git.tag` | `run_dependabot` | branch-workflow    | tag-workflow       | dependabot-workflow |
-| -------------------------------- | --------- | ---------------- | ------------------ | ------------------ | ------------------- |
-| Normal branch push               | `''`      | `false`          | ✅ runs (as today) | ✗                  | ✗                   |
-| Semver tag push                  | set       | `false`          | ✗                  | ✅ runs (as today) | ✗                   |
-| Scheduled / on-demand Dependabot | `''`      | `true`           | ✗ (gated off)      | ✗                  | ✅ runs             |
+| Event                            | `git.tag` | `workflow_type`       | branch-workflow    | tag-workflow       | dependabot-workflow |
+| -------------------------------- | --------- | --------------------- | ------------------ | ------------------ | ------------------- |
+| Normal branch push               | `''`      | `''`                  | ✅ runs (as today) | ✗                  | ✗                   |
+| Semver tag push                  | set       | `''`                  | ✗                  | ✅ runs (as today) | ✗                   |
+| Scheduled / on-demand Dependabot | `''`      | `'dependency-update'` | ✗ (gated off)      | ✗                  | ✅ runs             |
 
-`tag-workflow` is untouched. Normal pushes default `run_dependabot=false`, so `not false = true` and behaviour is identical to today.
+`tag-workflow` is untouched. Normal pushes leave `workflow_type=''`, so the `not equal` test is true and `branch-workflow` behaves identically to today.
 
 ## 6. Trigger
 
-- The user creates a **Scheduled Pipeline** in the CircleCI web UI (Project → Triggers): weekly cadence (user's chosen day/time), target branch `main`, with pipeline parameter `run_dependabot: true`.
-- On-demand "run now" uses the same parameter via the **Trigger Pipeline** button.
+- The user creates a **Scheduled Pipeline** in the CircleCI web UI (Project → Triggers): weekly cadence (user's chosen day/time), target branch `main`, with pipeline parameter `workflow_type: dependency-update`.
+- On-demand "run now" sets the same `workflow_type: dependency-update` parameter via the **Trigger Pipeline** button.
 - **Nothing schedule-related lives in `config.yml`** — the config only defines the parameter and the workflow that responds to it. This matches the requirement that the trigger be handled in the CircleCI web UI.
 
 ## 7. Dependabot job descriptions
@@ -172,7 +176,7 @@ Dependabot has **no cross-ecosystem grouping** (groups only scope within one eco
 
 | Risk                                                                       | Mitigation                                                                                                                               |
 | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| Scheduled run also fires the full build/deploy pipeline                    | `run_dependabot` parameter + `not` gate on `branch-workflow` (§5). Default `false` keeps normal pushes identical.                        |
+| Scheduled run also fires the full build/deploy pipeline                    | `workflow_type` parameter + `not equal` gate on `branch-workflow` (§5). Default `''` keeps normal pushes identical.                      |
 | `dependabot-core` monolithic image incompatible with CLI `--updater-image` | Verify at implementation; fall back to `dependabot-updater-<eco>` images and record deviation (§4).                                      |
 | Job-description schema is not formally documented                          | Field names taken from the CLI's `internal/model/job.go`; validate by a local dry-run before wiring into CI (§12).                       |
 | Token exposed to malicious dependency code during resolution               | CLI proxy holds the credential; updater container never sees the raw token. Fine-grained PAT scoped to one repo limits blast radius.     |
@@ -193,7 +197,7 @@ Dependabot has **no cross-ecosystem grouping** (groups only scope within one eco
 
 **Modified:**
 
-- `.circleci/config.yml` — add `parameters.run_dependabot`; add `dependabot` job; add `dependabot-workflow`; add the `not` gate to `branch-workflow.when`.
+- `.circleci/config.yml` — add `parameters.workflow_type`; add `dependabot` job; add `dependabot-workflow`; add the `not equal` gate to `branch-workflow.when`.
 
 **External (manual, documented in plan — not code):**
 
@@ -208,7 +212,7 @@ CI config and shell glue are not unit-testable in the repo's Vitest sense, so ve
 1. **Static:** `circleci config validate` on the edited `config.yml`.
 2. **Local dry-run:** run `dependabot update -f job-npm.yml` (and docker) locally with a **read-only** token, inspecting output without creating PRs — confirms ecosystem support, grouping collapse to one PR, and major-ignore behaviour.
 3. **Combiner unit tests:** pure `buildCombinedUpdate` tested against captured dry-run output fixtures (empty set, npm-only, docker-only, both).
-4. **First live run observed:** trigger the pipeline on-demand (`run_dependabot=true`) and confirm exactly one PR opens against `main`, that it carries only minor/patch bumps, and that `branch-workflow` did **not** fire for the scheduled pipeline.
+4. **First live run observed:** trigger the pipeline on-demand (`workflow_type=dependency-update`) and confirm exactly one PR opens against `main`, that it carries only minor/patch bumps, and that `branch-workflow` did **not** fire for the scheduled pipeline.
 
 ## 13. Non-goals / explicitly deferred
 
