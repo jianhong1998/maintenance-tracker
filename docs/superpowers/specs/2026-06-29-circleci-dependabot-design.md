@@ -16,6 +16,7 @@ The repo has no automated dependency-update mechanism. There is no `.github/depe
 ## 2. Scope
 
 **In:**
+
 - A new CircleCI workflow that runs Dependabot for **npm/pnpm** and **Docker** ecosystems.
 - Triggered weekly by a **CircleCI Scheduled Pipeline** (created in the web UI) and on-demand via the same pipeline parameter.
 - Restricted to **minor + patch** version updates; **major versions ignored**.
@@ -23,6 +24,7 @@ The repo has no automated dependency-update mechanism. There is no `.github/depe
 - Manual merge — the runner only opens/refreshes the PR.
 
 **Out:**
+
 - GitHub-native Dependabot (`.github/dependabot.yml`).
 - GitHub Actions and any ecosystem beyond npm + Docker.
 - Major-version updates and security-only mode.
@@ -32,16 +34,16 @@ The repo has no automated dependency-update mechanism. There is no `.github/depe
 
 ## 3. Decisions (resolved during brainstorming)
 
-| # | Decision | Choice |
-|---|----------|--------|
-| 1 | Where Dependabot runs | Self-hosted in CircleCI (not GitHub-native) |
-| 2 | Ecosystems | `npm_and_yarn` (pnpm) + `docker` |
-| 3 | Update scope | All version updates, **minor + patch only**, majors ignored |
-| 4 | Merge policy | Manual review, no auto-merge |
-| 5 | Drive mechanism | Dependabot **CLI** orchestrating the **`dependabot-core` image** (not per-ecosystem slim images) + credential proxy |
-| 6 | PR shape | **One combined PR** for npm + Docker, refreshed weekly |
-| 7 | Credentials | **Single** fine-grained GitHub PAT in a CircleCI context |
-| 8 | Executor | Existing **x86 `machine-executor`** (prebuilt Dependabot images are AMD64-only) |
+| #   | Decision              | Choice                                                                                                              |
+| --- | --------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 1   | Where Dependabot runs | Self-hosted in CircleCI (not GitHub-native)                                                                         |
+| 2   | Ecosystems            | `npm_and_yarn` (pnpm) + `docker`                                                                                    |
+| 3   | Update scope          | All version updates, **minor + patch only**, majors ignored                                                         |
+| 4   | Merge policy          | Manual review, no auto-merge                                                                                        |
+| 5   | Drive mechanism       | Dependabot **CLI** orchestrating the **`dependabot-core` image** (not per-ecosystem slim images) + credential proxy |
+| 6   | PR shape              | **One combined PR** for npm + Docker, refreshed weekly                                                              |
+| 7   | Credentials           | **Single** fine-grained GitHub PAT in a CircleCI context                                                            |
+| 8   | Executor              | Existing **x86 `machine-executor`** (prebuilt Dependabot images are AMD64-only)                                     |
 
 ## 4. Architecture
 
@@ -99,11 +101,11 @@ dependabot-workflow:
 
 **Correctness matrix** (proves "never break userspace"):
 
-| Event | `git.tag` | `run_dependabot` | branch-workflow | tag-workflow | dependabot-workflow |
-|-------|-----------|------------------|-----------------|--------------|---------------------|
-| Normal branch push | `''` | `false` | ✅ runs (as today) | ✗ | ✗ |
-| Semver tag push | set | `false` | ✗ | ✅ runs (as today) | ✗ |
-| Scheduled / on-demand Dependabot | `''` | `true` | ✗ (gated off) | ✗ | ✅ runs |
+| Event                            | `git.tag` | `run_dependabot` | branch-workflow    | tag-workflow       | dependabot-workflow |
+| -------------------------------- | --------- | ---------------- | ------------------ | ------------------ | ------------------- |
+| Normal branch push               | `''`      | `false`          | ✅ runs (as today) | ✗                  | ✗                   |
+| Semver tag push                  | set       | `false`          | ✗                  | ✅ runs (as today) | ✗                   |
+| Scheduled / on-demand Dependabot | `''`      | `true`           | ✗ (gated off)      | ✗                  | ✅ runs             |
 
 `tag-workflow` is untouched. Normal pushes default `run_dependabot=false`, so `not false = true` and behaviour is identical to today.
 
@@ -125,19 +127,19 @@ job:
   source:
     provider: github
     repo: jianhong1998/maintenance-tracker
-    directory: "/"          # root pnpm-lock.yaml covers all workspaces
+    directory: '/' # root pnpm-lock.yaml covers all workspaces
     commit: <main HEAD sha> # injected at runtime
   allowed-updates:
     - update-type: all
   ignore-conditions:
-    - dependency-name: "*"
-      update-types: ["version-update:semver-major"]
+    - dependency-name: '*'
+      update-types: ['version-update:semver-major']
   dependency-groups:
     - name: weekly-minor-patch
       applies-to: version-updates
       rules:
-        patterns: ["*"]
-        update-types: ["minor", "patch"]
+        patterns: ['*']
+        update-types: ['minor', 'patch']
 ```
 
 **`job-docker.yml`** — identical structure with `package-manager: docker` and `directory: "/docker/deployment"` (location of `Dockerfile.backend`, `Dockerfile.frontend`, `Dockerfile.db-migration`).
@@ -168,20 +170,21 @@ Dependabot has **no cross-ecosystem grouping** (groups only scope within one eco
 
 ## 10. Risks & back-compat
 
-| Risk | Mitigation |
-|------|------------|
-| Scheduled run also fires the full build/deploy pipeline | `run_dependabot` parameter + `not` gate on `branch-workflow` (§5). Default `false` keeps normal pushes identical. |
-| `dependabot-core` monolithic image incompatible with CLI `--updater-image` | Verify at implementation; fall back to `dependabot-updater-<eco>` images and record deviation (§4). |
-| Job-description schema is not formally documented | Field names taken from the CLI's `internal/model/job.go`; validate by a local dry-run before wiring into CI (§12). |
-| Token exposed to malicious dependency code during resolution | CLI proxy holds the credential; updater container never sees the raw token. Fine-grained PAT scoped to one repo limits blast radius. |
-| Combined PR is all-or-nothing to merge | Accepted property (solo manual-merge flow). If one ecosystem's bump breaks CI, fix or drop it on the single branch. |
-| AMD64-only images slow on ARM | Pin job to the x86 `machine-executor`. |
-| Weekly PRs accumulate | Fixed branch + force-update means exactly one PR ever (§8). |
-| pnpm workspace resolution | `npm_and_yarn` operates on root `/` where the single `pnpm-lock.yaml` lives; dependabot-core supports pnpm lockfiles. Verify in dry-run. |
+| Risk                                                                       | Mitigation                                                                                                                               |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| Scheduled run also fires the full build/deploy pipeline                    | `run_dependabot` parameter + `not` gate on `branch-workflow` (§5). Default `false` keeps normal pushes identical.                        |
+| `dependabot-core` monolithic image incompatible with CLI `--updater-image` | Verify at implementation; fall back to `dependabot-updater-<eco>` images and record deviation (§4).                                      |
+| Job-description schema is not formally documented                          | Field names taken from the CLI's `internal/model/job.go`; validate by a local dry-run before wiring into CI (§12).                       |
+| Token exposed to malicious dependency code during resolution               | CLI proxy holds the credential; updater container never sees the raw token. Fine-grained PAT scoped to one repo limits blast radius.     |
+| Combined PR is all-or-nothing to merge                                     | Accepted property (solo manual-merge flow). If one ecosystem's bump breaks CI, fix or drop it on the single branch.                      |
+| AMD64-only images slow on ARM                                              | Pin job to the x86 `machine-executor`.                                                                                                   |
+| Weekly PRs accumulate                                                      | Fixed branch + force-update means exactly one PR ever (§8).                                                                              |
+| pnpm workspace resolution                                                  | `npm_and_yarn` operates on root `/` where the single `pnpm-lock.yaml` lives; dependabot-core supports pnpm lockfiles. Verify in dry-run. |
 
 ## 11. File-change inventory
 
 **New:**
+
 - `.circleci/dependabot/job-npm.yml` — npm/pnpm job description.
 - `.circleci/dependabot/job-docker.yml` — docker job description.
 - `.circleci/dependabot/create-combined-pr.mjs` — combiner (pure core + I/O shell).
@@ -189,9 +192,11 @@ Dependabot has **no cross-ecosystem grouping** (groups only scope within one eco
 - Combiner unit spec (path per plan-level test-runner decision).
 
 **Modified:**
+
 - `.circleci/config.yml` — add `parameters.run_dependabot`; add `dependabot` job; add `dependabot-workflow`; add the `not` gate to `branch-workflow.when`.
 
 **External (manual, documented in plan — not code):**
+
 - Create the fine-grained GitHub PAT.
 - Create the CircleCI `dependabot-context` with `DEPENDABOT_GITHUB_TOKEN`.
 - Create the weekly Scheduled Pipeline in the CircleCI web UI.
