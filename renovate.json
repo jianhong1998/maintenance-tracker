@@ -4,7 +4,6 @@
   "dependencyDashboard": true,
   "enabledManagers": ["npm", "dockerfile"],
   "rangeStrategy": "bump",
-  "platformCommit": "enabled",
   "branchPrefix": "chore/000/",
   "minimumReleaseAge": "5 days",
   "lockFileMaintenance": { "enabled": false },

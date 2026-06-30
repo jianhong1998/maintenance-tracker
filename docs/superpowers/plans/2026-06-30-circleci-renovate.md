@@ -57,7 +57,6 @@ Produces the single source of policy and proves it parses and behaves before any
   "dependencyDashboard": true,
   "enabledManagers": ["npm", "dockerfile"],
   "rangeStrategy": "bump",
-  "platformCommit": "enabled",
   "branchPrefix": "chore/000/",
   "minimumReleaseAge": "5 days",
   "lockFileMaintenance": { "enabled": false },
