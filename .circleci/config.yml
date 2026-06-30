@@ -11,7 +11,7 @@ parameters:
 executors:
   node-executor:
     docker:
-      - image: cimg/node:22.14
+      - image: cimg/node:24.18
 
   machine-executor:
     machine:
@@ -371,7 +371,8 @@ workflows:
       and:
         - equal: ['', << pipeline.git.tag >>]
         - not:
-            equal: ['dependency-update', << pipeline.parameters.workflow_type >>]
+            equal:
+              ['dependency-update', << pipeline.parameters.workflow_type >>]
     jobs:
       - lint-test
       - unit-test
