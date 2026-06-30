@@ -2,64 +2,123 @@
 
 **Date:** 2026-07-01
 **Branch:** `chore/000/weekly-updates`
-**Status:** Approved
+**Status:** Approved (revised after investigation — see "Investigation correction" below)
 
 ---
 
 ## Background
 
 The `chore/000/weekly-updates` branch carries Renovate dependency bumps. After the
-bumps, `just lint` and `just test-ui` both fail. Investigation confirmed **both
+bumps, `just lint` and `just test-ui` both fail. Investigation confirmed **the
 failures are collateral damage from the version bumps — no application source
-regressed.** The relevant bumps:
+regressed.** Relevant bumps:
 
-- `typescript-eslint` `8.41.0 → 8.62.0` (root, `frontend`, `api-test`)
-- `@radix-ui/react-dialog` `1.1.15 → 1.1.17` (frontend), which pulls
+- `typescript-eslint` `8.41.0 → 8.62.0` (root, `frontend`, `api-test`, `backend`)
+- `@radix-ui/react-dialog` `1.1.15 → 1.1.17` (frontend), pulling
   `@radix-ui/react-dismissable-layer@1.1.13`
 
-Two files need changes. Both are in the test/quality layer. **Zero production
-source files change.**
+## Investigation correction
+
+An initial subagent reported the lint failure in `api-test`. That was a **turbo
+build/lint race artifact**, not the real failure. `@typescript-eslint/no-unnecessary-type-assertion`
+is a *type-aware* rule: its verdict depends on whether `@project/types` is built
+when a package lints. `turbo.json`'s `lint` task has **no `dependsOn: ["^build"]`**,
+so cross-package type-aware lint races the types build and flip-flops between runs.
+
+Canonical state (verified by running `eslint` directly per package with
+`@project/types` built):
+
+| Package | Lint | Notes |
+|---|---|---|
+| `api-test` | ✅ clean | earlier "errors" were the race |
+| `backend` | ❌ **9 errors** | stable — assertions on **local** entity types, build-independent |
+| `frontend` | ✅ clean (lint) | dialog **test** fails separately |
+| `e2e` | ✅ clean | |
+
+Three changes result. All are in the test/quality/build-config layer; **zero
+production application source changes.**
 
 ---
 
-## Failure 1 — Lint (`api-test`)
+## Change 1 — Backend lint (9 redundant assertions)
 
 ### Symptom
 
 ```
-api-test/src/tests/maintenance-cards.spec.ts
-   48:38  error  This assertion is unnecessary since the receiver accepts the
-                 original type of the expression  @typescript-eslint/no-unnecessary-type-assertion
-  459:38  error  (same)
-✖ 2 problems (2 errors, 0 warnings)
+backend/src/modules/notification/notification.service.spec.ts
+   80:46  error  This assertion is unnecessary ...  @typescript-eslint/no-unnecessary-type-assertion
+   81:52  error  (same)
+  100:46  error  (same)
+  111:46  error  (same)
+  112:52  error  (same)
+  125:46  error  (same)
+backend/src/modules/scheduler/scheduler.service.spec.ts
+  159:71  error  (same)
+  202:71  error  (same)
+  231:71  error  (same)
+✖ 9 problems (9 errors, 0 warnings)  — all fixable with --fix
 ```
 
 ### Root cause
 
-`typescript-eslint@8.62`'s `no-unnecessary-type-assertion` rule now understands
-that `toMatchObject(...)`'s parameter accepts the un-asserted expression type, so
-two casts that were previously tolerated are now provably redundant:
+`typescript-eslint@8.62`'s `no-unnecessary-type-assertion` now proves these casts
+are no-ops because the receiver (`mockResolvedValue(...)`) accepts the un-asserted
+expression type:
 
-- Line 49: `id: expect.any(String) as string`
-- Line 468: `} as Partial<IMaintenanceCardResDTO>)`
+- `notification.service.spec.ts`: six `... mockResolvedValue(card as never)` /
+  `mockResolvedValue(undefined as never)` / `mockResolvedValue(null as never)`
+  casts (lines 80, 81, 100, 111, 112, 125).
+- `scheduler.service.spec.ts`: three `mockResolvedValue({ id: 'job-1' } as BackgroundJobEntity)`
+  casts (the `as BackgroundJobEntity` on lines 161, 204, 233; eslint anchors to the
+  object-literal start at 159/202/231).
 
-Removing them changes nothing at runtime — `toMatchObject` already accepts the
-un-asserted values. This is pure lint hygiene, auto-fixable.
+These assertions are compile-time only; Vitest+SWC strips them, so removing them
+cannot change runtime behavior.
+
+**Not flagged (leave untouched):** the `} as unknown as MaintenanceCardEntity`
+double-assertions (scheduler lines 157/200/229) and the inline
+`as { expiresAt: Date; jobType: string }` (line 209) — those are necessary and the
+rule correctly does not flag them.
 
 ### Fix
 
-| Line | Before | After |
-|---|---|---|
-| 49 | `id: expect.any(String) as string,` | `id: expect.any(String),` |
-| 468 | `} as Partial<IMaintenanceCardResDTO>);` | `});` |
+Run `eslint --fix` (via `pnpm lint:fix`) in `backend`. The auto-fix deterministically
+removes exactly the 9 redundant assertions:
 
-If line 468's cast was the only consumer of the `IMaintenanceCardResDTO` import in
-that file, leave the import — it is still used elsewhere (the `axiosInstance.get<IMaintenanceCardResDTO>`
-generics at lines 41 and 453). No import removal expected; verify with lint.
+- `card as never` → `card`; `undefined as never` → `undefined`; `null as never` → `null`
+- `{ id: 'job-1' } as BackgroundJobEntity` → `{ id: 'job-1' }`
+
+Then review `git diff` to confirm only those removals, and run the backend unit
+suite to confirm green.
 
 ---
 
-## Failure 2 — UI test (`frontend`)
+## Change 2 — turbo.json lint determinism (root-cause of the flake)
+
+### Root cause
+
+`turbo.json` `lint` and `lint:fix` tasks have no `dependsOn`, so they may run before
+`@project/types` is built. Type-aware lint rules then resolve cross-package types
+inconsistently, producing nondeterministic results (the `api-test` flip-flop, and a
+latent risk that CI lint flakes).
+
+### Fix
+
+Add `"dependsOn": ["^build"]` to both `lint` and `lint:fix` in `turbo.json`, mirroring
+the existing `build`/`test` tasks. Lint then always runs against built dependency
+types — deterministic locally and in CI.
+
+```jsonc
+"lint":     { "dependsOn": ["^build"], "outputs": [] },
+"lint:fix": { "dependsOn": ["^build"], "outputs": [] },
+```
+
+Trade-off: lint now builds upstream packages first (marginally slower on a cold
+cache). Correctness and reproducibility outweigh it.
+
+---
+
+## Change 3 — UI test (frontend dialog overlay-dismiss)
 
 ### Symptom
 
@@ -72,69 +131,47 @@ Number of calls: 0
 
 ### Root cause
 
-`@radix-ui/react-dialog@1.1.17` configures its `Content` with
-**`deferPointerDownOutside: true`** (verified in the dialog dist build).
+`@radix-ui/react-dialog@1.1.17` sets **`deferPointerDownOutside: true`** on its
+Content (verified in the dialog dist build). In
+`@radix-ui/react-dismissable-layer@1.1.13`, deferred mode + left button
+(`event.button === 0`, the `fireEvent.pointerDown` default) **no longer dispatches
+the outside-dismiss on `pointerdown`** — it registers a one-time `click` listener and
+dispatches `onDismiss → onOpenChange(false)` on the following **`click`**.
 
-In `@radix-ui/react-dismissable-layer@1.1.13`, deferred mode changed the dismiss
-timing. With a left-button pointer (`event.button === 0`, the default for
-`fireEvent.pointerDown`), the layer **no longer dispatches the outside-dismiss on
-`pointerdown`**. Instead it registers a one-time `click` listener and dispatches
-`onDismiss → onOpenChange(false)` on the subsequent **`click`**.
-
-The existing test fires only `pointerDown` on the overlay and never a `click`, so
-the dismiss path never runs → `onOpenChange` called 0 times.
-
-In a real browser a user produces pointerdown → pointerup → click, so
-overlay-click-to-close still works. `dialog.tsx` is unchanged and correct; the test
-was coupled to the old (pre-defer) Radix dismiss timing and is now stale.
+The test fires only `pointerDown` on the overlay and never a `click`, so the dismiss
+path never runs → `onOpenChange` called 0 times. In a real browser, a user produces
+pointerdown → pointerup → click, so overlay-click-to-close still works. `dialog.tsx`
+is unchanged and correct; the test was coupled to the old (pre-defer) Radix timing
+and is now stale.
 
 ### Fix
 
 Decision: **keep the behavioral test, fix the simulation to match the new
-interaction** (rejected alternatives: drop Radix coupling for a contract-only test
-— loses behavioral coverage; pin/revert Radix — fights the upgrade).
+interaction** (rejected: drop Radix coupling for a contract-only test — loses
+behavioral coverage; pin/revert Radix — fights the upgrade).
 
-In the `'calls onOpenChange(false) when the overlay is clicked'` test, after the
-`fireEvent.pointerDown(overlay!)` add the `click` and flush timers:
-
-```ts
-const overlay = document.querySelector('[data-radix-dialog-overlay]');
-expect(overlay).not.toBeNull();
-fireEvent.pointerDown(overlay!);
-fireEvent.click(overlay!);          // Radix now defers the dismiss to the click
-act(() => {
-  vi.runAllTimers();                // flush the capture-phase setTimeout(0)
-});
-vi.useRealTimers();
-expect(onOpenChange).toHaveBeenCalledWith(false);
-```
-
-Keep the existing fake-timer setup that registers Radix's deferred `pointerdown`
-listener (the `act(() => vi.runAllTimers())` after render stays). Update the stale
-explanatory comment so it documents the pointerdown→click deferral, e.g.:
-
-```ts
-// Radix DismissableLayer (deferPointerDownOutside: true) registers its pointerdown
-// listener after a setTimeout(0), then defers the actual dismiss to the following
-// click. Use fake timers to activate the listener, then simulate the full
-// pointerdown -> click a real user produces.
-```
+After `fireEvent.pointerDown(overlay!)` add `fireEvent.click(overlay!)` and flush
+timers, and update the stale explanatory comment to document the pointerdown→click
+deferral. (Exact code in the implementation plan.)
 
 ---
 
 ## Validation
 
-1. `just lint` → green (api-test errors gone, all 5 packages pass).
-2. `just test-ui` → green (dialog.spec.tsx 5/5 pass, 391/391 total).
+1. `just lint` → green for all 5 packages, **deterministically** (re-run twice to
+   confirm no flip).
+2. `just test-ui` → green (dialog.spec.tsx 5/5, 391/391 total).
+3. `just test-unit` (backend) → green (confirms the `--fix` removals didn't break the
+   backend suite).
 
-No new test files. Failure 2's corrected test is its own red→green: it fails today,
-the corrected pointerdown→click simulation makes it pass against the real Radix
-behavior. Failure 1 has no test — it is lint hygiene (removing dead casts).
+No new test files. Change 3's corrected test is its own red→green. Change 1 is lint
+hygiene (removing dead casts). Change 2 is build-config robustness.
 
 ---
 
 ## Out of scope
 
-- No changes to `frontend/src/components/ui/dialog.tsx`.
+- No changes to `frontend/src/components/ui/dialog.tsx` or any production source.
 - No Radix version pins or reverts.
-- No changes to the other 390 passing UI tests or any backend/e2e suites.
+- No edits to `api-test` (canonically clean once lint is deterministic).
+- No restructuring of test files or unrelated turbo tasks.
