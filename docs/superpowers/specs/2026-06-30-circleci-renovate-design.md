@@ -64,7 +64,7 @@ declarative config and the CircleCI wiring that invokes it.
 | 1   | Engine           | Self-hosted **Renovate** in CircleCI (replaces self-hosted Dependabot). Native grouping + PR lifecycle.      |
 | 2   | Managers         | `enabledManagers: ["npm", "dockerfile"]` only — auto-detection of all other managers suppressed              |
 | 3   | Update scope     | minor + patch only; majors `enabled: false` (held, visible on Dashboard)                                     |
-| 4   | Cooldown         | `minimumReleaseAge: "5 days"` + `internalChecksFilter: "strict"`                                             |
+| 4   | Cooldown         | `minimumReleaseAge: "5 days"` (default `internalChecksFilter: "flexible"` — `strict` suppressed branch creation for the grouped PR) |
 | 5   | Range strategy   | `rangeStrategy: "bump"` — always edit `package.json` then refresh lockfile; never lockfile-only              |
 | 6   | PR shape         | **One combined grouped PR** for npm + Docker, force-refreshed each run                                       |
 | 7   | Merge policy     | Manual review, no auto-merge                                                                                 |
@@ -201,7 +201,6 @@ config docs.
   "platformCommit": "enabled",
   "branchPrefix": "chore/000/",
   "minimumReleaseAge": "5 days",
-  "internalChecksFilter": "strict",
   "lockFileMaintenance": { "enabled": false },
   "vulnerabilityAlerts": { "enabled": false },
   "packageRules": [
@@ -371,10 +370,14 @@ not cosmetic.
 
 ### Q2 — Cooldown
 
-- **Decision:** `minimumReleaseAge: "5 days"` + `internalChecksFilter: "strict"`
-  so a too-young release is held (shown pending on the Dashboard) rather than
-  silently dropped. Rock-solid off npm publish timestamps; Docker Hub timestamp
-  availability verified at implementation. → Decision #4.
+- **Decision:** `minimumReleaseAge: "5 days"` with the default
+  `internalChecksFilter: "flexible"`. A too-young release is held back per-package
+  and rolls into the grouped PR as it ages. **`internalChecksFilter: "strict"` was
+  removed** — combined with the single 60+ package `weekly-updates` group it
+  suppressed branch creation entirely (under `strict` the branch is not created
+  while *any* group member's `renovate/stability-days` check is pending, which for
+  a large weekly group is effectively always). The 5-day soak still applies; we
+  just no longer block the whole branch on it. → Decision #4.
 
 ### Q3 — How Renovate runs in CircleCI
 

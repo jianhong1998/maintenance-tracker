@@ -60,7 +60,6 @@ Produces the single source of policy and proves it parses and behaves before any
   "platformCommit": "enabled",
   "branchPrefix": "chore/000/",
   "minimumReleaseAge": "5 days",
-  "internalChecksFilter": "strict",
   "lockFileMaintenance": { "enabled": false },
   "vulnerabilityAlerts": { "enabled": false },
   "packageRules": [
