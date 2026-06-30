@@ -69,7 +69,7 @@ declarative config and the CircleCI wiring that invokes it.
 | 6   | PR shape         | **One combined grouped PR** for npm + Docker, force-refreshed each run                                       |
 | 7   | Merge policy     | Manual review, no auto-merge                                                                                 |
 | 8   | Branch naming    | `branchPrefix: "chore/000/"` → branches like `chore/000/weekly-updates` (satisfies the husky branch pattern) |
-| 9   | Commit mechanism | `platformCommit: "enabled"` — commits via GitHub API (verified commits; sidesteps the husky commit hook)     |
+| 9   | Commit mechanism | Default `platformCommit: "auto"` → plain `git push` with the PAT. **`enabled` was removed** — it forces GitHub's App-only commit API, which a PAT cannot use, so no branch was ever pushed. |
 | 10  | Commit/PR text   | Renovate's default conventional-commits format; PR title `chore(deps): weekly minor/patch updates`           |
 | 11  | Security PRs     | `vulnerabilityAlerts: { enabled: false }` — preserves the one-PR / no-majors / cooldown guarantees           |
 | 12  | Dashboard        | Dependency Dashboard **on** (one tracking issue; needs `Issues: R/W` on the PAT)                             |
@@ -198,7 +198,6 @@ config docs.
   "dependencyDashboard": true,
   "enabledManagers": ["npm", "dockerfile"],
   "rangeStrategy": "bump",
-  "platformCommit": "enabled",
   "branchPrefix": "chore/000/",
   "minimumReleaseAge": "5 days",
   "lockFileMaintenance": { "enabled": false },
@@ -229,9 +228,12 @@ config docs.
   ecosystem; everything minor/patch lands in the single `weekly-updates` group.
 - `branchPrefix: "chore/000/"` makes the group branch `chore/000/weekly-updates`,
   which satisfies the husky branch-name pattern `^(chore|…)/[0-9]+/.+$`.
-  `platformCommit: "enabled"` additionally commits via the GitHub API, so the
-  husky `prepare-commit-msg` hook never runs on Renovate commits and cannot reject
-  them.
+  Husky does not interfere with Renovate commits anyway: Renovate runs in its own
+  container, clones fresh, and installs with `--ignore-scripts`, so the `prepare`
+  script never runs and `core.hooksPath` is never set — the `prepare-commit-msg`
+  hook cannot fire. (We do **not** use `platformCommit: "enabled"` to "bypass"
+  husky: that option requires running as a GitHub App and is unsupported with the
+  PAT this project uses, which silently prevents the branch from being pushed.)
 
 ## 8. One combined PR — for free
 
@@ -251,8 +253,8 @@ it is default behavior expressed in two `packageRules`.
   (Dependency Dashboard). Nothing else.
 - Stored in a new CircleCI **context** `renovate-context` as `RENOVATE_TOKEN`.
   Never committed.
-- The single token authenticates clone, commit (via the GitHub API under
-  `platformCommit`), PR, and Dashboard. A single token is acceptable for a solo
+- The single token authenticates clone, commit (plain `git push`), PR, and
+  Dashboard. A single token is acceptable for a solo
   private repo; Renovate runs package managers with scripts ignored by default
   during lockfile refresh, limiting the blast radius of malicious dependency code.
 - Public npm registry and `node` Docker Hub lookups are unauthenticated and fine
@@ -267,7 +269,7 @@ it is default behavior expressed in two `packageRules`.
 | Scheduled run also fires the full build/deploy pipeline                | `workflow_type` parameter + `not equal` gate on `branch-workflow` (§5). Default `''` keeps normal pushes identical.      |
 | Renovate auto-enables managers beyond scope (docker-compose, circleci) | `enabledManagers: ["npm","dockerfile"]` allowlist (§7). Renovate never touches `.circleci/config.yml` or compose files.  |
 | Default `rangeStrategy` produces lockfile-only updates on caret ranges | `rangeStrategy: "bump"` forces a `package.json` edit on every bump (§7, Appendix A Q4).                                  |
-| Husky hook rejects Renovate's branch/commit                            | `branchPrefix: "chore/000/"` satisfies the branch pattern; `platformCommit: "enabled"` commits via API, bypassing husky. |
+| Husky hook rejects Renovate's branch/commit                            | `branchPrefix: "chore/000/"` satisfies the branch pattern; husky's hook never fires in Renovate's `--ignore-scripts` container clone anyway. Do **not** use `platformCommit` to "bypass" it — it breaks PAT-based pushes. |
 | Security advisory spawns an off-model extra PR (major / <5 days old)   | `vulnerabilityAlerts: { enabled: false }` (§2, Appendix A Q9). Dashboard still surfaces held updates.                    |
 | Renovate's internal schedule conflicts with CircleCI cadence           | Renovate `schedule` left unset; CircleCI Scheduled Pipeline is the only cadence source (§6).                             |
 | Combined PR is all-or-nothing to merge                                 | Accepted property (solo manual-merge flow). If one bump breaks CI, fix or drop it on the single branch.                  |
@@ -363,10 +365,10 @@ with `git`**, so if husky is active in Renovate's clone, a default `renovate/...
 branch fails the pattern and the commit dies. So matching the pattern is defensive,
 not cosmetic.
 
-- **Decision:** `branchPrefix: "chore/000/"` (branch `chore/000/weekly-updates`),
-  plus `platformCommit: "enabled"` so commits go through the GitHub API and husky
-  never runs. `chore` because dependency bumps are conventionally `chore(deps)`;
-  `000` is the repo's no-ticket convention. → Decisions #8, #9.
+- **Decision:** `branchPrefix: "chore/000/"` (branch `chore/000/weekly-updates`).
+  Commits use the default `platformCommit: "auto"` → plain `git push` with the PAT.
+  `chore` because dependency bumps are conventionally `chore(deps)`; `000` is the
+  repo's no-ticket convention. → Decisions #8, #9.
 
 ### Q2 — Cooldown
 
@@ -448,7 +450,7 @@ security-only mode as out of scope.
 
 ### Q10 — Commit / PR text
 
-Because `platformCommit` bypasses husky, the message format is fully Renovate's.
+Husky's hook never fires on Renovate's container commits, so the message format is fully Renovate's.
 
 - **Decision:** keep Renovate's default conventional-commits format; PR title
   `chore(deps): weekly minor/patch updates`. → Decision #10.
