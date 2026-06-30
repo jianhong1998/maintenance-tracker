@@ -1,5 +1,5 @@
 import axiosInstance from '../config/axios';
-import { IAppConfigResDTO, IHealthCheckResDTO } from '@project/types';
+import { IAppConfigResDTO } from '@project/types';
 
 describe('#Health Check', () => {
   it('should return status 200 without auth token', async () => {
@@ -14,7 +14,7 @@ describe('#Health Check', () => {
     expect(result.data).toMatchObject({
       isHealthy: true,
       timestamp: expect.any(String) as string,
-    } as IHealthCheckResDTO);
+    });
   });
 });
 
