@@ -14,9 +14,11 @@
       "outputs": ["coverage/**"]
     },
     "lint": {
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "lint:fix": {
+      "dependsOn": ["^build"],
       "outputs": []
     },
     "format": {

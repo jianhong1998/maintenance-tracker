@@ -87,8 +87,7 @@ describe('VehicleController', () => {
     // eslint-disable-next-line @typescript-eslint/unbound-method
     const createFn = VehicleController.prototype.create;
     const httpCode = Reflect.getMetadata('__httpCode__', createFn) as
-      | number
-      | undefined;
+      number | undefined;
     expect(httpCode).toBe(HttpStatus.CREATED);
   });
 

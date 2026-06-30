@@ -1,8 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class AddMileageLastUpdatedAtToVehicles1775374861700
-  implements MigrationInterface
-{
+export class AddMileageLastUpdatedAtToVehicles1775374861700 implements MigrationInterface {
   name = 'AddMileageLastUpdatedAtToVehicles1775374861700';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
