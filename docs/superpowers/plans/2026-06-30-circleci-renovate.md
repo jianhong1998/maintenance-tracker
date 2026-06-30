@@ -48,7 +48,7 @@ Produces the single source of policy and proves it parses and behaves before any
 
 **Prerequisites (local machine):** Node 22 available (for `npx`); Docker running and a **read-only** GitHub PAT exported as `RENOVATE_TOKEN` for the dry-run only.
 
-- [ ] **Step 1: Write `renovate.json`**
+- [x] **Step 1: Write `renovate.json`**
 
 ```json
 {
@@ -81,7 +81,7 @@ Produces the single source of policy and proves it parses and behaves before any
 }
 ```
 
-- [ ] **Step 2: Validate the config against the Renovate schema**
+- [x] **Step 2: Validate the config against the Renovate schema**
 
 Run: `npx --yes renovate-config-validator renovate.json`
 
@@ -114,7 +114,7 @@ If managers other than npm/dockerfile appear, fix `enabledManagers`. If a lockfi
 
 > Note the image tag actually pulled (e.g. `renovate/renovate:41`) — reuse the **same** pinned tag in Task 2 so CI and the dry-run agree.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add renovate.json
@@ -136,7 +136,7 @@ The "never break userspace" task. Adds the parameter, the job, the new workflow,
 - Consumes: `renovate.json` (Task 1), the `renovate-context` CircleCI context (created manually, Task 3).
 - Produces: the `workflow_type` parameter and `renovate-workflow` referenced by the Scheduled Pipeline (Task 3).
 
-- [ ] **Step 1: Add the top-level `parameters` block**
+- [x] **Step 1: Add the top-level `parameters` block**
 
 Insert immediately after `version: 2.1` (line 1), before the `# ===` Executors banner:
 
@@ -149,7 +149,7 @@ parameters:
     default: ''
 ```
 
-- [ ] **Step 2: Add the `renovate` job**
+- [x] **Step 2: Add the `renovate` job**
 
 Add to the `jobs:` map (e.g. after the `deploy-production` job, before the Workflows banner). The job _is_ a Renovate container; it overrides the image entrypoint to invoke `renovate` in a `run` step. No `checkout` — Renovate clones the repo itself.
 
@@ -170,7 +170,7 @@ renovate:
 
 > Use the **same** pinned image tag observed in Task 1 Step 3. `RENOVATE_TOKEN` is supplied by the `renovate-context` (Step 4), not hardcoded here.
 
-- [ ] **Step 3: Gate the existing `branch-workflow`**
+- [x] **Step 3: Gate the existing `branch-workflow`**
 
 Change (around line 351):
 
@@ -193,7 +193,7 @@ branch-workflow:
   jobs:
 ```
 
-- [ ] **Step 4: Add `renovate-workflow`**
+- [x] **Step 4: Add `renovate-workflow`**
 
 Add a new workflow under `workflows:` (e.g. after `branch-workflow`, before `tag-workflow`):
 
@@ -206,14 +206,14 @@ renovate-workflow:
         context: renovate-context
 ```
 
-- [ ] **Step 5: Validate the config**
+- [x] **Step 5: Validate the config**
 
 Run: `circleci config validate .circleci/config.yml`
 
 Expected: `Config file at .circleci/config.yml is valid.`
 (If the CircleCI CLI is missing: `brew install circleci`. `circleci config validate` validates structure locally without needing org access.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add .circleci/config.yml
@@ -233,7 +233,7 @@ The code is inert until the PAT, context, and Scheduled Pipeline exist. Document
 - Delete: `docs/superpowers/plans/2026-06-29-circleci-dependabot.md`
 - Delete: `.circleci/dependabot/` (empty directory)
 
-- [ ] **Step 1: Write `.circleci/renovate/README.md`**
+- [x] **Step 1: Write `.circleci/renovate/README.md`**
 
 ```markdown
 # Self-hosted weekly Renovate (CircleCI)
@@ -289,7 +289,7 @@ deliberately when adopting a new Renovate major; re-run the local dry-run from t
 plan's Task 1 Step 3 after any bump.
 ```
 
-- [ ] **Step 2: Delete the superseded Dependabot artifacts**
+- [x] **Step 2: Delete the superseded Dependabot artifacts**
 
 ```bash
 git rm docs/superpowers/specs/2026-06-29-circleci-dependabot-design.md
@@ -299,7 +299,7 @@ rmdir .circleci/dependabot 2>/dev/null || true
 
 (`.circleci/dependabot/` is an empty, untracked directory — `rmdir` removes it; the `|| true` keeps the step green if it is already gone.)
 
-- [ ] **Step 3: Commit the docs + deletions**
+- [x] **Step 3: Commit the docs + deletions**
 
 ```bash
 git add .circleci/renovate/README.md docs/superpowers/specs docs/superpowers/plans
