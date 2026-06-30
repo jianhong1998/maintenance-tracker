@@ -7,7 +7,6 @@
   "platformCommit": "enabled",
   "branchPrefix": "chore/000/",
   "minimumReleaseAge": "5 days",
-  "internalChecksFilter": "strict",
   "lockFileMaintenance": { "enabled": false },
   "vulnerabilityAlerts": { "enabled": false },
   "packageRules": [
