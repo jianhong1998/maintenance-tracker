@@ -1,5 +1,10 @@
 version: 2.1
 
+parameters:
+  workflow_type:
+    type: string
+    default: ''
+
 # ===========================================================
 # Executors
 # ===========================================================
@@ -343,6 +348,19 @@ jobs:
           command: |
             curl -fsSL -X POST "$COOLIFY_PRODUCTION_WEBHOOK_URL" -H "Authorization: Bearer $COOLIFY_API_TOKEN"
 
+  renovate:
+    docker:
+      - image: renovate/renovate:41
+    resource_class: medium
+    environment:
+      RENOVATE_REPOSITORIES: jianhong1998/maintenance-tracker
+      RENOVATE_PLATFORM: github
+      LOG_LEVEL: info
+    steps:
+      - run:
+          name: Run Renovate
+          command: renovate
+
 # ===========================================================
 # Workflows
 # ===========================================================
@@ -350,7 +368,10 @@ workflows:
   # Triggered on every branch push (git tag is empty)
   branch-workflow:
     when:
-      equal: ['', << pipeline.git.tag >>]
+      and:
+        - equal: ['', << pipeline.git.tag >>]
+        - not:
+            equal: ['dependency-update', << pipeline.parameters.workflow_type >>]
     jobs:
       - lint-test
       - unit-test
@@ -439,6 +460,13 @@ workflows:
             - tag-dev-frontend
             - tag-dev-background-job
             - tag-dev-db-migration
+
+  renovate-workflow:
+    when:
+      equal: ['dependency-update', << pipeline.parameters.workflow_type >>]
+    jobs:
+      - renovate:
+          context: renovate-context
 
   # Triggered only on git tag creation (semantic version tags: 1.0.0, 2.3.4, etc.).
   # Intentionally has no approval gate before deploy-production — this is a solo project

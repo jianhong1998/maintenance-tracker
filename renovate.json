@@ -1,0 +1,28 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "onboarding": false,
+  "requireConfig": "optional",
+  "dependencyDashboard": true,
+  "enabledManagers": ["npm", "dockerfile"],
+  "rangeStrategy": "bump",
+  "platformCommit": "enabled",
+  "branchPrefix": "chore/000/",
+  "minimumReleaseAge": "5 days",
+  "internalChecksFilter": "strict",
+  "lockFileMaintenance": { "enabled": false },
+  "vulnerabilityAlerts": { "enabled": false },
+  "packageRules": [
+    {
+      "description": "Hold all major updates (visible on the Dashboard, no PR).",
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
+      "description": "Collapse every minor/patch update across npm + docker into one PR.",
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "weekly-updates",
+      "groupSlug": "weekly-updates"
+    }
+  ]
+}
