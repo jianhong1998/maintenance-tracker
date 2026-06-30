@@ -195,8 +195,6 @@ config docs.
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "onboarding": false,
-  "requireConfig": "optional",
   "dependencyDashboard": true,
   "enabledManagers": ["npm", "dockerfile"],
   "rangeStrategy": "bump",

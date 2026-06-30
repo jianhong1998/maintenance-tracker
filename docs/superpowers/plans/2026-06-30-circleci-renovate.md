@@ -54,8 +54,6 @@ Produces the single source of policy and proves it parses and behaves before any
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "onboarding": false,
-  "requireConfig": "optional",
   "dependencyDashboard": true,
   "enabledManagers": ["npm", "dockerfile"],
   "rangeStrategy": "bump",
