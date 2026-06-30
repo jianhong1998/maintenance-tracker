@@ -1,0 +1,11 @@
+{
+  "task_id": "task-1-lint-test-fixes",
+  "plan": "docs/superpowers/plans/2026-07-01-weekly-updates-test-lint-fixes.md",
+  "spec": "docs/superpowers/specs/2026-07-01-weekly-updates-test-lint-fixes-design.md",
+  "status": "completed",
+  "attempt": 1,
+  "worktree": ".worktrees/task-1-lint-test-fixes",
+  "completed_steps": ["tdd-loop-complete"],
+  "covers": ["plan-task-1-backend-assertions", "plan-task-2-turbo-lint", "plan-task-3-dialog-test", "orchestrator-prettier-drift-fix"],
+  "note": "Coupled by Husky pre-commit (make format lint, whole-tree) -> single sequential worktree. Includes 3 prettier-drift fixes (migrations x2 + vehicle.controller.spec) the plan under-scoped; required for clean-checkout lint because eslint-plugin-prettier makes prettier a lint rule. Agent verified just lint x2, just test-unit (284), just test-ui (391) all green."
+}
