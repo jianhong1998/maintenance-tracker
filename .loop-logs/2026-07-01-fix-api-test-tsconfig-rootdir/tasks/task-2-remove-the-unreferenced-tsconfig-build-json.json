@@ -1,0 +1,11 @@
+{
+  "task_id": "task-2-remove-the-unreferenced-tsconfig-build-json",
+  "plan": "docs/superpowers/plans/2026-07-01-fix-api-test-tsconfig-rootdir.md",
+  "spec": "docs/superpowers/specs/2026-07-01-fix-api-test-tsconfig-rootdir-design.md",
+  "status": "completed",
+  "attempt": 1,
+  "worktree": ".worktrees/task-2-remove-the-unreferenced-tsconfig-build-json",
+  "completed_steps": [
+    "tdd-loop-complete"
+  ]
+}
