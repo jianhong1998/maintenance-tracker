@@ -12,7 +12,7 @@ RUN apt-get update \
         build-essential \
         python3 \
     && rm -rf /var/lib/apt/lists/* \
-    && npm install -g pnpm@9.0.0
+    && npm install -g pnpm@9.15.9
 
 # ===========================================================
 # Stage 2: deps — install all workspace dependencies
