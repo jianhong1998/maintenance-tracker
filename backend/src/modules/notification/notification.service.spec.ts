@@ -77,8 +77,8 @@ describe('NotificationService', () => {
 
     it('fetches card with vehicle+user relations and sends upcoming email', async () => {
       const card = buildCard();
-      mockCardRepo.findOne.mockResolvedValue(card as never);
-      mockEmailService.sendEmail.mockResolvedValue(undefined as never);
+      mockCardRepo.findOne.mockResolvedValue(card);
+      mockEmailService.sendEmail.mockResolvedValue(undefined);
 
       await service.sendUpcomingNotification(buildJob('card-1'));
 
@@ -97,7 +97,7 @@ describe('NotificationService', () => {
     });
 
     it('throws when card is not found', async () => {
-      mockCardRepo.findOne.mockResolvedValue(null as never);
+      mockCardRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.sendUpcomingNotification(buildJob('missing-card')),
@@ -108,8 +108,8 @@ describe('NotificationService', () => {
   describe('#sendOverdueNotification', () => {
     it('fetches card with vehicle+user relations and sends overdue email', async () => {
       const card = buildCard();
-      mockCardRepo.findOne.mockResolvedValue(card as never);
-      mockEmailService.sendEmail.mockResolvedValue(undefined as never);
+      mockCardRepo.findOne.mockResolvedValue(card);
+      mockEmailService.sendEmail.mockResolvedValue(undefined);
 
       await service.sendOverdueNotification(buildJob('card-1'));
 
@@ -122,7 +122,7 @@ describe('NotificationService', () => {
     });
 
     it('throws when card is not found', async () => {
-      mockCardRepo.findOne.mockResolvedValue(null as never);
+      mockCardRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.sendOverdueNotification(buildJob('missing-card')),

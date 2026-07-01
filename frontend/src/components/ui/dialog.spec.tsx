@@ -47,8 +47,11 @@ describe('Dialog', () => {
   });
 
   it('calls onOpenChange(false) when the overlay is clicked', () => {
-    // Radix DismissableLayer registers its pointerdown listener after a setTimeout(0).
-    // Use fake timers so we can advance the clock and activate the listener before dispatching.
+    // Radix DismissableLayer (deferPointerDownOutside: true) registers its pointerdown
+    // listener after a setTimeout(0). Use fake timers to activate that listener, then
+    // simulate the full pointerdown -> click sequence a real user produces on the
+    // overlay: the pointerdown is observed by the now-registered listener, and the
+    // dismiss is dispatched synchronously on the following click.
     vi.useFakeTimers();
     const onOpenChange = vi.fn();
     render(
@@ -67,6 +70,7 @@ describe('Dialog', () => {
     const overlay = document.querySelector('[data-radix-dialog-overlay]');
     expect(overlay).not.toBeNull();
     fireEvent.pointerDown(overlay!);
+    fireEvent.click(overlay!);
     vi.useRealTimers();
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });

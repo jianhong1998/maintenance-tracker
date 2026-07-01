@@ -158,7 +158,7 @@ describe('SchedulerService', () => {
       mockCardRepository.findCardsForNotification.mockResolvedValue([card]);
       mockBackgroundJobRepository.insertIfNotExists.mockResolvedValue({
         id: 'job-1',
-      } as BackgroundJobEntity);
+      });
       mockQueue.add.mockResolvedValue(undefined);
 
       await service.scheduleNotifications(7);
@@ -201,7 +201,7 @@ describe('SchedulerService', () => {
       mockCardRepository.findCardsForNotification.mockResolvedValue([card]);
       mockBackgroundJobRepository.insertIfNotExists.mockResolvedValue({
         id: 'job-1',
-      } as BackgroundJobEntity);
+      });
 
       await service.scheduleNotifications(7);
 
@@ -230,7 +230,7 @@ describe('SchedulerService', () => {
       mockCardRepository.findCardsForNotification.mockResolvedValue([card]);
       mockBackgroundJobRepository.insertIfNotExists.mockResolvedValue({
         id: 'job-1',
-      } as BackgroundJobEntity);
+      });
 
       await service.scheduleNotifications(7);
 

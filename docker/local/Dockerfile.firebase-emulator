@@ -1,5 +1,5 @@
 # Pinned firebase-tools version. Bump deliberately, never via `latest`.
-FROM node:20-alpine
+FROM node:20.20.2-alpine
 
 # OpenJDK is required by the Firebase Auth emulator.
 RUN apk add --no-cache openjdk17-jre-headless curl bash

@@ -57,7 +57,7 @@ describe('#MaintenanceCards', () => {
         nextDueDate: null,
         createdAt: expect.any(String) as string,
         updatedAt: expect.any(String) as string,
-      } as IMaintenanceCardResDTO);
+      });
     });
 
     it('returns 201 with intervalTimeMonths only', async () => {
@@ -465,7 +465,7 @@ describe('#MaintenanceCards', () => {
         intervalMileage: null,
         nextDueDate: null,
         nextDueMileage: null,
-      } as Partial<IMaintenanceCardResDTO>);
+      });
     });
 
     // nextDueDate date-only format (YYYY-MM-DD) is validated here for the null
