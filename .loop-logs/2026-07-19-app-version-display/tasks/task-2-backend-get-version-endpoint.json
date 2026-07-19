@@ -1,0 +1,9 @@
+{
+  "task_id": "task-2-backend-get-version-endpoint",
+  "plan": "docs/superpowers/plans/2026-07-19-app-version-display.md",
+  "spec": "docs/superpowers/specs/2026-07-19-app-version-display-design.md",
+  "status": "completed",
+  "attempt": 1,
+  "worktree": ".worktrees/task-2-backend-get-version-endpoint",
+  "completed_steps": ["tdd-loop-complete"]
+}

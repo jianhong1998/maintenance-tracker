@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>App Version Display — build-time version baked into the image, surfaced as persistent chrome</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; max-width: 780px; margin: 2rem auto; padding: 0 1rem; line-height: 1.6; }
+  header { border-bottom: 2px solid #ccc; margin-bottom: 1.5rem; padding-bottom: 1rem; }
+  .badge { display: inline-block; background: #eee; border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.85rem; margin-right: 0.5rem; }
+  section.area { margin: 2rem 0; padding-top: 1rem; border-top: 1px solid #ddd; }
+  .quiz { background: #f7f7f7; border-radius: 6px; padding: 1rem; margin-top: 1rem; }
+  .quiz details { margin: 0.75rem 0; }
+  .quiz summary { cursor: pointer; font-weight: 600; }
+  .quiz .answer { margin-top: 0.5rem; padding: 0.5rem 0.75rem; background: #fff; border-left: 3px solid #888; }
+  ul.plain li { margin-bottom: 0.5rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="badge">diff-review</span>
+  <span class="badge">feat/000/app-version-display</span>
+  <span class="badge">2026-07-19</span>
+  <h1>App Version Display — build-time version baked into the image, surfaced as persistent chrome</h1>
+  <p>Bakes a build-time version string into the backend Docker image via a CI build-arg, exposes it at a public GET /version endpoint, and renders it as persistent UI chrome — a sidebar footer on md+ and a fixed strip above the mobile tab bar. Adds a shared IVersionResDTO type, a TanStack Query hook with an infinite stale time, and threads the value through AppShell into the presentational component.</p>
+</header>
+
+<section>
+  <h2>Why</h2>
+  <p>Nothing in the deployed system could report what it actually was. package.json versions had gone stale and meaningless because nobody bumped them, so a running instance had no reliable way to say which commit or tag it came from. The fix makes the CI build itself the source of truth: whatever ref produced the image is stamped into the image and read back at runtime.</p>
+  <p>The deliberate choice is to inject the value as a Docker build-arg → ENV rather than commit a version file. A committed file is exactly what drifts (that was the package.json failure mode); a build-arg is computed fresh from CI's own ref every build and cannot lie about which artifact you are looking at.</p>
+  <p>The placement decision is about being able to actually check the version anywhere, including from a phone, without it scrolling off screen — hence persistent chrome rather than an in-flow footer or a desktop-only element.</p>
+</section>
+
+<section class="area">
+  <h2>Shared type contract (packages/types)</h2>
+  <p>The change starts at the type boundary because both backend and frontend must agree on the shape of the /version response. A new IVersionResDTO — just { version: string } — is added to packages/types and re-exported from the dtos barrel. Backend implements it (VersionResDTO implements IVersionResDTO), frontend consumes it (useVersion typed as IVersionResDTO). This mirrors the existing DTO pattern in the repo and keeps the API contract in one place, so a change to the response shape is a compile error on both sides rather than a silent drift.</p>
+
+  <div class="quiz">
+    <h3>Self-check</h3>
+    <details>
+      <summary>Why is the version response type defined in packages/types rather than separately in the backend and frontend?</summary>
+      <div class="answer"><strong>So both sides share one contract and a shape change breaks compilation on both, preventing drift.</strong><br>packages/types is the shared contract package; VersionResDTO implements IVersionResDTO and useVersion is typed with it, so the same definition binds producer and consumer.</div>
+    </details>
+    <details>
+      <summary>What is the actual shape of IVersionResDTO?</summary>
+      <div class="answer"><strong>A single field: { version: string }.</strong><br>Defined in packages/types/src/dtos/version.dto.ts as `type IVersionResDTO = { version: string }`.</div>
+    </details>
+  </div>
+</section>
+
+<section class="area">
+  <h2>Backend endpoint and version resolution (AppService / AppController)</h2>
+  <p>AppService.getVersion() reads process.env.BACKEND_APP_VERSION and falls back to the literal 'unreleased' when it is unset. That fallback is what a local dev run (no build-arg) reports. AppController exposes it as a @Public() GET /version, wrapping the service result in a VersionResDTO. @Public() matters: this endpoint must be reachable without auth, since the shell renders the version before/around the auth boundary.</p>
+  <p>One small-but-deliberate detail: VersionResDTO uses a plain import of IVersionResDTO, not `import type`. That is allowed here because the class is undecorated — the repo's `import type` rule only applies to types referenced in decorated method/property signatures (an isolatedModules + emitDecoratorMetadata constraint). This matches the existing HealthCheckResDTO pattern in the same module.</p>
+  <p>Tests cover both the env-set and env-unset branches of the service (restoring the original env var in afterEach so the test doesn't leak state) and a controller test that confirms it wraps the service output into the DTO.</p>
+
+  <div class="quiz">
+    <h3>Self-check</h3>
+    <details>
+      <summary>What does GET /version return when running locally with no build-arg set, and why?</summary>
+      <div class="answer"><strong>{ version: 'unreleased' } — because BACKEND_APP_VERSION is unset and getVersion falls back to that literal.</strong><br>AppService.getVersion returns `process.env.BACKEND_APP_VERSION ?? 'unreleased'`; local runs never set that env var.</div>
+    </details>
+    <details>
+      <summary>Why is the endpoint annotated @Public()?</summary>
+      <div class="answer"><strong>So it can be fetched without authentication, since the shell shows the version around/before the auth boundary.</strong><br>Without @Public() the global auth guard would reject the request; the version is chrome that should render regardless of auth state.</div>
+    </details>
+    <details>
+      <summary>Why can VersionResDTO use a plain import of IVersionResDTO instead of `import type`, given the project's usual rule?</summary>
+      <div class="answer"><strong>Because the class is undecorated, so the isolatedModules/emitDecoratorMetadata constraint that forces `import type` doesn't apply.</strong><br>The `import type` rule only bites when a type appears in a decorated signature; VersionResDTO has no decorators, matching the existing HealthCheckResDTO pattern.</div>
+    </details>
+  </div>
+</section>
+
+<section class="area">
+  <h2>Build-time bake: CI build-arg and Dockerfile.backend</h2>
+  <p>CI computes APP_VERSION="${CIRCLE_TAG:-$CIRCLE_SHA1_SHORT}" — a git tag when the build was triggered by a tag push (e.g. 1.1.2), otherwise the short commit SHA — and passes it as `--build-arg APP_VERSION=...` in the buildx invocation. Dockerfile.backend declares `ARG APP_VERSION=unreleased` and `ENV BACKEND_APP_VERSION=${APP_VERSION}` late in the production stage. Two things are intentional here: placing the ARG/ENV late means a per-commit version change only invalidates the final layer, not the expensive earlier build layers (cache-safe); and the ARG default of `unreleased` gives a sane value if the build-arg is ever omitted.</p>
+  <p>The critical conceptual point — and the reason it is commented in the Dockerfile — is that this is build-time artifact identity, NOT a runtime gate. The repo has a documented pitfall (docs/code-review-related/002) warning against NODE_ENV-style build-time gates for anything that must differ between prod and pipeline-E2E, because those share the same image. This case is the deliberate opposite: the version legitimately IS the same across every environment that runs a given image, so baking it at build time is correct and does not conflict with that pitfall. The 'unreleased' default is technically duplicated between the Dockerfile ARG and the service fallback, but that was reviewed and left as-is because CI always supplies the arg, so the paths that hit each default never overlap in practice.</p>
+
+  <div class="quiz">
+    <h3>Self-check</h3>
+    <details>
+      <summary>How does CI decide what value APP_VERSION gets?</summary>
+      <div class="answer"><strong>`${CIRCLE_TAG:-$CIRCLE_SHA1_SHORT}` — the git tag on a tag build, otherwise the short commit SHA.</strong><br>Bash default-expansion: CIRCLE_TAG is only set on tag-triggered builds; commit builds fall back to the short SHA.</div>
+    </details>
+    <details>
+      <summary>Why are the ARG/ENV lines placed late in the production stage of the Dockerfile rather than early?</summary>
+      <div class="answer"><strong>So a per-commit version change only busts the final layer, keeping earlier (expensive) build layers cacheable.</strong><br>Docker layer caching invalidates everything after a changed instruction; the version changes every commit, so it must sit after all cache-worthy work.</div>
+    </details>
+    <details>
+      <summary>Doesn't baking the version at build time contradict the repo's documented NODE_ENV / build-time-gate pitfall?</summary>
+      <div class="answer"><strong>No — the pitfall is about values that must DIFFER between prod and E2E; the version legitimately IS the same for a given image.</strong><br>docs/002 warns against build-time discriminators for env-specific behavior; the version is artifact identity, identical across every environment running that image, so build-time is the right layer.</div>
+    </details>
+  </div>
+</section>
+
+<section class="area">
+  <h2>Frontend data fetching: useVersion hook</h2>
+  <p>useVersion is a TanStack Query hook keyed on a flat [QueryGroup.VERSION] and fetching GET /version, typed as IVersionResDTO. It sets staleTime: Infinity because the version of a running image never changes during a session — there is no point ever refetching it. A new VERSION entry is added to the QueryGroup frozen object.</p>
+  <p>The query key is deliberately flat rather than built via the repo's getQueryKey() helper. That helper encodes LIST vs ONE semantics — ONE implies an entity id — and version is a singleton with no id, so ONE would be a category error. This mirrors the existing useAppConfig singleton pattern. (An earlier iteration used getQueryKey({ type: ONE, key: '' }) and was corrected during review precisely for this reason.)</p>
+
+  <div class="quiz">
+    <h3>Self-check</h3>
+    <details>
+      <summary>Why does useVersion set staleTime: Infinity?</summary>
+      <div class="answer"><strong>The version of a running image is immutable for the session, so refetching would never yield anything new.</strong><br>A deployed image's version is fixed; Infinity stale time means the query is fetched once and never refetched as stale.</div>
+    </details>
+    <details>
+      <summary>Why a flat [QueryGroup.VERSION] key instead of the getQueryKey() helper?</summary>
+      <div class="answer"><strong>Because getQueryKey encodes LIST/ONE entity semantics and version is a singleton with no id — ONE would be a category error.</strong><br>Version isn't an entity you fetch by id nor a list; a flat key matches the existing useAppConfig singleton pattern.</div>
+    </details>
+  </div>
+</section>
+
+<section class="area">
+  <h2>Display: AppShell wiring and AppShellPresentation layout</h2>
+  <p>AppShell (the container) calls useVersion and passes versionData?.version down as an optional `version` prop to AppShellPresentation. The prop is optional, so when the version is loading or the request fails, nothing renders — a graceful absence rather than a broken element.</p>
+  <p>AppShellPresentation renders the version in two places, both always present in the DOM and toggled purely by CSS (md:hidden), not conditional rendering: a sidebar footer on md+ (below the user info, separated by a subtle top border) and a fixed strip at the bottom on mobile. This is why the test asserts getAllByText('1.1.2') has length 2 — both sites exist simultaneously in jsdom.</p>
+  <p>The mobile layout is the subtle part. The original attempt positioned the strip at `bottom: calc(3rem + inset)` — stacked above the tab bar — which on notched devices left a gap of exactly the safe-area inset (~34px on iPhone), because the tab bar's fixed h-12 border-box height already sits 3rem from the viewport bottom regardless of the inset. The fix merges the strip and tab bar into a single flex-column wrapper that applies pb-[env(safe-area-inset-bottom)] exactly once, so both stay flush to the bottom. Correspondingly, the mobile page-content bottom padding grew from 3rem to 4.25rem (3rem tab bar + 1.25rem strip), and the frontend-convention doc table was updated to match.</p>
+
+  <div class="quiz">
+    <h3>Self-check</h3>
+    <details>
+      <summary>What happens in the UI while the version request is loading or if it fails?</summary>
+      <div class="answer"><strong>Nothing renders — the `version` prop is optional and both render sites are guarded by `version &&`.</strong><br>AppShell passes versionData?.version (undefined until loaded); the presentation only renders the strip/footer when version is truthy.</div>
+    </details>
+    <details>
+      <summary>Why does the test assert the version text appears exactly twice?</summary>
+      <div class="answer"><strong>Both the sidebar footer and the mobile strip are always in the DOM; md:hidden is CSS-only, so jsdom sees both.</strong><br>Visibility is controlled by CSS media classes, not conditional rendering, so getAllByText('1.1.2') has length 2.</div>
+    </details>
+    <details>
+      <summary>What caused the original ~34px gap above the mobile tab bar, and how was it fixed?</summary>
+      <div class="answer"><strong>The strip was offset by the full safe-area inset on top of the tab bar's fixed 3rem height; the fix merges both into one wrapper that applies the inset padding once.</strong><br>The tab bar's h-12 border-box sits 3rem from the bottom regardless of inset; positioning the strip at calc(3rem+inset) double-counted the inset, leaving a gap equal to the inset.</div>
+    </details>
+    <details>
+      <summary>Why did the mobile page-content bottom padding change from 3rem to 4.25rem?</summary>
+      <div class="answer"><strong>To reserve space for both the 3rem tab bar and the newly-added 1.25rem version strip stacked above it.</strong><br>The bottom chrome grew by the strip's height, so content padding had to grow correspondingly (and the convention doc was updated to match).</div>
+    </details>
+  </div>
+</section>
+
+<section>
+  <h2>Challenges &amp; decisions</h2>
+  <ul class="plain">
+    <li>Chose Docker build-arg → ENV over a committed version file specifically because a committed file is what drifted (the package.json failure mode this feature replaces).</li>
+    <li>Placed ARG/ENV late in the Dockerfile production stage to keep per-commit version changes off the cacheable build layers.</li>
+    <li>Explicitly reconciled this build-time bake against the repo's build-time-gate pitfall (docs/002): the version is the same across environments by design, so it is not the kind of value that pitfall warns about.</li>
+    <li>A1 mobile safe-area fix: merged version strip and tab bar into one wrapper applying env(safe-area-inset-bottom) exactly once, eliminating the notch-device gap.</li>
+    <li>A2: tightened the render test from toBeGreaterThan(0) to toHaveLength(2), since both render sites are always in the DOM via CSS, not conditional rendering.</li>
+    <li>C1: replaced getQueryKey({type: ONE, key: ''}) with a flat [QueryGroup.VERSION] key — version is a singleton with no entity id, so ONE was a category error.</li>
+    <li>DOC1: corrected the stale padding value in docs/codebase-related/002-frontend-convention.md to match the actual 4.25rem code.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>Known risks &amp; deferred items</h2>
+  <ul class="plain">
+    <li>Duplicated 'unreleased' default in both Dockerfile ARG and AppService fallback — deferred; confirmed unreachable overlap since CI always supplies the build-arg.</li>
+    <li>Mobile page-content padding reserves the 1.25rem strip space unconditionally, even on a total /version request failure where the strip never renders — deferred; zero functional impact, at most a few px of empty space.</li>
+  </ul>
+</section>
+
+</body>
+</html>
