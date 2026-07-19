@@ -215,16 +215,22 @@ padding from that combined height.
 
 ### 5.6 Data flow
 
-```
-CI (git tag OR commit)
-  → APP_VERSION = ${CIRCLE_TAG:-$CIRCLE_SHA1_SHORT}
-  → docker --build-arg APP_VERSION
-    → Dockerfile.backend: ENV BACKEND_APP_VERSION
-      → AppService.getVersion() reads process.env (?? 'unreleased')
-        → GET /version → { version }
-          → useVersion() (TanStack Query, staleTime Infinity)
-            → AppShellPresentation renders in sidebar footer (md+)
-              and pinned strip above tab bar (mobile)
+```mermaid
+flowchart TD
+    trigger{"CI build trigger"}
+    trigger -->|"tag push"| tag["$CIRCLE_TAG<br/>e.g. 1.1.2"]
+    trigger -->|"commit push"| sha["$CIRCLE_SHA1_SHORT<br/>e.g. 730606c"]
+    tag --> compute["APP_VERSION = ${CIRCLE_TAG:-$CIRCLE_SHA1_SHORT}"]
+    sha --> compute
+    compute --> buildarg["docker buildx --build-arg APP_VERSION"]
+    buildarg --> dockerfile["Dockerfile.backend<br/>ENV BACKEND_APP_VERSION"]
+    dockerfile --> service["AppService.getVersion()<br/>process.env.BACKEND_APP_VERSION ?? 'unreleased'"]
+    local["Local dev<br/>(no tag, no build-arg)"] -.->|"ENV unset"| service
+    service --> endpoint["GET /version → { version }"]
+    endpoint --> hook["useVersion()<br/>TanStack Query · staleTime Infinity"]
+    hook --> render["AppShellPresentation"]
+    render --> md["Sidebar footer<br/>(md+)"]
+    render --> mobile["Pinned strip above tab bar<br/>(mobile)"]
 ```
 
 ---
