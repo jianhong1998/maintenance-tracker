@@ -300,7 +300,7 @@ This prevents `/history-foo` from matching `/history`.
 The root layout exports `viewportFit: 'cover'` in the `Viewport` object, which enables `env(safe-area-inset-*)` on iOS. Components that sit at the bottom of the screen must account for the home indicator:
 
 - Bottom tab bar: `pb-[env(safe-area-inset-bottom)]`
-- Page content wrapper (mobile): `pb-[calc(3rem+env(safe-area-inset-bottom))]`
+- Page content wrapper (mobile): `pb-[calc(4.25rem+env(safe-area-inset-bottom))]` (4.25rem = 3rem tab bar + 1.25rem version strip stacked above it)
 - Mobile dialog bottom sheets: `pb-[calc(1.25rem+env(safe-area-inset-bottom))]`
 
 Do not remove `viewportFit: 'cover'` from `layout.tsx` — the safe-area padding only works when this is set.
