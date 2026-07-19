@@ -4,6 +4,7 @@ import type { FC, ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuthContext } from '@/contexts/auth-context';
 import { useFeatureFlags } from '@/hooks/queries/feature-flag/useFeatureFlags';
+import { useVersion } from '@/hooks/queries/version/useVersion';
 import { AppShellPresentation } from './app-shell-presentation';
 
 type AppShellProps = {
@@ -16,6 +17,7 @@ export const AppShell: FC<AppShellProps> = ({ children }) => {
   // undefined featureFlags (loading or error) intentionally hides flagged tabs;
   // the guard on flagged routes then returns null so nothing leaks through.
   const { data: featureFlags } = useFeatureFlags();
+  const { data: versionData } = useVersion();
 
   const showNav = !loading && !!user && pathname !== '/login';
   const userDisplayName = user?.displayName ?? null;
@@ -26,6 +28,7 @@ export const AppShell: FC<AppShellProps> = ({ children }) => {
       pathname={pathname}
       userDisplayName={userDisplayName}
       featureFlags={featureFlags}
+      version={versionData?.version}
     >
       {children}
     </AppShellPresentation>

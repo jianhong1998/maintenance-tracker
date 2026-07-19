@@ -9,6 +9,7 @@ type AppShellPresentationProps = {
   pathname: string;
   userDisplayName: string | null;
   featureFlags?: IFeatureFlagResDTO;
+  version?: string;
   children: ReactNode;
 };
 
@@ -35,6 +36,7 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
   pathname,
   userDisplayName,
   featureFlags,
+  version,
   children,
 }) => {
   if (!showNav) {
@@ -103,13 +105,29 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
               </span>
             )}
           </div>
+          {version && (
+            <div className="mt-2 pt-2 border-t border-[#ffffff0a]">
+              <span className="block text-center text-[0.5rem] text-[color:var(--text-secondary)] truncate">
+                {version}
+              </span>
+            </div>
+          )}
         </div>
       </aside>
 
-      {/* Page content wrapper — leaves room for sidebar on md+ and for bottom tab bar on mobile */}
-      <div className="flex-1 min-w-0 md:ml-[52px] xl:ml-[140px] pb-[calc(3rem+env(safe-area-inset-bottom))] md:pb-0">
+      {/* Page content wrapper — leaves room for sidebar on md+ and for bottom tab bar + version strip on mobile */}
+      <div className="flex-1 min-w-0 md:ml-[52px] xl:ml-[140px] pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
         {children}
       </div>
+
+      {/* Mobile: version strip pinned above the tab bar */}
+      {version && (
+        <div className="md:hidden fixed inset-x-0 bottom-[calc(3rem+env(safe-area-inset-bottom))] h-5 bg-[color:var(--bg-surface)] border-t border-[#00e5ff10] flex items-center justify-center z-40">
+          <span className="text-[0.5rem] text-[color:var(--text-secondary)]">
+            {version}
+          </span>
+        </div>
+      )}
 
       {/* Mobile: bottom tab bar */}
       <nav
