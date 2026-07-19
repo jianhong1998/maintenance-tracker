@@ -260,8 +260,9 @@ describe('AppShellPresentation', () => {
         <div>page content</div>
       </AppShellPresentation>,
     );
-    // Appears in both the sidebar footer and the mobile strip.
-    expect(screen.getAllByText('1.1.2').length).toBeGreaterThan(0);
+    // Appears in both the sidebar footer and the mobile strip (both render in
+    // jsdom simultaneously — md:hidden is CSS-only, not removed from the DOM).
+    expect(screen.getAllByText('1.1.2')).toHaveLength(2);
   });
 
   it('renders no version text when version is undefined', () => {
