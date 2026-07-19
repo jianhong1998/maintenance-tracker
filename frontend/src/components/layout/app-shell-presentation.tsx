@@ -9,6 +9,7 @@ type AppShellPresentationProps = {
   pathname: string;
   userDisplayName: string | null;
   featureFlags?: IFeatureFlagResDTO;
+  version?: string;
   children: ReactNode;
 };
 
@@ -35,6 +36,7 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
   pathname,
   userDisplayName,
   featureFlags,
+  version,
   children,
 }) => {
   if (!showNav) {
@@ -103,42 +105,58 @@ export const AppShellPresentation: FC<AppShellPresentationProps> = ({
               </span>
             )}
           </div>
+          {version && (
+            <div className="mt-2 pt-2 border-t border-[#ffffff0a]">
+              <span className="block text-center text-[0.5rem] text-[color:var(--text-secondary)] truncate">
+                {version}
+              </span>
+            </div>
+          )}
         </div>
       </aside>
 
-      {/* Page content wrapper — leaves room for sidebar on md+ and for bottom tab bar on mobile */}
-      <div className="flex-1 min-w-0 md:ml-[52px] xl:ml-[140px] pb-[calc(3rem+env(safe-area-inset-bottom))] md:pb-0">
+      {/* Page content wrapper — leaves room for sidebar on md+ and for bottom tab bar + version strip on mobile */}
+      <div className="flex-1 min-w-0 md:ml-[52px] xl:ml-[140px] pb-[calc(4.25rem+env(safe-area-inset-bottom))] md:pb-0">
         {children}
       </div>
 
-      {/* Mobile: bottom tab bar */}
-      <nav
-        aria-label="Mobile navigation"
-        className="md:hidden fixed bottom-0 inset-x-0 h-12 bg-[color:var(--bg-surface)] border-t border-[#00e5ff15] flex items-center justify-around z-40 px-4 pb-[env(safe-area-inset-bottom)]"
-      >
-        {visibleNavItems.map(({ href, label, icon: Icon }) => {
-          const active = isActive(pathname, href);
-          return (
-            <Link
-              key={href}
-              href={href}
-              aria-current={active ? 'page' : undefined}
-              className={cn(
-                'flex flex-col items-center gap-0.5 py-1 px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5ff40] rounded',
-                active ? 'text-primary' : 'text-[#444]',
-              )}
-            >
-              {active && (
-                <span className="w-1 h-1 rounded-full bg-primary mb-0.5" />
-              )}
-              <Icon size={16} />
-              <span className="text-[0.55rem] font-semibold tracking-wide">
-                {label}
-              </span>
-            </Link>
-          );
-        })}
-      </nav>
+      {/* Mobile: bottom stack — version strip + tab bar share one safe-area inset so they stay flush */}
+      <div className="md:hidden fixed inset-x-0 bottom-0 z-40 flex flex-col bg-[color:var(--bg-surface)] pb-[env(safe-area-inset-bottom)]">
+        {version && (
+          <div className="h-5 border-t border-[#00e5ff10] flex items-center justify-center">
+            <span className="text-[0.5rem] text-[color:var(--text-secondary)]">
+              {version}
+            </span>
+          </div>
+        )}
+        <nav
+          aria-label="Mobile navigation"
+          className="h-12 border-t border-[#00e5ff15] flex items-center justify-around px-4"
+        >
+          {visibleNavItems.map(({ href, label, icon: Icon }) => {
+            const active = isActive(pathname, href);
+            return (
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'flex flex-col items-center gap-0.5 py-1 px-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00e5ff40] rounded',
+                  active ? 'text-primary' : 'text-[#444]',
+                )}
+              >
+                {active && (
+                  <span className="w-1 h-1 rounded-full bg-primary mb-0.5" />
+                )}
+                <Icon size={16} />
+                <span className="text-[0.55rem] font-semibold tracking-wide">
+                  {label}
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
     </div>
   );
 };

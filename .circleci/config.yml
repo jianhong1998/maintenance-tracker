@@ -80,9 +80,12 @@ commands:
             if [ -n "<< parameters.build_args >>" ]; then
               BUILD_ARGS_FLAG="--build-arg << parameters.build_args >>"
             fi
+            # Tag builds → semver git tag; commit builds → short SHA. Empty tag falls back.
+            APP_VERSION="${CIRCLE_TAG:-$CIRCLE_SHA1_SHORT}"
             docker buildx build \
               --platform linux/arm64 \
               $BUILD_ARGS_FLAG \
+              --build-arg APP_VERSION="$APP_VERSION" \
               --cache-from "type=registry,ref=$CACHE_REPO" \
               --cache-to "type=registry,ref=$CACHE_REPO,mode=max" \
               --tag "$IMAGE_REPO:$CIRCLE_SHA1_SHORT" \

@@ -247,4 +247,35 @@ describe('AppShellPresentation', () => {
     expect(screen.queryByText(/history/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/profile/i)).not.toBeInTheDocument();
   });
+
+  it('renders the version string when version is provided', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName="Jane Smith"
+        featureFlags={allFlagsEnabled}
+        version="1.1.2"
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    // Appears in both the sidebar footer and the mobile strip (both render in
+    // jsdom simultaneously — md:hidden is CSS-only, not removed from the DOM).
+    expect(screen.getAllByText('1.1.2')).toHaveLength(2);
+  });
+
+  it('renders no version text when version is undefined', () => {
+    render(
+      <AppShellPresentation
+        showNav={true}
+        pathname="/"
+        userDisplayName="Jane Smith"
+        featureFlags={allFlagsEnabled}
+      >
+        <div>page content</div>
+      </AppShellPresentation>,
+    );
+    expect(screen.queryByText('1.1.2')).not.toBeInTheDocument();
+  });
 });

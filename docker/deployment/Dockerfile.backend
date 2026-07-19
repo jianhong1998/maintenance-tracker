@@ -59,6 +59,13 @@ WORKDIR /app/backend
 ARG NODE_ENTRYPOINT=dist/backend/src/main
 ENV NODE_ENTRYPOINT=${NODE_ENTRYPOINT}
 
+# APP_VERSION is build-time artifact identity (NOT a runtime gate — the same
+# value ships to prod and to pipeline-E2E because it is the same image).
+# CI passes --build-arg APP_VERSION=${CIRCLE_TAG:-$CIRCLE_SHA1_SHORT}.
+# Kept in this late layer so per-commit version changes don't bust build cache.
+ARG APP_VERSION=unreleased
+ENV BACKEND_APP_VERSION=${APP_VERSION}
+
 USER node
 # exec replaces the shell so node is PID 1 and receives signals correctly.
 CMD exec node $NODE_ENTRYPOINT
