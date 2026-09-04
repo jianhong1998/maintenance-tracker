@@ -10,9 +10,9 @@
     "format": "prettier . --write"
   },
   "dependencies": {
-    "@playwright/test": "1.62.0",
+    "@playwright/test": "1.62.1",
     "@project/types": "workspace:*",
-    "axios": "1.18.1"
+    "axios": "1.20.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",
@@ -24,6 +24,6 @@
     "globals": "^16.5.0",
     "prettier": "^3.9.6",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.65.0"
+    "typescript-eslint": "^8.68.0"
   }
 }
